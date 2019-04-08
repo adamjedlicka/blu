@@ -9,7 +9,7 @@ MODE = debug
 NAME = blu
 SOURCE_DIR = src
 
-CFLAGS := -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter
+CFLAGS := -std=c99 -Wall -Wextra -Wno-unused-parameter
 
 # Mode configuration.
 ifeq ($(MODE),debug)
