@@ -132,8 +132,15 @@ static InterpretResult run() {
 				double b = AS_NUMBER(pop());
 				double a = AS_NUMBER(pop());
 				push(NUMBER_VAL(a + b));
+			} else if (IS_NUMBER(peek(0)) && IS_STRING(peek(1))) {
+				char output[14];
+
+				snprintf(output, 14, "%g", AS_NUMBER(pop()));
+				push(OBJ_VAL(copyString(output, strlen(output))));
+
+				concatenate();
 			} else {
-				runtimeError("Operands must be two numbers or two strings.");
+				runtimeError("First operand must be string or both operands must be numbers.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 			break;
