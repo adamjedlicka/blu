@@ -40,16 +40,13 @@ static char peek() {
 }
 
 static char peekNext() {
-	if (isAtEnd())
-		return '\0';
+	if (isAtEnd()) return '\0';
 	return scanner.current[1];
 }
 
 static bool match(char expected) {
-	if (isAtEnd())
-		return false;
-	if (*scanner.current != expected)
-		return false;
+	if (isAtEnd()) return false;
+	if (*scanner.current != expected) return false;
 
 	scanner.current++;
 	return true;
@@ -187,13 +184,11 @@ static Token number() {
 
 static Token string() {
 	while (peek() != '"' && !isAtEnd()) {
-		if (peek() == '\n')
-			scanner.line++;
+		if (peek() == '\n') scanner.line++;
 		advance();
 	}
 
-	if (isAtEnd())
-		return errorToken("Unterminated string.");
+	if (isAtEnd()) return errorToken("Unterminated string.");
 
 	// The closing ".
 	advance();
@@ -205,14 +200,11 @@ Token scanToken() {
 
 	scanner.start = scanner.current;
 
-	if (isAtEnd())
-		return makeToken(TOKEN_EOF);
+	if (isAtEnd()) return makeToken(TOKEN_EOF);
 
 	char c = advance();
-	if (isAlpha(c))
-		return identifier();
-	if (isDigit(c))
-		return number();
+	if (isAlpha(c)) return identifier();
+	if (isDigit(c)) return number();
 
 	switch (c) {
 	case '(':
