@@ -40,7 +40,7 @@ $(BUILD_DIR)/$(NAME)/%.o: $(SOURCE_DIR)/%.c $(HEADERS)
 	@ $(CC) -c $(CFLAGS) -o $@ $<
 
 run: build/$(NAME)
-	./build/$(NAME)
+	./build/$(NAME) $(SCRIPT)
 
 clean:
 	rm -rf build/
