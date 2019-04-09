@@ -42,7 +42,9 @@ Parser parser;
 
 Chunk *compilingChunk;
 
-static Chunk *currentChunk() { return compilingChunk; }
+static Chunk *currentChunk() {
+	return compilingChunk;
+}
 
 static void errorAt(Token *token, const char *message) {
 	if (parser.panicMode)
@@ -63,9 +65,13 @@ static void errorAt(Token *token, const char *message) {
 	parser.hadError = true;
 }
 
-static void error(const char *message) { errorAt(&parser.previous, message); }
+static void error(const char *message) {
+	errorAt(&parser.previous, message);
+}
 
-static void errorAtCurrent(const char *message) { errorAt(&parser.current, message); }
+static void errorAtCurrent(const char *message) {
+	errorAt(&parser.current, message);
+}
 
 static void advance() {
 	parser.previous = parser.current;
@@ -88,14 +94,18 @@ static void consume(TokenType type, const char *message) {
 	errorAtCurrent(message);
 }
 
-static void emitByte(uint8_t byte) { writeChunk(currentChunk(), byte, parser.previous.line); }
+static void emitByte(uint8_t byte) {
+	writeChunk(currentChunk(), byte, parser.previous.line);
+}
 
 static void emitBytes(uint8_t byte1, uint8_t byte2) {
 	emitByte(byte1);
 	emitByte(byte2);
 }
 
-static void emitReturn() { emitByte(OP_RETURN); }
+static void emitReturn() {
+	emitByte(OP_RETURN);
+}
 
 static uint8_t makeConstant(Value value) {
 	int constant = addConstant(currentChunk(), value);
@@ -107,7 +117,9 @@ static uint8_t makeConstant(Value value) {
 	return (uint8_t)constant;
 }
 
-static void emitConstant(Value value) { emitBytes(OP_CONSTANT, makeConstant(value)); }
+static void emitConstant(Value value) {
+	emitBytes(OP_CONSTANT, makeConstant(value));
+}
 
 static void endCompiler() {
 	emitReturn();
@@ -194,7 +206,9 @@ static void number() {
 	emitConstant(NUMBER_VAL(value));
 }
 
-static void string() { emitConstant(OBJ_VAL(copyString(parser.previous.start + 1, parser.previous.length - 2))); }
+static void string() {
+	emitConstant(OBJ_VAL(copyString(parser.previous.start + 1, parser.previous.length - 2)));
+}
 
 static void unary() {
 	TokenType operatorType = parser.previous.type;
@@ -275,9 +289,13 @@ static void parsePrecedence(Precedence precedence) {
 	}
 }
 
-static ParseRule *getRule(TokenType type) { return &rules[type]; }
+static ParseRule *getRule(TokenType type) {
+	return &rules[type];
+}
 
-void expression() { parsePrecedence(PREC_ASSIGNMENT); }
+void expression() {
+	parsePrecedence(PREC_ASSIGNMENT);
+}
 
 bool compile(const char *source, Chunk *chunk) {
 	initScanner(source);

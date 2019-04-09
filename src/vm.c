@@ -14,7 +14,9 @@
 
 VM vm;
 
-static void resetStack() { vm.stackTop = vm.stack; }
+static void resetStack() {
+	vm.stackTop = vm.stack;
+}
 
 static void runtimeError(const char *format, ...) {
 	va_list args;
@@ -50,9 +52,13 @@ Value pop() {
 	return *vm.stackTop;
 }
 
-static Value peek(int distance) { return vm.stackTop[-1 - distance]; }
+static Value peek(int distance) {
+	return vm.stackTop[-1 - distance];
+}
 
-static bool isFalsey(Value value) { return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value)); }
+static bool isFalsey(Value value) {
+	return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+}
 
 static void concatenate() {
 	ObjString *b = AS_STRING(pop());
