@@ -19,7 +19,8 @@ static void resetStack() {
 }
 
 static void runtimeError(const char *format, ...) {
-	size_t instruction = vm.ip - vm.chunk->code;
+	// (vm.ip - 1) gets currenty execing instruction.
+	size_t instruction = (vm.ip - 1) - vm.chunk->code;
 	fprintf(stderr, "[line %d] Runtime error: ", vm.chunk->lines[instruction]);
 
 	va_list args;
@@ -212,6 +213,16 @@ static InterpretResult run() {
 		case OP_PRINT: {
 			printValue(pop());
 			printf("\n");
+			break;
+		}
+
+		case OP_ASSERT: {
+			if (isFalsey(pop())) {
+				// TODO : It prints wrong line number. This hack fixes it...
+				// vm.ip--;
+				runtimeError("Assertion error.");
+				return INTERPRET_ASSERTION_ERROR;
+			}
 			break;
 		}
 

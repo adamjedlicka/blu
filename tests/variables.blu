@@ -1,0 +1,18 @@
+assert 1 == 1;
+assert 1 != 2;
+assert 1 < 2;
+assert 1 <= 2;
+assert 1 <= 1;
+assert 2 > 1;
+assert 2 >= 1;
+assert 1 >= 1;
+
+assert "a" == "a";
+assert "a" != "b";
+
+assert "ab" + "cd" == "a" + "b" + "c" + "d";
+
+var a = 1;
+assert a == 1;
+a = 2;
+assert a == 2;

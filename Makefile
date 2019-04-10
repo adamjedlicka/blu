@@ -42,6 +42,9 @@ $(BUILD_DIR)/$(NAME)/%.o: $(SOURCE_DIR)/%.c $(HEADERS)
 run: build/$(NAME)
 	./build/$(NAME) $(SCRIPT)
 
+test: build/$(NAME)
+	bash test.sh
+
 clean:
 	rm -rf build/
 

@@ -57,6 +57,7 @@ static void runFile(const char *path) {
 
 	if (result == INTERPRET_COMPILE_ERROR) exit(65);
 	if (result == INTERPRET_RUNTIME_ERROR) exit(70);
+	if (result == INTERPRET_ASSERTION_ERROR) exit(75);
 }
 
 int main(int argc, const char *argv[]) {

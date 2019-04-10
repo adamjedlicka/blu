@@ -86,6 +86,7 @@ static void errorAtCurrent(const char *message) {
 	errorAt(&parser.current, message);
 }
 
+// Scans another token, skipping error tokens and sets parser.previous to parse.current.
 static void advance() {
 	parser.previous = parser.current;
 
@@ -97,6 +98,7 @@ static void advance() {
 	}
 }
 
+// Consumes next token. If next token is not of the given type, throws an error with a message.
 static void consume(TokenType type, const char *message) {
 	if (parser.current.type == type) {
 		advance();
@@ -106,10 +108,14 @@ static void consume(TokenType type, const char *message) {
 	errorAtCurrent(message);
 }
 
+// Checks whether next token is of the given type.
+// Returns true if so, otherwise returns false.
 static bool check(TokenType type) {
 	return parser.current.type == type;
 }
 
+// Checks whether next token is of the given type.
+// If yes, consumes it and returns true, otherwise it does not consume any tokens and return false.
 static bool match(TokenType type) {
 	if (!check(type)) return false;
 	advance();
@@ -364,6 +370,7 @@ ParseRule rules[] = {
 	{literal, NULL, PREC_NONE},		 // TOKEN_NIL
 	{NULL, NULL, PREC_OR},			 // TOKEN_OR
 	{NULL, NULL, PREC_NONE},		 // TOKEN_PRINT
+	{NULL, NULL, PREC_NONE},		 // TOKEN_ASSERT
 	{NULL, NULL, PREC_NONE},		 // TOKEN_RETURN
 	{NULL, NULL, PREC_NONE},		 // TOKEN_SUPER
 	{NULL, NULL, PREC_NONE},		 // TOKEN_THIS
@@ -461,6 +468,12 @@ static void printStatement() {
 	emitByte(OP_PRINT);
 }
 
+static void assertStatement() {
+	expression();
+	consume(TOKEN_SEMICOLON, "Expect ';' after value.");
+	emitByte(OP_ASSERT);
+}
+
 static void ifStatement() {
 	beginScope();
 	expression();
@@ -530,6 +543,8 @@ static void statement() {
 		beginScope();
 		block();
 		endScope();
+	} else if (match(TOKEN_ASSERT)) {
+		assertStatement();
 	} else {
 		expressionStatement();
 	}

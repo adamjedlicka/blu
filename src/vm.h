@@ -18,7 +18,12 @@ typedef struct {
 	Obj *objects;
 } VM;
 
-typedef enum { INTERPRET_OK, INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR } InterpretResult;
+typedef enum {
+	INTERPRET_OK,
+	INTERPRET_COMPILE_ERROR,
+	INTERPRET_RUNTIME_ERROR,
+	INTERPRET_ASSERTION_ERROR,
+} InterpretResult;
 
 extern VM vm;
 
