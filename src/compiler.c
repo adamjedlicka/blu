@@ -147,6 +147,20 @@ static uint8_t emitConstant(Value value) {
 	return constant;
 }
 
+static int emitJump(OpCode code) {
+	emitByte(code);
+	emitBytes(0, 0);
+
+	return currentChunk()->count - 2;
+}
+
+static void patchJump(int jump) {
+	int length = currentChunk()->count - jump - 2;
+
+	currentChunk()->code[jump] = (length >> 8) & 0xff;
+	currentChunk()->code[jump + 1] = length & 0xff;
+}
+
 static void initCompiler(Compiler *compiler) {
 	compiler->localCount = 0;
 	compiler->scopeDepth = 0;
@@ -449,40 +463,29 @@ static void printStatement() {
 
 static void ifStatement() {
 	beginScope();
-
 	expression();
-
-	emitBytes(OP_JMP, 0);
-
-	consume(TOKEN_LEFT_BRACE, "Expect block after if condition.");
-
-	int before = currentChunk()->count;
+	int ifJump = emitJump(OP_JUMP_IF);
+	consume(TOKEN_LEFT_BRACE, "Expect '{' after if condition.");
 	block();
-	int after = currentChunk()->count;
-
-	currentChunk()->code[before - 1] = after - before;
-
 	endScope();
 
 	if (match(TOKEN_ELSE)) {
-		consume(TOKEN_LEFT_BRACE, "Expect block after else.");
+		int elseJump = emitJump(OP_JUMP);
+		patchJump(ifJump);
 
-		beginScope();
+		if (match(TOKEN_LEFT_BRACE)) {
+			beginScope();
+			block();
+			endScope();
+		} else if (match(TOKEN_IF)) {
+			ifStatement();
+		} else {
+			error("Expect 'if' or '{' after 'else'.");
+		}
 
-		// Jump else branch if previous if did pass.
-		emitByte(OP_FALSE);
-		emitBytes(OP_JMP, 0);
-
-		// If previous if did not pass we need to skip previous instructions.
-		currentChunk()->code[before - 1] += 3;
-
-		int before = currentChunk()->count;
-		block();
-		int after = currentChunk()->count;
-
-		currentChunk()->code[before - 1] = after - before;
-
-		endScope();
+		patchJump(elseJump);
+	} else {
+		patchJump(ifJump);
 	}
 }
 
