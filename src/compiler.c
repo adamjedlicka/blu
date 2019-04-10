@@ -406,7 +406,7 @@ static ParseRule *getRule(TokenType type) {
 	return &rules[type];
 }
 
-void expression() {
+static void expression() {
 	parsePrecedence(PREC_ASSIGNMENT);
 }
 
@@ -458,9 +458,7 @@ static void synchronize() {
 		case TOKEN_WHILE:
 		case TOKEN_PRINT:
 		case TOKEN_RETURN: return;
-		default:
-			// Do nothing.
-			;
+		default:; // Do nothing.
 		}
 
 		advance();

@@ -19,14 +19,14 @@ static void resetStack() {
 }
 
 static void runtimeError(const char *format, ...) {
+	size_t instruction = vm.ip - vm.chunk->code;
+	fprintf(stderr, "[line %d] Runtime error: ", vm.chunk->lines[instruction]);
+
 	va_list args;
 	va_start(args, format);
 	vfprintf(stderr, format, args);
 	va_end(args);
 	fputs("\n", stderr);
-
-	size_t instruction = vm.ip - vm.chunk->code;
-	fprintf(stderr, "[line %d] in script\n", vm.chunk->lines[instruction]);
 
 	resetStack();
 }
@@ -77,6 +77,7 @@ static void concatenate() {
 }
 
 static InterpretResult run() {
+
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
