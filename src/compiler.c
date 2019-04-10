@@ -139,8 +139,12 @@ static uint8_t makeConstant(Value value) {
 	return (uint8_t)constant;
 }
 
-static void emitConstant(Value value) {
-	emitBytes(OP_CONSTANT, makeConstant(value));
+static uint8_t emitConstant(Value value) {
+	uint8_t constant = makeConstant(value);
+
+	emitBytes(OP_CONSTANT, constant);
+
+	return constant;
 }
 
 static void initCompiler(Compiler *compiler) {
@@ -443,6 +447,45 @@ static void printStatement() {
 	emitByte(OP_PRINT);
 }
 
+static void ifStatement() {
+	beginScope();
+
+	expression();
+
+	emitBytes(OP_JMP, 0);
+
+	consume(TOKEN_LEFT_BRACE, "Expect block after if condition.");
+
+	int before = currentChunk()->count;
+	block();
+	int after = currentChunk()->count;
+
+	currentChunk()->code[before - 1] = after - before;
+
+	endScope();
+
+	if (match(TOKEN_ELSE)) {
+		consume(TOKEN_LEFT_BRACE, "Expect block after else.");
+
+		beginScope();
+
+		// Jump else branch if previous if did pass.
+		emitByte(OP_FALSE);
+		emitBytes(OP_JMP, 0);
+
+		// If previous if did not pass we need to skip previous instructions.
+		currentChunk()->code[before - 1] += 3;
+
+		int before = currentChunk()->count;
+		block();
+		int after = currentChunk()->count;
+
+		currentChunk()->code[before - 1] = after - before;
+
+		endScope();
+	}
+}
+
 static void synchronize() {
 	parser.panicMode = false;
 
@@ -478,6 +521,8 @@ static void declaration() {
 static void statement() {
 	if (match(TOKEN_PRINT)) {
 		printStatement();
+	} else if (match(TOKEN_IF)) {
+		ifStatement();
 	} else if (match(TOKEN_LEFT_BRACE)) {
 		beginScope();
 		block();

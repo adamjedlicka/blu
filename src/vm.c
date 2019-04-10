@@ -214,6 +214,17 @@ static InterpretResult run() {
 			break;
 		}
 
+		case OP_JMP: {
+			if (isFalsey(pop())) {
+				uint8_t jumpLength = READ_BYTE();
+				vm.ip += jumpLength;
+			} else {
+				vm.ip++;
+			}
+
+			break;
+		}
+
 		case OP_RETURN: return INTERPRET_OK;
 		}
 	}
