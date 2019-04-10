@@ -13,10 +13,14 @@ do
     fi
 done
 
-if [ 1 -eq $CODE ]
+if [ 0 -eq $CODE ]
 then
     echo ""
-    echo " --- Not all tests passed successfully! --- ";
+    echo " --- All tests passed successfully :) --- ";
+    echo ""
+else
+    echo ""
+    echo " --- Not all tests passed successfully :( --- ";
     echo ""
 fi
 
