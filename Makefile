@@ -9,7 +9,7 @@ endif
 NAME := blu
 SOURCE_DIR := src
 
-CFLAGS := -std=c99 -Wall -Wextra -Wno-unused-parameter
+CFLAGS := -std=c11 -Wall -Wextra -Wno-unused-parameter
 
 # Mode configuration.
 ifeq ($(MODE),debug)

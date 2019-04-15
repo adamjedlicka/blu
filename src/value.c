@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -33,7 +34,7 @@ bool valuesEqual(Value a, Value b) {
 	switch (a.type) {
 	case VAL_BOOL: return AS_BOOL(a) == AS_BOOL(b);
 	case VAL_NIL: return true;
-	case VAL_NUMBER: return AS_NUMBER(a) == AS_NUMBER(b);
+	case VAL_NUMBER: return fabs(AS_NUMBER(a) - AS_NUMBER(b)) < __DBL_EPSILON__;
 	case VAL_OBJ: return AS_OBJ(a) == AS_OBJ(b);
 	default: return false;
 	}
