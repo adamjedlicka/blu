@@ -48,6 +48,7 @@ typedef struct Compiler {
 	Local locals[UINT8_COUNT];
 	int localCount;
 	int scopeDepth;
+	int currentBreak;
 } Compiler;
 
 Compiler *current = NULL;
@@ -180,6 +181,7 @@ static void patchJump(int jump) {
 static void initCompiler(Compiler *compiler) {
 	compiler->localCount = 0;
 	compiler->scopeDepth = 0;
+	compiler->currentBreak = 0;
 	current = compiler;
 }
 
@@ -371,6 +373,7 @@ ParseRule rules[] = {
 	{string, NULL, PREC_NONE},		 // TOKEN_STRING
 	{number, NULL, PREC_NONE},		 // TOKEN_NUMBER
 	{NULL, NULL, PREC_AND},			 // TOKEN_AND
+	{NULL, NULL, PREC_NONE},		 // TOKEN_BREAK
 	{NULL, NULL, PREC_NONE},		 // TOKEN_CLASS
 	{NULL, NULL, PREC_NONE},		 // TOKEN_ELSE
 	{literal, NULL, PREC_NONE},		 // TOKEN_FALSE
@@ -513,6 +516,7 @@ static void ifStatement() {
 }
 
 static void whileStatement() {
+	int currentBreak = current->currentBreak;
 	int loopStart = currentChunk()->count;
 
 	beginScope();
@@ -530,6 +534,19 @@ static void whileStatement() {
 	emitLoop(loopStart);
 
 	patchJump(exitJump);
+
+	if (current->currentBreak != 0) {
+		printf("break - ");
+		patchJump(current->currentBreak);
+	}
+
+	current->currentBreak = currentBreak;
+}
+
+static void breakStatement() {
+	consume(TOKEN_SEMICOLON, "Expect ';' after break statement.");
+
+	current->currentBreak = emitJump(OP_JUMP);
 }
 
 static void synchronize() {
@@ -571,6 +588,8 @@ static void statement() {
 		ifStatement();
 	} else if (match(TOKEN_WHILE)) {
 		whileStatement();
+	} else if (match(TOKEN_BREAK)) {
+		breakStatement();
 	} else if (match(TOKEN_LEFT_BRACE)) {
 		beginScope();
 		block();

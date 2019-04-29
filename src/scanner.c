@@ -115,6 +115,7 @@ static TokenType identifierType() {
 			}
 		}
 		break;
+	case 'b': return checkKeyword(1, 4, "reak", TOKEN_BREAK);
 	case 'c': return checkKeyword(1, 4, "lass", TOKEN_CLASS);
 	case 'e': return checkKeyword(1, 3, "lse", TOKEN_ELSE);
 	case 'f':

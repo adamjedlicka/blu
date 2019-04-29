@@ -1,0 +1,23 @@
+var i = 0;
+
+while i < 15 {
+    if i == 10 {
+        break;
+    }
+
+    var j = 0;
+
+    while j < 15 {
+        if j == 5 {
+            break;
+        }
+
+        j = j + 1;
+    }
+
+    assert j == 5;
+
+    i = i + 1;
+}
+
+assert i == 10;
