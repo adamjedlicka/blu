@@ -536,7 +536,6 @@ static void whileStatement() {
 	patchJump(exitJump);
 
 	if (current->currentBreak != 0) {
-		printf("break - ");
 		patchJump(current->currentBreak);
 	}
 
