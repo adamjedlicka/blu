@@ -542,6 +542,70 @@ static void whileStatement() {
 	current->currentBreak = currentBreak;
 }
 
+static void forStatement() {
+	int currentBreak = current->currentBreak;
+
+	beginScope();
+
+	// The initialization clause.
+	if (match(TOKEN_VAR)) {
+		varDeclaration();
+	} else if (match(TOKEN_SEMICOLON)) {
+		// No initializer.
+	} else {
+		expressionStatement();
+	}
+
+	int loopStart = currentChunk()->count;
+
+	// The exit condition.
+	int exitJump = 0;
+	if (!match(TOKEN_SEMICOLON)) {
+		expression();
+		consume(TOKEN_SEMICOLON, "Expect ';' after loop condition.");
+
+		// Jump out of the loop if the condition is false.
+		exitJump = emitJump(OP_JUMP_IF);
+	}
+
+	// Increment step.
+	if (!match(TOKEN_LEFT_BRACE)) {
+		// We don't want to execute the increment before the body, so jump over it.
+		int bodyJump = emitJump(OP_JUMP);
+
+		int incrementStart = currentChunk()->count;
+		expression();
+		emitByte(OP_POP);
+		consume(TOKEN_LEFT_BRACE, "Expect '{' after for clause.");
+
+		// After the increment, start the whole loop over.
+		emitLoop(loopStart);
+
+		// At the end of the body, we want to jump to the increment, not the top of the loop.
+		loopStart = incrementStart;
+
+		patchJump(bodyJump);
+	}
+
+	// Compile the body.
+	block();
+
+	// Jump back to the beginning (or the increment).
+	emitLoop(loopStart);
+
+	if (exitJump != 0) {
+		patchJump(exitJump);
+	}
+
+	if (current->currentBreak != 0) {
+		patchJump(current->currentBreak);
+	}
+
+	endScope();
+
+	current->currentBreak = currentBreak;
+}
+
 static void breakStatement() {
 	consume(TOKEN_SEMICOLON, "Expect ';' after break statement.");
 
@@ -587,6 +651,8 @@ static void statement() {
 		ifStatement();
 	} else if (match(TOKEN_WHILE)) {
 		whileStatement();
+	} else if (match(TOKEN_FOR)) {
+		forStatement();
 	} else if (match(TOKEN_BREAK)) {
 		breakStatement();
 	} else if (match(TOKEN_LEFT_BRACE)) {
