@@ -354,6 +354,7 @@ ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE},		 // TOKEN_RIGHT_PAREN
 	{NULL, NULL, PREC_NONE},		 // TOKEN_LEFT_BRACE
 	{NULL, NULL, PREC_NONE},		 // TOKEN_RIGHT_BRACE
+	{NULL, NULL, PREC_NONE},		 // TOKEN_COLON
 	{NULL, NULL, PREC_NONE},		 // TOKEN_COMMA
 	{NULL, NULL, PREC_CALL},		 // TOKEN_DOT
 	{unary, binary, PREC_TERM},		 // TOKEN_MINUS
@@ -491,6 +492,15 @@ static void ifStatement() {
 	beginScope();
 	expression();
 	int ifJump = emitJump(OP_JUMP_IF);
+
+	// One-line if notation
+	if (match(TOKEN_COLON)) {
+		statement();
+		endScope();
+		patchJump(ifJump);
+		return;
+	}
+
 	consume(TOKEN_LEFT_BRACE, "Expect '{' after if condition.");
 	block();
 	endScope();
@@ -525,9 +535,12 @@ static void whileStatement() {
 
 	int exitJump = emitJump(OP_JUMP_IF);
 
-	consume(TOKEN_LEFT_BRACE, "Expect '{' after while condition.");
-
-	block();
+	if (match(TOKEN_COLON)) {
+		statement();
+	} else {
+		consume(TOKEN_LEFT_BRACE, "Expect '{' after while condition.");
+		block();
+	}
 
 	endScope();
 

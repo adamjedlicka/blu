@@ -55,3 +55,9 @@ if x == 1 {
 }
 
 assert out == "other";
+
+var a = true;
+
+if a == true : a = false;
+
+assert a == false;
