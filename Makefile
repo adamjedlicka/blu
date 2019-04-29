@@ -13,7 +13,7 @@ CFLAGS := -std=c11 -Wall -Wextra -Wno-unused-parameter
 
 # Mode configuration.
 ifeq ($(MODE),debug)
-	CFLAGS += -O0 -DDEBUG -g
+	CFLAGS += -O0 -DDEBUG -g -fsanitize=address
 	BUILD_DIR := build/debug
 else
 	CFLAGS += -O3 -flto

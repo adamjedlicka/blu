@@ -43,6 +43,9 @@ void freeVM() {
 	freeTable(&vm.globals);
 	freeTable(&vm.strings);
 	freeObjects();
+
+	// Reset VM data
+	initVM();
 }
 
 void push(Value value) {

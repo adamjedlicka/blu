@@ -16,6 +16,8 @@ void initTable(Table *table) {
 
 void freeTable(Table *table) {
 	FREE_ARRAY(Entry, table->entries, table->capacity);
+
+	// Reset table data
 	initTable(table);
 }
 
