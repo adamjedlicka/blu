@@ -1,0 +1,19 @@
+var cnt = 0;
+
+var i = 0;
+
+while i < 10 {
+    var j = 0;
+
+    while j < i + 1 {
+        cnt = cnt + 1;
+
+        j = j + 1;
+    }
+
+    assert j == i + 1;
+
+    i = i + 1;
+}
+
+assert cnt == 55;
