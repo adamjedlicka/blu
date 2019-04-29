@@ -1,16 +1,12 @@
 var i = 0;
 
 while i < 15 {
-    if i == 10 {
-        break;
-    }
+    if i == 10 : break;
 
     var j = 0;
 
     while j < 15 {
-        if j == 5 {
-            break;
-        }
+        if j == 5 : break;
 
         j = j + 1;
     }

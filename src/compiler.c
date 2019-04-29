@@ -589,7 +589,6 @@ static void forStatement() {
 		int incrementStart = currentChunk()->count;
 		expression();
 		emitByte(OP_POP);
-		consume(TOKEN_LEFT_BRACE, "Expect '{' after for clause.");
 
 		// After the increment, start the whole loop over.
 		emitLoop(loopStart);
@@ -601,7 +600,12 @@ static void forStatement() {
 	}
 
 	// Compile the body.
-	block();
+	if (match(TOKEN_COLON)) {
+		statement();
+	} else {
+		consume(TOKEN_LEFT_BRACE, "Expect '{' after for clause.");
+		block();
+	}
 
 	// Jump back to the beginning (or the increment).
 	emitLoop(loopStart);
