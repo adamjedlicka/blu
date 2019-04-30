@@ -235,7 +235,7 @@ static InterpretResult run() {
 			break;
 		}
 
-		case OP_JUMP_IF: {
+		case OP_JUMP_IF_FALSE: {
 			uint16_t offset = READ_SHORT();
 			Value condition = pop();
 

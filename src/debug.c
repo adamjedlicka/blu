@@ -30,9 +30,9 @@ static int byteInstruction(const char* name, Chunk* chunk, int offset) {
 	return offset + 2;
 }
 
-static int shortInstrctuon(const char* name, Chunk* chunk, int offset) {
+static int jumpInstruction(const char* name, Chunk* chunk, int offset) {
 	uint16_t slot = ((chunk->code[offset + 1] << 8) & 0xff) | (chunk->code[offset + 2] & 0xff);
-	printf("%-16s %6d\n", name, slot);
+	printf("%-16s %6d (%d)\n", name, slot, slot + offset + 3);
 	return offset + 3;
 }
 
@@ -67,9 +67,9 @@ int disassembleInstruction(Chunk* chunk, int offset) {
 	case OP_NEGATE: return simpleInstruction("OP_NEGATE", offset);
 	case OP_PRINT: return simpleInstruction("OP_PRINT", offset);
 	case OP_ASSERT: return simpleInstruction("OP_ASSERT", offset);
-	case OP_JUMP: return shortInstrctuon("OP_JUMP", chunk, offset);
-	case OP_JUMP_IF: return shortInstrctuon("OP_JUMP_IF", chunk, offset);
-	case OP_LOOP: return shortInstrctuon("OP_LOOP", chunk, offset);
+	case OP_JUMP: return jumpInstruction("OP_JUMP", chunk, offset);
+	case OP_JUMP_IF_FALSE: return jumpInstruction("OP_JUMP_IF_FALSE", chunk, offset);
+	case OP_LOOP: return jumpInstruction("OP_LOOP", chunk, offset);
 	case OP_RETURN: return simpleInstruction("OP_RETURN", offset);
 	default: printf("Unknown opcode %d\n", instruction); return offset + 1;
 	}

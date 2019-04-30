@@ -2,6 +2,7 @@
 #define blu_table_h
 
 #include "common.h"
+#include "object.h"
 #include "value.h"
 
 typedef struct {

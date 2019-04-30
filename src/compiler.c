@@ -48,6 +48,8 @@ typedef struct Compiler {
 	Local locals[UINT8_COUNT];
 	int localCount;
 	int scopeDepth;
+
+	bool inLoop;
 	int currentBreak;
 } Compiler;
 
@@ -181,11 +183,18 @@ static void patchJump(int jump) {
 static void initCompiler(Compiler* compiler) {
 	compiler->localCount = 0;
 	compiler->scopeDepth = 0;
+
+	compiler->inLoop = false;
 	compiler->currentBreak = 0;
+
 	current = compiler;
 }
 
 static void endCompiler() {
+	if (current->currentBreak != 0) {
+		patchJump(current->currentBreak);
+	}
+
 	emitReturn();
 
 #ifdef DEBUG_PRINT_CODE
@@ -491,7 +500,7 @@ static void assertStatement() {
 static void ifStatement() {
 	beginScope();
 	expression();
-	int ifJump = emitJump(OP_JUMP_IF);
+	int ifJump = emitJump(OP_JUMP_IF_FALSE);
 
 	// One-line if notation
 	if (match(TOKEN_COLON)) {
@@ -526,14 +535,18 @@ static void ifStatement() {
 }
 
 static void whileStatement() {
+	bool inLoop = current->inLoop;
+	current->inLoop = true;
+
 	int currentBreak = current->currentBreak;
+
 	int loopStart = currentChunk()->count;
 
 	beginScope();
 
 	expression();
 
-	int exitJump = emitJump(OP_JUMP_IF);
+	int exitJump = emitJump(OP_JUMP_IF_FALSE);
 
 	if (match(TOKEN_COLON)) {
 		statement();
@@ -552,10 +565,14 @@ static void whileStatement() {
 		patchJump(current->currentBreak);
 	}
 
+	current->inLoop = inLoop;
 	current->currentBreak = currentBreak;
 }
 
 static void forStatement() {
+	bool inLoop = current->inLoop;
+	current->inLoop = true;
+
 	int currentBreak = current->currentBreak;
 
 	beginScope();
@@ -578,7 +595,7 @@ static void forStatement() {
 		consume(TOKEN_SEMICOLON, "Expect ';' after loop condition.");
 
 		// Jump out of the loop if the condition is false.
-		exitJump = emitJump(OP_JUMP_IF);
+		exitJump = emitJump(OP_JUMP_IF_FALSE);
 	}
 
 	// Increment step.
@@ -620,10 +637,15 @@ static void forStatement() {
 
 	endScope();
 
+	current->inLoop = inLoop;
 	current->currentBreak = currentBreak;
 }
 
 static void breakStatement() {
+	if (current->inLoop == false) {
+		error("Break statement cannot be used outside of loop.");
+	}
+
 	consume(TOKEN_SEMICOLON, "Expect ';' after break statement.");
 
 	current->currentBreak = emitJump(OP_JUMP);
