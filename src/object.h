@@ -1,5 +1,5 @@
-#ifndef blue_object_h
-#define blue_object_h
+#ifndef blu_object_h
+#define blu_object_h
 
 #include "common.h"
 #include "value.h"
