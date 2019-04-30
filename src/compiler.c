@@ -51,17 +51,17 @@ typedef struct Compiler {
 	int currentBreak;
 } Compiler;
 
-Compiler *current = NULL;
+Compiler* current = NULL;
 
 Parser parser;
 
-Chunk *compilingChunk;
+Chunk* compilingChunk;
 
-static Chunk *currentChunk() {
+static Chunk* currentChunk() {
 	return compilingChunk;
 }
 
-static void errorAt(Token *token, const char *message) {
+static void errorAt(Token* token, const char* message) {
 	if (parser.panicMode) return;
 	parser.panicMode = true;
 
@@ -79,11 +79,11 @@ static void errorAt(Token *token, const char *message) {
 	parser.hadError = true;
 }
 
-static void error(const char *message) {
+static void error(const char* message) {
 	errorAt(&parser.previous, message);
 }
 
-static void errorAtCurrent(const char *message) {
+static void errorAtCurrent(const char* message) {
 	errorAt(&parser.current, message);
 }
 
@@ -100,7 +100,7 @@ static void advance() {
 }
 
 // Consumes next token. If next token is not of the given type, throws an error with a message.
-static void consume(TokenType type, const char *message) {
+static void consume(TokenType type, const char* message) {
 	if (parser.current.type == type) {
 		advance();
 		return;
@@ -178,7 +178,7 @@ static void patchJump(int jump) {
 	currentChunk()->code[jump + 1] = length & 0xff;
 }
 
-static void initCompiler(Compiler *compiler) {
+static void initCompiler(Compiler* compiler) {
 	compiler->localCount = 0;
 	compiler->scopeDepth = 0;
 	compiler->currentBreak = 0;
@@ -211,7 +211,7 @@ static void endScope() {
 static void expression();
 static void statement();
 static void declaration();
-static ParseRule *getRule(TokenType type);
+static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
 static void binary(bool canAssign) {
@@ -219,7 +219,7 @@ static void binary(bool canAssign) {
 	TokenType operatorType = parser.previous.type;
 
 	// Compile the right operand.
-	ParseRule *rule = getRule(operatorType);
+	ParseRule* rule = getRule(operatorType);
 	parsePrecedence((Precedence)(rule->precedence + 1));
 
 	// Emit the operator instruction.
@@ -261,18 +261,18 @@ static void string(bool canAssign) {
 	emitConstant(OBJ_VAL(copyString(parser.previous.start + 1, parser.previous.length - 2)));
 }
 
-static uint8_t identifierConstant(Token *name) {
+static uint8_t identifierConstant(Token* name) {
 	return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
 }
 
-static bool identifiersEqual(Token *a, Token *b) {
+static bool identifiersEqual(Token* a, Token* b) {
 	if (a->length != b->length) return false;
 	return memcmp(a->start, b->start, a->length) == 0;
 }
 
-static int resolveLocal(Compiler *compiler, Token *name) {
+static int resolveLocal(Compiler* compiler, Token* name) {
 	for (int i = compiler->localCount - 1; i >= 0; i--) {
-		Local *local = &compiler->locals[i];
+		Local* local = &compiler->locals[i];
 		if (identifiersEqual(name, &local->name)) {
 			if (local->depth == -1) {
 				error("Cannot read local variable in its own initializer.");
@@ -290,7 +290,7 @@ static void addLocal(Token name) {
 		return;
 	}
 
-	Local *local = &current->locals[current->localCount++];
+	Local* local = &current->locals[current->localCount++];
 	local->name = name;
 	local->depth = -1;
 }
@@ -299,9 +299,9 @@ static void declareVariable() {
 	// Global variables are implicitly declared.
 	if (current->scopeDepth == 0) return;
 
-	Token *name = &parser.previous;
+	Token* name = &parser.previous;
 	for (int i = current->localCount - 1; i >= 0; i--) {
-		Local *local = &current->locals[i];
+		Local* local = &current->locals[i];
 		if (local->depth != -1 && local->depth < current->scopeDepth) break;
 		if (identifiersEqual(name, &local->name)) {
 			error("Variable with this name already declared in this scope.");
@@ -418,7 +418,7 @@ static void parsePrecedence(Precedence precedence) {
 	}
 }
 
-static uint8_t parseVariable(const char *errorMessage) {
+static uint8_t parseVariable(const char* errorMessage) {
 	consume(TOKEN_IDENTIFIER, errorMessage);
 
 	declareVariable();
@@ -441,7 +441,7 @@ static void defineVariable(uint8_t global) {
 	emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
-static ParseRule *getRule(TokenType type) {
+static ParseRule* getRule(TokenType type) {
 	return &rules[type];
 }
 
@@ -683,7 +683,7 @@ static void statement() {
 	}
 }
 
-bool compile(const char *source, Chunk *chunk) {
+bool compile(const char* source, Chunk* chunk) {
 	initScanner(source);
 	Compiler compiler;
 	initCompiler(&compiler);
