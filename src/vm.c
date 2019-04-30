@@ -221,8 +221,6 @@ static InterpretResult run() {
 
 		case OP_ASSERT: {
 			if (isFalsey(pop())) {
-				// TODO : It prints wrong line number. This hack fixes it...
-				// vm.ip--;
 				runtimeError("Assertion error.");
 				return INTERPRET_ASSERTION_ERROR;
 			}
@@ -255,6 +253,7 @@ static InterpretResult run() {
 	}
 
 #undef READ_BYTE
+#undef READ_SHORT
 #undef READ_CONSTANT
 #undef READ_STRING
 #undef BINARY_OP
