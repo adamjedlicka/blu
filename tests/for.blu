@@ -1,19 +1,19 @@
 var cnt = 0;
 
-for var i = 0; i < 10; i = i + 1 : cnt = cnt + i;
+for var i = 0; i < 10; i = i + 1 : cnt += i;
 
 assert cnt == 45;
 
 var a = 0;
 var b = 0;
 
-for var i = 0; i < 10; i = i + 1 {
-    a = a + 1;
+for var i = 0; i < 10; i += 1 {
+    a += 1;
 
     if i > 0 : break;
 
-    for var j = 0; j < 10; j = j + 1 {
-        b = b + 1;
+    for var j = 0; j < 10; j += 1 {
+        b += 1;
 
         if j > 0 : break;
 

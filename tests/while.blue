@@ -8,18 +8,18 @@ while i < 10 {
     while j < i + 1 {
         cnt = cnt + 1;
 
-        j = j + 1;
+        j += 1;
     }
 
     assert j == i + 1;
 
-    i = i + 1;
+    i += 1;
 }
 
 assert cnt == 55;
 
 cnt = 0;
 
-while cnt < 10 : cnt = cnt + 1;
+while cnt < 10 : cnt += 1;
 
 assert cnt == 10;
