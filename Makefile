@@ -177,7 +177,7 @@ dirs:
 
 # Executes the binary
 .PHONY: run
-run: release
+run: $(BIN_NAME)
 	@./$(BIN_NAME) script.blu
 
 # Runs tests
