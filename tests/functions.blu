@@ -1,0 +1,33 @@
+fn add(x, y) {
+    return x + y;
+}
+
+assert add(1, 2) == 3;
+
+fn fib(x) {
+    if x <= 1 : return 1;
+
+    return fib(x - 1) + fib(x - 2);
+}
+
+assert fib(1) == 1;
+assert fib(2) == 2;
+assert fib(3) == 3;
+assert fib(4) == 5;
+assert fib(5) == 8;
+
+fn times(x, f) {
+    for var i = 0; i < x; i += 1 {
+        f();
+    }
+}
+
+var cnt = 0;
+
+fn inc() {
+    cnt += 1;
+}
+
+times(3, inc);
+
+assert cnt == 3;
