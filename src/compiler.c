@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "common.h"
 #include "compiler.h"
+#include "object.h"
 #include "scanner.h"
 
 #ifdef DEBUG_PRINT_CODE

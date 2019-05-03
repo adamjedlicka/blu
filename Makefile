@@ -10,7 +10,7 @@ SRC_PATH = ./src
 # Space-separated pkg-config libraries used by this project
 LIBS =
 # General compiler flags
-COMPILE_FLAGS = -std=c11 -Wall -Wextra -Wno-unused-parameter
+COMPILE_FLAGS = -std=c11 -Wall -Wextra -Werror -Wno-unused-parameter
 # Additional release-specific flags
 RCOMPILE_FLAGS = -D NDEBUG
 # Additional debug-specific flags
