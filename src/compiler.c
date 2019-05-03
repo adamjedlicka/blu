@@ -538,10 +538,6 @@ static ParseRule* getRule(TokenType type) {
 	return &rules[type];
 }
 
-static void expression() {
-	parsePrecedence(PREC_ASSIGNMENT);
-}
-
 static void block() {
 	while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
 		declaration();
@@ -579,6 +575,14 @@ static void function(FunctionType type) {
 	endScope();
 	ObjFunction* function = endCompiler();
 	emitBytes(OP_CONSTANT, makeConstant(OBJ_VAL(function)));
+}
+
+static void expression() {
+	if (match(TOKEN_FN)) {
+		function(TYPE_FUNCTION);
+	} else {
+		parsePrecedence(PREC_ASSIGNMENT);
+	}
 }
 
 static void fnDeclaration() {

@@ -24,10 +24,14 @@ fn times(x, f) {
 
 var cnt = 0;
 
-fn inc() {
+times(3, fn () {
     cnt += 1;
-}
-
-times(3, inc);
+});
 
 assert cnt == 3;
+
+var greeter = fn (name) {
+    return "Hello, " + name + "!";
+};
+
+assert "Hello, World!" == greeter("World");
