@@ -175,6 +175,16 @@ dirs:
 	@mkdir -p $(dir $(OBJECTS))
 	@mkdir -p $(BIN_PATH)
 
+# Executes the binary
+.PHONY: run
+run: debug
+	@./$(BIN_NAME) script.blu
+
+# Runs tests
+.PHONY: test
+test: debug
+	@bash test.sh
+
 # Installs to the set path
 .PHONY: install
 install:

@@ -6,7 +6,7 @@ for f in tests/*
 do
     printf " => Executing file: %-25s\n" "$f"
 
-    ./build/blu "$f" >/dev/null
+    ./blu "$f" >/dev/null
     if [ 0 -ne $? ]
     then
         CODE=1
