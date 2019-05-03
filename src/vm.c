@@ -20,6 +20,15 @@ static Value clockNative(int argCount, Value* args) {
 	return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
 }
 
+static Value printNative(int argCount, Value* args) {
+	for (int i = 0; i < argCount; i++) {
+		printValue(args[i]);
+		printf("\n");
+	}
+
+	return NIL_VAL;
+}
+
 static void resetStack() {
 	vm.stackTop = vm.stack;
 	vm.frameCount = 0;
@@ -64,6 +73,7 @@ void initVM() {
 	initTable(&vm.strings);
 
 	defineNative("clock", clockNative);
+	defineNative("print", printNative);
 }
 
 void freeVM() {
@@ -283,12 +293,6 @@ static InterpretResult run() {
 			}
 
 			push(NUMBER_VAL(-AS_NUMBER(pop())));
-			break;
-		}
-
-		case OP_PRINT: {
-			printValue(pop());
-			printf("\n");
 			break;
 		}
 
