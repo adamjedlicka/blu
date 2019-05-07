@@ -13,7 +13,7 @@
 #define IS_ARRAY(value) isObjType(value, OBJ_ARRAY)
 
 #define AS_FUNCTION(value) ((ObjFunction*)AS_OBJ(value))
-#define AS_NATIVE(value) (((ObjNative*)AS_OBJ(value))->function)
+#define AS_NATIVE(value) (((ObjNative*)AS_OBJ(value)))
 #define AS_STRING(value) ((ObjString*)AS_OBJ(value))
 #define AS_CSTRING(value) (((ObjString*)AS_OBJ(value))->chars)
 #define AS_ARRAY(value) ((ObjArray*)AS_OBJ(value))
@@ -55,11 +55,12 @@ typedef Value (*NativeFn)(int argCount, Value* args);
 
 typedef struct {
 	Obj obj;
+	int arity;
 	NativeFn function;
 } ObjNative;
 
 ObjFunction* newFunction();
-ObjNative* newNative(NativeFn function);
+ObjNative* newNative(NativeFn function, int arity);
 ObjArray* newArray();
 
 void arrayPush(ObjArray*, Value);
