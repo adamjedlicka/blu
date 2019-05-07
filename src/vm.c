@@ -325,6 +325,20 @@ static InterpretResult run() {
 			break;
 		}
 
+		case OP_ARRAY: {
+			uint8_t len = READ_BYTE();
+
+			ObjArray* array = newArray(len);
+			for (uint8_t i = 0; i < len; i++) {
+				Value val = pop();
+				array->data[len - 1 - i] = val;
+			}
+
+			push(OBJ_VAL(array));
+
+			break;
+		}
+
 		case OP_CALL_0:
 		case OP_CALL_1:
 		case OP_CALL_2:

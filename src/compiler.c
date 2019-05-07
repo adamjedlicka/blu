@@ -436,6 +436,8 @@ static void unary(bool canAssign) {
 ParseRule rules[] = {
 	{grouping, call, PREC_CALL}, // TOKEN_LEFT_PAREN
 	{NULL, NULL, PREC_NONE},	 // TOKEN_RIGHT_PAREN
+	{NULL, NULL, PREC_NONE},	 // TOKEN_LEFT_BACKET
+	{NULL, NULL, PREC_NONE},	 // TOKEN_RIGHT_BRACKET
 	{NULL, NULL, PREC_NONE},	 // TOKEN_LEFT_BRACE
 	{NULL, NULL, PREC_NONE},	 // TOKEN_RIGHT_BRACE
 	{NULL, NULL, PREC_NONE},	 // TOKEN_COLON
@@ -579,9 +581,26 @@ static void function(FunctionType type) {
 	emitBytes(OP_CONSTANT, makeConstant(OBJ_VAL(function)));
 }
 
+static void array() {
+	uint8_t len = 0;
+
+	while (!match(TOKEN_RIGHT_BRACKET)) {
+		if (len > 0) {
+			consume(TOKEN_COMMA, "Expect ',' between expressions.");
+		}
+
+		expression();
+		len++;
+	}
+
+	emitBytes(OP_ARRAY, len);
+}
+
 static void expression() {
 	if (match(TOKEN_FN)) {
 		function(TYPE_FUNCTION);
+	} else if (match(TOKEN_LEFT_BRACKET)) {
+		array();
 	} else {
 		parsePrecedence(PREC_ASSIGNMENT);
 	}

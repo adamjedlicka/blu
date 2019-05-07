@@ -22,17 +22,28 @@ static Obj* allocateObject(size_t size, ObjType type) {
 
 ObjFunction* newFunction() {
 	ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
-
 	function->arity = 0;
 	function->name = NULL;
+
 	initChunk(&function->chunk);
+
 	return function;
 }
 
 ObjNative* newNative(NativeFn function) {
 	ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
 	native->function = function;
+
 	return native;
+}
+
+ObjArray* newArray(int cap) {
+	ObjArray* array = ALLOCATE_OBJ(ObjArray, OBJ_ARRAY);
+	array->cap = cap;
+	array->len = cap;
+	array->data = ALLOCATE(Value, cap);
+
+	return array;
 }
 
 static ObjString* allocateString(char* chars, int length, uint32_t hash) {
@@ -87,5 +98,16 @@ void printObject(Value value) {
 	case OBJ_FUNCTION: printf("<fn %s>", AS_FUNCTION(value)->name->chars); break;
 	case OBJ_NATIVE: printf("<native fn>"); break;
 	case OBJ_STRING: printf("%s", AS_CSTRING(value)); break;
+
+	case OBJ_ARRAY: {
+		printf("[");
+		for (int i = 0; i < AS_ARRAY(value)->len; i++) {
+			if (i > 0) printf(", ");
+
+			printValue(AS_ARRAY(value)->data[i]);
+		}
+		printf("]");
+		break;
+	}
 	}
 }
