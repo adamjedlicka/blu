@@ -51,7 +51,9 @@ void arrayPush(ObjArray* array, Value value) {
 	if (array->len == array->cap) {
 		int cap = GROW_CAPACITY(array->cap);
 		array->data = GROW_ARRAY(array->data, Value, array->cap, cap);
+		array->cap = cap;
 	}
+
 	array->data[array->len++] = value;
 }
 
