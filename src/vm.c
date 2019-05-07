@@ -339,6 +339,47 @@ static InterpretResult run() {
 			break;
 		}
 
+		case OP_ARRAY_GET: {
+			Value index = pop();
+
+			if (!IS_NUMBER(index)) {
+				runtimeError("Array access index must be a number.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			Value array = pop();
+
+			if (!IS_ARRAY(array)) {
+				runtimeError("Only arrays can be accessed.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			push(AS_ARRAY(array)->data[(int)AS_NUMBER(index)]);
+
+			break;
+		}
+
+		case OP_ARRAY_SET: {
+			Value value = pop();
+			Value index = pop();
+
+			if (!IS_NUMBER(index)) {
+				runtimeError("Array access index must be a number.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			Value array = peek(0);
+
+			if (!IS_ARRAY(array)) {
+				runtimeError("Only arrays can be accessed.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			AS_ARRAY(array)->data[(int)AS_NUMBER(index)] = value;
+
+			break;
+		}
+
 		case OP_CALL_0:
 		case OP_CALL_1:
 		case OP_CALL_2:

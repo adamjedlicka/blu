@@ -21,6 +21,8 @@ typedef enum {
 	OP_LOOP,
 
 	OP_ARRAY,
+	OP_ARRAY_GET,
+	OP_ARRAY_SET,
 
 	OP_CALL_0,
 	OP_CALL_1,

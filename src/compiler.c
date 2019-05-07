@@ -302,6 +302,18 @@ static void call(bool canAssign) {
 	emitByte(OP_CALL_0 + argCount);
 }
 
+static void arrayAccess(bool canAssign) {
+	expression();
+	consume(TOKEN_RIGHT_BRACKET, "Expect ']' after array access.");
+
+	if (canAssign && match(TOKEN_EQUAL)) {
+		expression();
+		emitByte(OP_ARRAY_SET);
+	} else {
+		emitByte(OP_ARRAY_GET);
+	}
+}
+
 static void literal(bool canAssign) {
 	switch (parser.previous.type) {
 	case TOKEN_FALSE: emitByte(OP_FALSE); break;
@@ -434,16 +446,16 @@ static void unary(bool canAssign) {
 }
 
 ParseRule rules[] = {
-	{grouping, call, PREC_CALL}, // TOKEN_LEFT_PAREN
-	{NULL, NULL, PREC_NONE},	 // TOKEN_RIGHT_PAREN
-	{NULL, NULL, PREC_NONE},	 // TOKEN_LEFT_BACKET
-	{NULL, NULL, PREC_NONE},	 // TOKEN_RIGHT_BRACKET
-	{NULL, NULL, PREC_NONE},	 // TOKEN_LEFT_BRACE
-	{NULL, NULL, PREC_NONE},	 // TOKEN_RIGHT_BRACE
-	{NULL, NULL, PREC_NONE},	 // TOKEN_COLON
-	{NULL, NULL, PREC_NONE},	 // TOKEN_COMMA
-	{NULL, NULL, PREC_CALL},	 // TOKEN_DOT
-	{NULL, NULL, PREC_NONE},	 // TOKEN_SEMICOLON
+	{grouping, call, PREC_CALL},	// TOKEN_LEFT_PAREN
+	{NULL, NULL, PREC_NONE},		// TOKEN_RIGHT_PAREN
+	{NULL, arrayAccess, PREC_CALL}, // TOKEN_LEFT_BACKET
+	{NULL, NULL, PREC_NONE},		// TOKEN_RIGHT_BRACKET
+	{NULL, NULL, PREC_NONE},		// TOKEN_LEFT_BRACE
+	{NULL, NULL, PREC_NONE},		// TOKEN_RIGHT_BRACE
+	{NULL, NULL, PREC_NONE},		// TOKEN_COLON
+	{NULL, NULL, PREC_NONE},		// TOKEN_COMMA
+	{NULL, NULL, PREC_CALL},		// TOKEN_DOT
+	{NULL, NULL, PREC_NONE},		// TOKEN_SEMICOLON
 
 	{unary, NULL, PREC_NONE},		 // TOKEN_BANG
 	{NULL, binary, PREC_EQUALITY},   // TOKEN_BANG_EQUAL
