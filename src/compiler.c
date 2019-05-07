@@ -47,6 +47,7 @@ typedef struct {
 
 typedef enum {
 	TYPE_FUNCTION,
+	TYPE_ANONYMOUS,
 	TYPE_TOP_LEVEL,
 } FunctionType;
 
@@ -207,6 +208,7 @@ static void initCompiler(Compiler* compiler, int scopeDepth, FunctionType type) 
 
 	switch (type) {
 	case TYPE_FUNCTION: current->function->name = copyString(parser.previous.start, parser.previous.length); break;
+	case TYPE_ANONYMOUS: current->function->name = copyString("anonymous", 9); break;
 	case TYPE_TOP_LEVEL: current->function->name = NULL; break;
 	}
 
@@ -584,8 +586,13 @@ static void function(FunctionType type) {
 
 	// The body.
 	beginScope();
-	consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
-	block();
+	if (type == TYPE_ANONYMOUS && match(TOKEN_COLON)) {
+		expression();
+		emitByte(OP_RETURN);
+	} else {
+		consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
+		block();
+	}
 
 	// Create the function object.
 	endScope();
@@ -610,7 +617,7 @@ static void array() {
 
 static void expression() {
 	if (match(TOKEN_FN)) {
-		function(TYPE_FUNCTION);
+		function(TYPE_ANONYMOUS);
 	} else if (match(TOKEN_LEFT_BRACKET)) {
 		array();
 	} else {
