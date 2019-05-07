@@ -29,6 +29,11 @@ static Value printNative(int argCount, Value* args) {
 	return NIL_VAL;
 }
 
+static Value lenNative(int argCount, Value* args) {
+	ObjArray* arr = AS_ARRAY(args[0]);
+	return NUMBER_VAL(arr->len);
+}
+
 static void resetStack() {
 	vm.stackTop = vm.stack;
 	vm.frameCount = 0;
@@ -74,6 +79,7 @@ void initVM() {
 
 	defineNative("clock", clockNative);
 	defineNative("print", printNative);
+	defineNative("len", lenNative);
 }
 
 void freeVM() {
@@ -271,6 +277,28 @@ static InterpretResult run() {
 				push(OBJ_VAL(copyString(output, strlen(output))));
 
 				concatenate();
+			} else if (IS_ARRAY(peek(1)) && IS_ARRAY(peek(0))) {
+				ObjArray* arrRight = AS_ARRAY(pop());
+				ObjArray* arrLeft = AS_ARRAY(pop());
+
+				ObjArray* arr = newArray(arrLeft->len + arrRight->len);
+
+				for (int i = 0; i < arrLeft->len; i++) {
+					arr->data[i] = arrLeft->data[i];
+				}
+
+				for (int i = 0; i < arrRight->len; i++) {
+					arr->data[arrLeft->len + i] = arrRight->data[i];
+				}
+
+				push(OBJ_VAL(arr));
+			} else if (IS_ARRAY(peek(1))) {
+				Value value = pop();
+				ObjArray* array = AS_ARRAY(pop());
+
+				arrayPush(array, value);
+
+				push(OBJ_VAL(array));
 			} else {
 				runtimeError("First operand must be string or both operands must be numbers.");
 				return INTERPRET_RUNTIME_ERROR;

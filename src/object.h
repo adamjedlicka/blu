@@ -62,6 +62,8 @@ ObjFunction* newFunction();
 ObjNative* newNative(NativeFn function);
 ObjArray* newArray();
 
+void arrayPush(ObjArray*, Value);
+
 ObjString* takeString(char* chars, int length);
 ObjString* copyString(const char* chars, int length);
 

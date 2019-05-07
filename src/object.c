@@ -37,13 +37,21 @@ ObjNative* newNative(NativeFn function) {
 	return native;
 }
 
-ObjArray* newArray(int cap) {
+ObjArray* newArray(int len) {
 	ObjArray* array = ALLOCATE_OBJ(ObjArray, OBJ_ARRAY);
-	array->cap = cap;
-	array->len = cap;
-	array->data = ALLOCATE(Value, cap);
+	array->cap = len;
+	array->len = len;
+	array->data = ALLOCATE(Value, len);
 
 	return array;
+}
+
+void arrayPush(ObjArray* array, Value value) {
+	if (array->len == array->cap) {
+		int cap = GROW_CAPACITY(array->cap);
+		array->data = GROW_ARRAY(array->data, Value, array->cap, cap);
+	}
+	array->data[array->len++] = value;
 }
 
 static ObjString* allocateString(char* chars, int length, uint32_t hash) {
