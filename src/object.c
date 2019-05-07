@@ -79,6 +79,9 @@ static uint32_t hashString(const char* key, int length) {
 	return hash;
 }
 
+/**
+ * Takes string dynamically allocated on the heap.
+ */
 ObjString* takeString(char* chars, int length) {
 	uint32_t hash = hashString(chars, length);
 
@@ -91,6 +94,9 @@ ObjString* takeString(char* chars, int length) {
 	return allocateString(chars, length, hash);
 }
 
+/**
+ * Copies static C string.
+ */
 ObjString* copyString(const char* chars, int length) {
 	uint32_t hash = hashString(chars, length);
 
