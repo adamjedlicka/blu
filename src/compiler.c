@@ -569,6 +569,7 @@ static void function(FunctionType type) {
 	consume(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
 
 	// The body.
+	beginScope();
 	consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
 	block();
 
