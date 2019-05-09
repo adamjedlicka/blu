@@ -400,14 +400,14 @@ static InterpretResult run() {
 			Value index = pop();
 
 			if (!IS_NUMBER(index)) {
-				runtimeError("Array access index must be a number.");
+				runtimeError("Array index must be a number.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
 			Value array = pop();
 
 			if (!IS_ARRAY(array)) {
-				runtimeError("Only arrays can be accessed.");
+				runtimeError("Only arrays can be indexed.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
@@ -421,14 +421,14 @@ static InterpretResult run() {
 			Value index = pop();
 
 			if (!IS_NUMBER(index)) {
-				runtimeError("Array access index must be a number.");
+				runtimeError("Array index must be a number.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
 			Value array = peek(0);
 
 			if (!IS_ARRAY(array)) {
-				runtimeError("Only arrays can be accessed.");
+				runtimeError("Only arrays can be indexed.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
