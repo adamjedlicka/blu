@@ -53,9 +53,10 @@ static void runtimeError(const char* format, ...) {
 	for (int i = vm.frameCount - 1; i >= 0; i--) {
 		CallFrame* frame = &vm.frames[i];
 		ObjFunction* function = frame->function;
-		// -1 because the IP is sitting on the next instruction to be
-		// executed.
+
+		// -1 because the IP is sitting on the next instruction to be executed.
 		size_t instruction = frame->ip - function->chunk.code - 1;
+
 		fprintf(stderr, "[line %d] in ", function->chunk.lines[instruction]);
 		if (function->name == NULL) {
 			fprintf(stderr, "script\n");
@@ -398,10 +399,20 @@ static InterpretResult run() {
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
+			if (AS_NUMBER(index) != (int)AS_NUMBER(index)) {
+				runtimeError("Array index must be natural number.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
 			Value array = pop();
 
 			if (!IS_ARRAY(array)) {
 				runtimeError("Only arrays can be indexed.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			if (AS_NUMBER(index) >= AS_ARRAY(array)->len || AS_NUMBER(index) < 0) {
+				runtimeError("Array index out of range.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
