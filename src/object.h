@@ -39,8 +39,8 @@ typedef struct {
 
 typedef struct {
 	Obj obj;
-	int len;
-	int cap;
+	uint32_t len;
+	uint32_t cap;
 	Value* data;
 } ObjArray;
 
@@ -61,7 +61,7 @@ typedef struct {
 
 ObjFunction* newFunction();
 ObjNative* newNative(NativeFn function, int arity);
-ObjArray* newArray();
+ObjArray* newArray(uint32_t len);
 
 void arrayPush(ObjArray*, Value);
 

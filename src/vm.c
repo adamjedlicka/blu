@@ -294,11 +294,11 @@ static InterpretResult run() {
 
 				ObjArray* arr = newArray(arrLeft->len + arrRight->len);
 
-				for (int i = 0; i < arrLeft->len; i++) {
+				for (uint32_t i = 0; i < arrLeft->len; i++) {
 					arr->data[i] = arrLeft->data[i];
 				}
 
-				for (int i = 0; i < arrRight->len; i++) {
+				for (uint32_t i = 0; i < arrRight->len; i++) {
 					arr->data[arrLeft->len + i] = arrRight->data[i];
 				}
 
@@ -378,12 +378,6 @@ static InterpretResult run() {
 
 		case OP_ARRAY: {
 			uint8_t len = READ_BYTE();
-
-			// Set len to the closest higher power of two.
-			len |= len >> 1;
-			len |= len >> 2;
-			len |= len >> 4;
-			len++;
 
 			ObjArray* array = newArray(len);
 			for (uint8_t i = 0; i < len; i++) {

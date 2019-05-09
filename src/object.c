@@ -38,11 +38,18 @@ ObjNative* newNative(NativeFn function, int arity) {
 	return native;
 }
 
-ObjArray* newArray(int len) {
+ObjArray* newArray(uint32_t len) {
+	// Set cap to the closest higher power of two.
+	uint32_t cap = len;
+	cap |= cap >> 1;
+	cap |= cap >> 2;
+	cap |= cap >> 4;
+	cap++;
+
 	ObjArray* array = ALLOCATE_OBJ(ObjArray, OBJ_ARRAY);
-	array->cap = len;
+	array->cap = cap;
 	array->len = len;
-	array->data = ALLOCATE(Value, len);
+	array->data = ALLOCATE(Value, cap);
 
 	return array;
 }
@@ -118,7 +125,7 @@ void printObject(Value value) {
 
 	case OBJ_ARRAY: {
 		printf("[");
-		for (int i = 0; i < AS_ARRAY(value)->len; i++) {
+		for (uint32_t i = 0; i < AS_ARRAY(value)->len; i++) {
 			if (i > 0) printf(", ");
 
 			printValue(AS_ARRAY(value)->data[i]);
