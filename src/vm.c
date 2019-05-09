@@ -323,6 +323,18 @@ static InterpretResult run() {
 
 		case OP_DIVIDE: BINARY_OP(NUMBER_VAL, /); break;
 
+		case OP_REMINDER: {
+			if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) {
+				runtimeError("Operands must be numbers.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			double b = AS_NUMBER(pop());
+			double a = AS_NUMBER(pop());
+			push(NUMBER_VAL((int)a % (int)b));
+			break;
+		}
+
 		case OP_NOT: push(BOOL_VAL(isFalsey(pop()))); break;
 
 		case OP_NEGATE: {

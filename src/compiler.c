@@ -274,6 +274,7 @@ static void binary(bool canAssign) {
 	case TOKEN_GREATER_EQUAL: emitBytes(OP_LESS, OP_NOT); break;
 	case TOKEN_LESS: emitByte(OP_LESS); break;
 	case TOKEN_LESS_EQUAL: emitBytes(OP_GREATER, OP_NOT); break;
+	case TOKEN_PERCENT: emitByte(OP_REMINDER); break;
 	case TOKEN_PLUS: emitByte(OP_ADD); break;
 	case TOKEN_MINUS: emitByte(OP_SUBTRACT); break;
 	case TOKEN_STAR: emitByte(OP_MULTIPLY); break;
@@ -424,6 +425,11 @@ static void namedVariable(Token name, bool canAssign) {
 		expression();
 		emitByte(OP_MULTIPLY);
 		emitBytes(setOp, (uint8_t)arg);
+	} else if (canAssign && match(TOKEN_PERCENT_EQUAL)) {
+		emitBytes(getOp, (uint8_t)arg);
+		expression();
+		emitByte(OP_REMINDER);
+		emitBytes(setOp, (uint8_t)arg);
 	} else {
 		emitBytes(getOp, (uint8_t)arg);
 	}
@@ -469,6 +475,8 @@ ParseRule rules[] = {
 	{NULL, binary, PREC_COMPARISON}, // TOKEN_LESS_EQUAL
 	{unary, binary, PREC_TERM},		 // TOKEN_MINUS
 	{NULL, NULL, PREC_NONE},		 // TOKEN_MINUS_EQUAL
+	{NULL, binary, PREC_FACTOR},	 // TOKEN_PERCENT
+	{NULL, NULL, PREC_NONE},		 // TOKEN_PERCENT_EQUAL
 	{NULL, binary, PREC_TERM},		 // TOKEN_PLUS
 	{NULL, NULL, PREC_NONE},		 // TOKEN_PLUS_EQUAL
 	{NULL, binary, PREC_FACTOR},	 // TOKEN_SLASH
