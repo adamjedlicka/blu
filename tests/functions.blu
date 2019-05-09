@@ -35,3 +35,11 @@ var greeter = fn (name) {
 };
 
 assert "Hello, World!" == greeter("World");
+
+var sub = fn(x, y) : x - y;
+
+assert 1 == sub(3, 2);
+
+var bin = fn(x, y, f) : f(x, y);
+
+assert 15 == bin(3, 5, fn(x, y) : x * y);

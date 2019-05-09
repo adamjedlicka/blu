@@ -21,10 +21,14 @@ static Value clockNative(int argCount, Value* args) {
 }
 
 static Value printNative(int argCount, Value* args) {
-	for (int i = 0; i < argCount; i++) {
-		printValue(args[i]);
-		printf("\n");
-	}
+	printValue(args[0]);
+
+	return NIL_VAL;
+}
+
+static Value printlnNative(int argCount, Value* args) {
+	printValue(args[0]);
+	printf("\n");
 
 	return NIL_VAL;
 }
@@ -79,6 +83,7 @@ void initVM() {
 
 	defineNative("clock", clockNative, 0);
 	defineNative("print", printNative, 1);
+	defineNative("println", printlnNative, 1);
 	defineNative("len", lenNative, 1);
 }
 
