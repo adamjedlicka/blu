@@ -21,10 +21,10 @@ typedef struct {
 typedef enum {
 	PREC_NONE,
 	PREC_ASSIGNMENT, // =
-	PREC_OR,		 // or
-	PREC_AND,		 // and
 	PREC_EQUALITY,   // == !=
 	PREC_COMPARISON, // < > <= >=
+	PREC_OR,		 // or
+	PREC_AND,		 // and
 	PREC_TERM,		 // + -
 	PREC_FACTOR,	 // * /
 	PREC_UNARY,		 // ! -
@@ -283,6 +283,26 @@ static void binary(bool canAssign) {
 	}
 }
 
+static void and_(bool canAssign) {
+	int endJump = emitJump(OP_JUMP_IF_FALSE);
+
+	emitByte(OP_POP);
+	parsePrecedence(PREC_AND);
+
+	patchJump(endJump);
+}
+
+static void or_(bool canAssign) {
+	int elseJump = emitJump(OP_JUMP_IF_FALSE);
+	int endJump = emitJump(OP_JUMP);
+
+	patchJump(elseJump);
+	emitByte(OP_POP);
+
+	parsePrecedence(PREC_OR);
+	patchJump(endJump);
+}
+
 static uint8_t argumentList() {
 	uint8_t argCount = 0;
 	if (!check(TOKEN_RIGHT_PAREN)) {
@@ -488,7 +508,7 @@ ParseRule rules[] = {
 	{string, NULL, PREC_NONE},   // TOKEN_STRING
 	{number, NULL, PREC_NONE},   // TOKEN_NUMBER
 
-	{NULL, NULL, PREC_AND},		// TOKEN_AND
+	{NULL, and_, PREC_AND},		// TOKEN_AND
 	{NULL, NULL, PREC_NONE},	// TOKEN_BREAK
 	{NULL, NULL, PREC_NONE},	// TOKEN_CLASS
 	{NULL, NULL, PREC_NONE},	// TOKEN_ELSE
@@ -497,7 +517,7 @@ ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE},	// TOKEN_FN
 	{NULL, NULL, PREC_NONE},	// TOKEN_IF
 	{literal, NULL, PREC_NONE}, // TOKEN_NIL
-	{NULL, NULL, PREC_OR},		// TOKEN_OR
+	{NULL, or_, PREC_OR},		// TOKEN_OR
 	{NULL, NULL, PREC_NONE},	// TOKEN_ASSERT
 	{NULL, NULL, PREC_NONE},	// TOKEN_RETURN
 	{NULL, NULL, PREC_NONE},	// TOKEN_SUPER

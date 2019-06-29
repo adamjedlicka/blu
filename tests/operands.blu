@@ -7,3 +7,9 @@ var b = 3;
 a %= b;
 
 assert 1 == a;
+
+assert 2 == true and 2;
+assert false == false and 2;
+
+assert true == true or 2;
+assert 2 == false or 2;
