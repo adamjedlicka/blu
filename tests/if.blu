@@ -61,3 +61,7 @@ var a = true;
 if a == true : a = false;
 
 assert a == false;
+
+if a == true : a = true;
+
+assert a == false;

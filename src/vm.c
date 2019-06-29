@@ -364,9 +364,8 @@ static InterpretResult run() {
 
 		case OP_JUMP_IF_FALSE: {
 			uint16_t offset = READ_SHORT();
-			Value condition = pop();
 
-			if (isFalsey(condition)) frame->ip += offset;
+			if (isFalsey(peek(0))) frame->ip += offset;
 
 			break;
 		}
@@ -463,7 +462,15 @@ static InterpretResult run() {
 			Value result = pop();
 
 			vm.frameCount--;
-			if (vm.frameCount == 0) return INTERPRET_OK;
+			if (vm.frameCount == 0) {
+#if DEBUG
+				if (vm.stackTop - vm.stack != 0) {
+					runtimeError("Stack not empty!");
+					return INTERPRET_ASSERTION_ERROR;
+				}
+#endif
+				return INTERPRET_OK;
+			}
 
 			vm.stackTop = frame->slots;
 			push(result);

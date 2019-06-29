@@ -669,12 +669,17 @@ static void ifStatement() {
 	beginScope();
 	expression();
 	int ifJump = emitJump(OP_JUMP_IF_FALSE);
+	emitByte(OP_POP);
 
 	// One-line if notation
 	if (match(TOKEN_COLON)) {
 		statement();
 		endScope();
+
+		int elseJump = emitJump(OP_JUMP);
 		patchJump(ifJump);
+		emitByte(OP_POP); // Condition
+		patchJump(elseJump);
 		return;
 	}
 
@@ -685,6 +690,7 @@ static void ifStatement() {
 	if (match(TOKEN_ELSE)) {
 		int elseJump = emitJump(OP_JUMP);
 		patchJump(ifJump);
+		emitByte(OP_POP);
 
 		if (match(TOKEN_LEFT_BRACE)) {
 			beginScope();
@@ -699,6 +705,7 @@ static void ifStatement() {
 		patchJump(elseJump);
 	} else {
 		patchJump(ifJump);
+		emitByte(OP_POP);
 	}
 }
 
@@ -729,6 +736,7 @@ static void whileStatement() {
 	expression();
 
 	int exitJump = emitJump(OP_JUMP_IF_FALSE);
+	emitByte(OP_POP);
 
 	if (match(TOKEN_COLON)) {
 		statement();
@@ -742,6 +750,7 @@ static void whileStatement() {
 	emitLoop(loopStart);
 
 	patchJump(exitJump);
+	emitByte(OP_POP);
 
 	if (current->currentBreak != 0) {
 		patchJump(current->currentBreak);
@@ -778,6 +787,7 @@ static void forStatement() {
 
 		// Jump out of the loop if the condition is false.
 		exitJump = emitJump(OP_JUMP_IF_FALSE);
+		emitByte(OP_POP); // Condition
 	}
 
 	// Increment step.
@@ -811,6 +821,7 @@ static void forStatement() {
 
 	if (exitJump != 0) {
 		patchJump(exitJump);
+		emitByte(OP_POP); // Condition
 	}
 
 	if (current->currentBreak != 0) {
