@@ -7,11 +7,14 @@
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
+#define IS_CLOSURE(value) isObjType(value, OBJ_CLOSURE)
+#define IS_FUNCTION(value) isObjType(value, OBJ_FUNCTION)
 #define IS_FUNCTION(value) isObjType(value, OBJ_FUNCTION)
 #define IS_NATIVE(value) isObjType(value, OBJ_NATIVE)
 #define IS_STRING(value) isObjType(value, OBJ_STRING)
 #define IS_ARRAY(value) isObjType(value, OBJ_ARRAY)
 
+#define AS_CLOSURE(value) ((ObjClosure*)AS_OBJ(value))
 #define AS_FUNCTION(value) ((ObjFunction*)AS_OBJ(value))
 #define AS_NATIVE(value) (((ObjNative*)AS_OBJ(value)))
 #define AS_STRING(value) ((ObjString*)AS_OBJ(value))
@@ -19,10 +22,12 @@
 #define AS_ARRAY(value) ((ObjArray*)AS_OBJ(value))
 
 typedef enum {
+	OBJ_ARRAY,
+	OBJ_CLOSURE,
 	OBJ_FUNCTION,
 	OBJ_NATIVE,
 	OBJ_STRING,
-	OBJ_ARRAY,
+	OBJ_UPVALUE,
 } ObjType;
 
 struct sObj {
@@ -47,6 +52,7 @@ typedef struct {
 typedef struct {
 	Obj obj;
 	int arity;
+	int upvalueCount;
 	Chunk chunk;
 	ObjString* name;
 } ObjFunction;
@@ -59,9 +65,32 @@ typedef struct {
 	NativeFn function;
 } ObjNative;
 
+typedef struct sUpvalue {
+	Obj obj;
+
+	// Pointer to the variable this upvalue is referencing.
+	Value* value;
+
+	// If the upvalue is closed (i.e. the local variable it was pointing to has been popped off the stack) then the
+	// closed-over value is hoisted out of the stack into here. [value] is then be changed to point to this.
+	Value closed;
+
+	// Open upvalues are stored in a linked list. This points to the next one in that list.
+	struct sUpvalue* next;
+} ObjUpvalue;
+
+typedef struct {
+	Obj obj;
+	ObjFunction* function;
+	ObjUpvalue** upvalues;
+	int upvalueCount;
+} ObjClosure;
+
+ObjArray* newArray(uint32_t len);
+ObjClosure* newClosure(ObjFunction* function);
 ObjFunction* newFunction();
 ObjNative* newNative(NativeFn function, int arity);
-ObjArray* newArray(uint32_t len);
+ObjUpvalue* newUpvalue(Value* slot);
 
 void arrayPush(ObjArray*, Value);
 

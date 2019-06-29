@@ -43,7 +43,18 @@ typedef struct {
 typedef struct {
 	Token name;
 	int depth;
+
+	// True if this local variable is captured as an upvalue by a function.
+	bool isUpvalue;
 } Local;
+
+typedef struct {
+	// The index of the local variable or upvalue being captured from the enclosing function.
+	uint8_t index;
+
+	// Whether the captured variable is a local or upvalue in the enclosing function.
+	bool isLocal;
+} Upvalue;
 
 typedef enum {
 	TYPE_FUNCTION,
@@ -61,6 +72,7 @@ typedef struct Compiler {
 
 	Local locals[UINT8_COUNT];
 	int localCount;
+	Upvalue upvalues[UINT8_COUNT];
 	int scopeDepth;
 
 	bool inLoop;
@@ -215,6 +227,7 @@ static void initCompiler(Compiler* compiler, int scopeDepth, FunctionType type) 
 	// The first slot is always implicitly declared.
 	Local* local = &current->locals[current->localCount++];
 	local->depth = current->scopeDepth;
+	local->isUpvalue = false;
 	local->name.start = "";
 	local->name.length = 0;
 }
@@ -247,7 +260,11 @@ static void endScope() {
 	current->scopeDepth--;
 
 	while (current->localCount > 0 && current->locals[current->localCount - 1].depth > current->scopeDepth) {
-		emitByte(OP_POP);
+		if (current->locals[current->localCount - 1].isUpvalue) {
+			emitByte(OP_CLOSE_UPVALUE);
+		} else {
+			emitByte(OP_POP);
+		}
 		current->localCount--;
 	}
 }
@@ -383,6 +400,61 @@ static int resolveLocal(Compiler* compiler, Token* name) {
 	return -1;
 }
 
+// Adds an upvalue to [compiler]'s function with the given properties. Does not add one if an upvalue for that variable
+// is already in the list. Returns the index of the upvalue.
+static int addUpvalue(Compiler* compiler, uint8_t index, bool isLocal) {
+	// Look for an existing one.
+	int upvalueCount = compiler->function->upvalueCount;
+	for (int i = 0; i < upvalueCount; i++) {
+		Upvalue* upvalue = &compiler->upvalues[i];
+		if (upvalue->index == index && upvalue->isLocal == isLocal) {
+			return i;
+		}
+	}
+
+	// If we got here, it's a new upvalue.
+	if (upvalueCount == UINT8_COUNT) {
+		error("Too many closure variables in function.");
+		return 0;
+	}
+
+	compiler->upvalues[upvalueCount].isLocal = isLocal;
+	compiler->upvalues[upvalueCount].index = index;
+	return compiler->function->upvalueCount++;
+}
+
+// Attempts to look up [name] in the functions enclosing the one being compiled by [compiler]. If found, it adds an
+// upvalue for it to this compiler's list of upvalues (unless it's already in there) and returns its index. If not
+// found, returns -1.
+//
+// If the name is found outside of the immediately enclosing function, this will flatten the closure and add upvalues to
+// all of the intermediate functions so that it gets walked down to this one.
+static int resolveUpvalue(Compiler* compiler, Token* name) {
+	// If we are at the top level, we didn't find it.
+	if (compiler->enclosing == NULL) return -1;
+
+	// See if it's a local variable in the immediately enclosing function.
+	int local = resolveLocal(compiler->enclosing, name);
+	if (local != -1) {
+		// Mark the local as an upvalue so we know to close it when it goes out of scope.
+		compiler->enclosing->locals[local].isUpvalue = true;
+		return addUpvalue(compiler, (uint8_t)local, true);
+	}
+
+	// See if it's an upvalue in the immediately enclosing function. In other words, if it's a local variable in a
+	// non-immediately enclosing function. This "flattens" closures automatically: it adds upvalues to all of the
+	// intermediate functions to get from the function where a local is declared all the way into the possibly deeply
+	// nested function that is closing over it.
+	int upvalue = resolveUpvalue(compiler->enclosing, name);
+	if (upvalue != -1) {
+		return addUpvalue(compiler, (uint8_t)upvalue, false);
+	}
+
+	// If we got here, we walked all the way up the parent chain and
+	// couldn't find it.
+	return -1;
+}
+
 static void addLocal(Token name) {
 	if (current->localCount == UINT8_COUNT) {
 		error("Too many local variables in function.");
@@ -392,6 +464,7 @@ static void addLocal(Token name) {
 	Local* local = &current->locals[current->localCount++];
 	local->name = name;
 	local->depth = -1;
+	local->isUpvalue = false;
 }
 
 static void declareVariable() {
@@ -416,6 +489,9 @@ static void namedVariable(Token name, bool canAssign) {
 	if (arg != -1) {
 		getOp = OP_GET_LOCAL;
 		setOp = OP_SET_LOCAL;
+	} else if ((arg = resolveUpvalue(current, &name)) != -1) {
+		getOp = OP_GET_UPVALUE;
+		setOp = OP_SET_UPVALUE;
 	} else {
 		arg = identifierConstant(&name);
 		getOp = OP_GET_GLOBAL;
@@ -625,7 +701,15 @@ static void function(FunctionType type) {
 	// Create the function object.
 	endScope();
 	ObjFunction* function = endCompiler();
-	emitBytes(OP_CONSTANT, makeConstant(OBJ_VAL(function)));
+
+	// Capture the upvalues in the new closure object.
+	emitBytes(OP_CLOSURE, makeConstant(OBJ_VAL(function)));
+
+	// Emit arguments for each upvalue to know whether to capture a local or an upvalue.
+	for (int i = 0; i < function->upvalueCount; i++) {
+		emitByte(compiler.upvalues[i].isLocal ? 1 : 0);
+		emitByte(compiler.upvalues[i].index);
+	}
 }
 
 static void array() {

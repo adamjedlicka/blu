@@ -1,0 +1,21 @@
+fn counter() {
+    var cnt = 0;
+
+    return fn () {
+        cnt += 1;
+
+        return cnt;
+    };
+}
+
+var cnt1 = counter();
+var cnt2 = counter();
+
+assert 1 == cnt1();
+assert 2 == cnt1();
+assert 3 == cnt1();
+assert 4 == cnt1();
+
+assert 1 == cnt2();
+assert 2 == cnt2();
+assert 3 == cnt2();
