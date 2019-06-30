@@ -1,0 +1,14 @@
+class Person {
+
+}
+
+var p1 = Person();
+var p2 = Person();
+
+assert p1 != p2;
+
+p1.name = "Franta";
+p2.name = "Lojza";
+
+assert "Franta" == p1.name;
+assert "Lojza" == p2.name;

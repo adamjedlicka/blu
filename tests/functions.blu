@@ -57,3 +57,15 @@ fn recursive() {
 }
 
 assert recursive == recursive();
+
+fn fib2(x) {
+    fn fib(x) {
+        if x < 1 : return 1;
+
+        return fib(x - 1) + fib(x - 2);
+    }
+
+    return fib(x) + fib(x);
+}
+
+assert 288 == fib2(10);

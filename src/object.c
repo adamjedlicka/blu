@@ -25,25 +25,6 @@ static Obj* allocateObject(size_t size, ObjType type) {
 	return object;
 }
 
-ObjFunction* newFunction() {
-	ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
-	function->arity = 0;
-	function->upvalueCount = 0;
-	function->name = NULL;
-
-	initChunk(&function->chunk);
-
-	return function;
-}
-
-ObjNative* newNative(NativeFn function, int arity) {
-	ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
-	native->function = function;
-	native->arity = arity;
-
-	return native;
-}
-
 ObjArray* newArray(uint32_t len) {
 	// Set cap to the closest higher power of two.
 	uint32_t cap = len;
@@ -68,6 +49,12 @@ ObjArray* newArray(uint32_t len) {
 	return array;
 }
 
+ObjClass* newClass(ObjString* name) {
+	ObjClass* klass = ALLOCATE_OBJ(ObjClass, OBJ_CLASS);
+	klass->name = name;
+	return klass;
+}
+
 ObjClosure* newClosure(ObjFunction* function) {
 	// Allocate the upvalue array first so it doesn't cause the closure to get collected.
 	ObjUpvalue** upvalues = ALLOCATE(ObjUpvalue*, function->upvalueCount);
@@ -81,6 +68,32 @@ ObjClosure* newClosure(ObjFunction* function) {
 	closure->upvalueCount = function->upvalueCount;
 
 	return closure;
+}
+
+ObjFunction* newFunction() {
+	ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
+	function->arity = 0;
+	function->upvalueCount = 0;
+	function->name = NULL;
+
+	initChunk(&function->chunk);
+
+	return function;
+}
+
+ObjInstance* newInstance(ObjClass* klass) {
+	ObjInstance* instance = ALLOCATE_OBJ(ObjInstance, OBJ_INSTANCE);
+	instance->klass = klass;
+	initTable(&instance->fields);
+	return instance;
+}
+
+ObjNative* newNative(NativeFn function, int arity) {
+	ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
+	native->function = function;
+	native->arity = arity;
+
+	return native;
 }
 
 ObjUpvalue* newUpvalue(Value* slot) {
@@ -160,26 +173,8 @@ ObjString* copyString(const char* chars, int length) {
 }
 
 void printObject(Value value) {
-	switch (OBJ_TYPE(value)) {
-	case OBJ_CLOSURE: {
-		if (AS_CLOSURE(value)->function->name == NULL) {
-			printf("<anonymous fn>");
-		} else {
-			printf("<fn %s>", AS_CLOSURE(value)->function->name->chars);
-		}
-		break;
-	}
-	case OBJ_FUNCTION: {
-		if (AS_FUNCTION(value)->name == NULL) {
-			printf("<anonymous fn>");
-		} else {
-			printf("<fn %s>", AS_FUNCTION(value)->name->chars);
-		}
 
-		break;
-	}
-	case OBJ_NATIVE: printf("<native fn>"); break;
-	case OBJ_STRING: printf("%s", AS_CSTRING(value)); break;
+	switch (OBJ_TYPE(value)) {
 
 	case OBJ_ARRAY: {
 		printf("[");
@@ -194,6 +189,49 @@ void printObject(Value value) {
 		printf("]");
 		break;
 	}
-	case OBJ_UPVALUE: printf("upvalue"); break;
+
+	case OBJ_CLASS: {
+		printf("%s", AS_CLASS(value)->name->chars);
+		break;
+	}
+
+	case OBJ_CLOSURE: {
+		if (AS_CLOSURE(value)->function->name == NULL) {
+			printf("<anonymous fn>");
+		} else {
+			printf("<fn %s>", AS_CLOSURE(value)->function->name->chars);
+		}
+		break;
+	}
+
+	case OBJ_FUNCTION: {
+		if (AS_FUNCTION(value)->name == NULL) {
+			printf("<anonymous fn>");
+		} else {
+			printf("<fn %s>", AS_FUNCTION(value)->name->chars);
+		}
+
+		break;
+	}
+
+	case OBJ_INSTANCE: {
+		printf("%s instance", AS_INSTANCE(value)->klass->name->chars);
+		break;
+	}
+
+	case OBJ_NATIVE: {
+		printf("<native fn>");
+		break;
+	}
+
+	case OBJ_STRING: {
+		printf("%s", AS_CSTRING(value));
+		break;
+	}
+
+	case OBJ_UPVALUE: {
+		printf("upvalue");
+		break;
+	}
 	}
 }

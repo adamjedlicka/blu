@@ -184,6 +184,10 @@ static uint8_t makeConstant(Value value) {
 	return (uint8_t)constant;
 }
 
+static uint8_t identifierConstant(Token* name) {
+	return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
+}
+
 static uint8_t emitConstant(Value value) {
 	uint8_t constant = makeConstant(value);
 
@@ -342,6 +346,18 @@ static void call(bool canAssign) {
 	emitByte(OP_CALL_0 + argCount);
 }
 
+static void dot(bool canAssign) {
+	consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
+	uint8_t name = identifierConstant(&parser.previous);
+
+	if (canAssign && match(TOKEN_EQUAL)) {
+		expression();
+		emitBytes(OP_SET_PROPERTY, name);
+	} else {
+		emitBytes(OP_GET_PROPERTY, name);
+	}
+}
+
 static void arrayAccess(bool canAssign) {
 	expression();
 	consume(TOKEN_RIGHT_BRACKET, "Expect ']' after array access.");
@@ -375,10 +391,6 @@ static void number(bool canAssign) {
 
 static void string(bool canAssign) {
 	emitConstant(OBJ_VAL(copyString(parser.previous.start + 1, parser.previous.length - 2)));
-}
-
-static uint8_t identifierConstant(Token* name) {
-	return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
 }
 
 static bool identifiersEqual(Token* a, Token* b) {
@@ -558,7 +570,7 @@ ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE},		// TOKEN_RIGHT_BRACE
 	{NULL, NULL, PREC_NONE},		// TOKEN_COLON
 	{NULL, NULL, PREC_NONE},		// TOKEN_COMMA
-	{NULL, NULL, PREC_CALL},		// TOKEN_DOT
+	{NULL, dot, PREC_CALL},			// TOKEN_DOT
 	{NULL, NULL, PREC_NONE},		// TOKEN_SEMICOLON
 
 	{unary, NULL, PREC_NONE},		 // TOKEN_BANG
@@ -737,24 +749,37 @@ static void expression() {
 	}
 }
 
+static void classDeclaration() {
+	uint8_t name = parseVariable("Expect class name.");
+
+	emitBytes(OP_CLASS, name);
+	defineVariable(name);
+
+	consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
+	consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
+}
+
 static void fnDeclaration() {
-	uint8_t global = parseVariable("Expect function name.");
+	uint8_t name = parseVariable("Expect function name.");
 	markInitialized();
+
 	function(TYPE_FUNCTION);
-	defineVariable(global);
+
+	defineVariable(name);
 }
 
 static void varDeclaration() {
-	uint8_t global = parseVariable("Expect variable name.");
+	uint8_t name = parseVariable("Expect variable name.");
 
 	if (match(TOKEN_EQUAL)) {
 		expression();
 	} else {
 		emitByte(OP_NIL);
 	}
+
 	consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
 
-	defineVariable(global);
+	defineVariable(name);
 }
 
 static void expressionStatement() {
@@ -974,6 +999,8 @@ static void declaration() {
 		varDeclaration();
 	} else if (match(TOKEN_FN)) {
 		fnDeclaration();
+	} else if (match(TOKEN_CLASS)) {
+		classDeclaration();
 	} else {
 		statement();
 	}

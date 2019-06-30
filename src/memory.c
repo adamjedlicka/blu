@@ -76,11 +76,18 @@ static void blackenObject(Obj* object) {
 #endif
 
 	switch (object->type) {
+
 	case OBJ_ARRAY: {
 		ObjArray* array = (ObjArray*)object;
 		for (uint32_t i = 0; i < array->cap; i++) {
 			grayValue(array->data[i]);
 		}
+		break;
+	}
+
+	case OBJ_CLASS: {
+		ObjClass* klass = (ObjClass*)object;
+		grayObject((Obj*)klass->name);
 		break;
 	}
 
@@ -100,12 +107,25 @@ static void blackenObject(Obj* object) {
 		break;
 	}
 
-	case OBJ_UPVALUE: grayValue(((ObjUpvalue*)object)->closed); break;
-
-	case OBJ_NATIVE:
-	case OBJ_STRING:
-		// No references.
+	case OBJ_INSTANCE: {
+		ObjInstance* instance = (ObjInstance*)object;
+		grayObject((Obj*)instance->klass);
+		grayTable(&instance->fields);
 		break;
+	}
+
+	case OBJ_NATIVE: {
+		break;
+	}
+
+	case OBJ_STRING: {
+		break;
+	}
+
+	case OBJ_UPVALUE: {
+		grayValue(((ObjUpvalue*)object)->closed);
+		break;
+	}
 	}
 }
 
@@ -125,6 +145,11 @@ static void freeObject(Obj* object) {
 		break;
 	}
 
+	case OBJ_CLASS: {
+		FREE(ObjClass, object);
+		break;
+	}
+
 	case OBJ_CLOSURE: {
 		ObjClosure* closure = (ObjClosure*)object;
 		FREE_ARRAY(Value, closure->upvalues, closure->upvalueCount);
@@ -136,6 +161,13 @@ static void freeObject(Obj* object) {
 		ObjFunction* function = (ObjFunction*)object;
 		freeChunk(&function->chunk);
 		FREE(ObjFunction, object);
+		break;
+	}
+
+	case OBJ_INSTANCE: {
+		ObjInstance* instance = (ObjInstance*)object;
+		freeTable(&instance->fields);
+		FREE(ObjInstance, object);
 		break;
 	}
 
