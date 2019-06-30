@@ -85,9 +85,17 @@ static void blackenObject(Obj* object) {
 		break;
 	}
 
+	case OBJ_BOUND_METHOD: {
+		ObjBoundMethod* bound = (ObjBoundMethod*)object;
+		grayValue(bound->receiver);
+		grayObject((Obj*)bound->method);
+		break;
+	}
+
 	case OBJ_CLASS: {
 		ObjClass* klass = (ObjClass*)object;
 		grayObject((Obj*)klass->name);
+		grayTable(&klass->methods);
 		break;
 	}
 
@@ -145,7 +153,14 @@ static void freeObject(Obj* object) {
 		break;
 	}
 
+	case OBJ_BOUND_METHOD: {
+		FREE(ObjBoundMethod, object);
+		break;
+	}
+
 	case OBJ_CLASS: {
+		ObjClass* klass = (ObjClass*)object;
+		freeTable(&klass->methods);
 		FREE(ObjClass, object);
 		break;
 	}
@@ -213,6 +228,7 @@ void collectGarbage() {
 	// Mark the global roots.
 	grayTable(&vm.globals);
 	grayCompilerRoots();
+	grayObject((Obj*)vm.initString);
 
 	// Traverse the references.
 	while (vm.grayCount > 0) {

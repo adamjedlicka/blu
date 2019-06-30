@@ -58,9 +58,11 @@ typedef struct {
 } Upvalue;
 
 typedef enum {
-	TYPE_FUNCTION,
 	TYPE_ANONYMOUS,
+	TYPE_FUNCTION,
+	TYPE_INITIALIZER,
 	TYPE_TOP_LEVEL,
+	TYPE_METHOD,
 } FunctionType;
 
 typedef struct Compiler {
@@ -80,7 +82,14 @@ typedef struct Compiler {
 	int currentBreak;
 } Compiler;
 
+typedef struct ClassCompiler {
+	struct ClassCompiler* enclosing;
+
+	Token name;
+} ClassCompiler;
+
 Compiler* current = NULL;
+ClassCompiler* currentClass = NULL;
 
 Parser parser;
 
@@ -170,7 +179,13 @@ static void emitLoop(int loopStart) {
 }
 
 static void emitReturn() {
-	emitByte(OP_NIL);
+	// An initializer automatically returns "this".
+	if (current->type == TYPE_INITIALIZER) {
+		emitBytes(OP_GET_LOCAL, 0);
+	} else {
+		emitByte(OP_NIL);
+	}
+
 	emitByte(OP_RETURN);
 }
 
@@ -223,8 +238,10 @@ static void initCompiler(Compiler* compiler, int scopeDepth, FunctionType type) 
 	current = compiler;
 
 	switch (type) {
+	case TYPE_INITIALIZER:
+	case TYPE_METHOD:
 	case TYPE_FUNCTION: current->function->name = copyString(parser.previous.start, parser.previous.length); break;
-	case TYPE_ANONYMOUS: current->function->name = NULL; break;
+	case TYPE_ANONYMOUS:
 	case TYPE_TOP_LEVEL: current->function->name = NULL; break;
 	}
 
@@ -232,8 +249,16 @@ static void initCompiler(Compiler* compiler, int scopeDepth, FunctionType type) 
 	Local* local = &current->locals[current->localCount++];
 	local->depth = current->scopeDepth;
 	local->isUpvalue = false;
-	local->name.start = "";
-	local->name.length = 0;
+
+	if (type != TYPE_FUNCTION && type != TYPE_ANONYMOUS) {
+		// In a method, it holds the receiver, "this".
+		local->name.start = "this";
+		local->name.length = 4;
+	} else {
+		// In a function, it holds the function, but cannot be referenced, so has no name.
+		local->name.start = "";
+		local->name.length = 0;
+	}
 }
 
 static ObjFunction* endCompiler() {
@@ -353,6 +378,9 @@ static void dot(bool canAssign) {
 	if (canAssign && match(TOKEN_EQUAL)) {
 		expression();
 		emitBytes(OP_SET_PROPERTY, name);
+	} else if (match(TOKEN_LEFT_PAREN)) {
+		uint8_t argCount = argumentList();
+		emitBytes(OP_INVOKE_0 + argCount, name);
 	} else {
 		emitBytes(OP_GET_PROPERTY, name);
 	}
@@ -547,6 +575,14 @@ static void variable(bool canAssign) {
 	namedVariable(parser.previous, canAssign);
 }
 
+static void this_(bool canAssign) {
+	if (currentClass == NULL) {
+		error("Cannot use 'this' outside of a class.");
+	} else {
+		variable(false);
+	}
+}
+
 static void unary(bool canAssign) {
 	TokenType operatorType = parser.previous.type;
 
@@ -609,7 +645,7 @@ ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE},	// TOKEN_ASSERT
 	{NULL, NULL, PREC_NONE},	// TOKEN_RETURN
 	{NULL, NULL, PREC_NONE},	// TOKEN_SUPER
-	{NULL, NULL, PREC_NONE},	// TOKEN_THIS
+	{this_, NULL, PREC_NONE},   // TOKEN_THIS
 	{literal, NULL, PREC_NONE}, // TOKEN_TRUE
 	{NULL, NULL, PREC_NONE},	// TOKEN_VAR
 	{NULL, NULL, PREC_NONE},	// TOKEN_WHILE
@@ -749,14 +785,49 @@ static void expression() {
 	}
 }
 
+static void method() {
+	consume(TOKEN_IDENTIFIER, "Expect method name.");
+	uint8_t constant = identifierConstant(&parser.previous);
+
+	// If the method is named "init", it's an initializer.
+	FunctionType type = TYPE_METHOD;
+	if (parser.previous.length == 4 && memcmp(parser.previous.start, "init", 4) == 0) {
+		type = TYPE_INITIALIZER;
+	}
+
+	function(type);
+
+	emitBytes(OP_METHOD, constant);
+}
+
 static void classDeclaration() {
 	uint8_t name = parseVariable("Expect class name.");
+	Token className = parser.previous;
 
 	emitBytes(OP_CLASS, name);
 	defineVariable(name);
 
+	ClassCompiler classCompiler;
+	classCompiler.name = className;
+	classCompiler.enclosing = currentClass;
+
+	currentClass = &classCompiler;
+
 	consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
+
+	while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
+		if (match(TOKEN_FN)) {
+			namedVariable(className, false);
+			method();
+		} else {
+			errorAtCurrent("Expect method declaration.");
+			return;
+		}
+	}
+
 	consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
+
+	currentClass = currentClass->enclosing;
 }
 
 static void fnDeclaration() {
@@ -846,6 +917,10 @@ static void returnStatement() {
 	if (match(TOKEN_SEMICOLON)) {
 		emitReturn();
 	} else {
+		if (current->type == TYPE_INITIALIZER) {
+			error("Cannot return a value from an initializer.");
+		}
+
 		expression();
 		consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
 		emitByte(OP_RETURN);

@@ -9,6 +9,7 @@
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
 #define IS_ARRAY(value) isObjType(value, OBJ_ARRAY)
+#define IS_BOUND_METHOD(value) isObjType(value, OBJ_BOUND_METHOD)
 #define IS_CLASS(value) isObjType(value, OBJ_CLASS)
 #define IS_CLOSURE(value) isObjType(value, OBJ_CLOSURE)
 #define IS_FUNCTION(value) isObjType(value, OBJ_FUNCTION)
@@ -17,6 +18,7 @@
 #define IS_STRING(value) isObjType(value, OBJ_STRING)
 
 #define AS_ARRAY(value) ((ObjArray*)AS_OBJ(value))
+#define AS_BOUND_METHOD(value) ((ObjBoundMethod*)AS_OBJ(value))
 #define AS_CLASS(value) ((ObjClass*)AS_OBJ(value))
 #define AS_CLOSURE(value) ((ObjClosure*)AS_OBJ(value))
 #define AS_CSTRING(value) (((ObjString*)AS_OBJ(value))->chars)
@@ -25,8 +27,18 @@
 #define AS_NATIVE(value) (((ObjNative*)AS_OBJ(value)))
 #define AS_STRING(value) ((ObjString*)AS_OBJ(value))
 
+typedef struct sObjArray ObjArray;
+typedef struct sObjBoundMethod ObjBoundMethod;
+typedef struct sObjClass ObjClass;
+typedef struct sObjClosure ObjClosure;
+typedef struct sObjFunction ObjFunction;
+typedef struct sObjInstance ObjInstance;
+typedef struct sObjNative ObjNative;
+typedef struct sObjUpvalue ObjUpvalue;
+
 typedef enum {
 	OBJ_ARRAY,
+	OBJ_BOUND_METHOD,
 	OBJ_CLASS,
 	OBJ_CLOSURE,
 	OBJ_FUNCTION,
@@ -42,39 +54,53 @@ struct sObj {
 	struct sObj* next;
 };
 
-typedef struct {
+struct sObjArray {
 	Obj obj;
 	uint32_t len;
 	uint32_t cap;
 	Value* data;
-} ObjArray;
+};
 
-typedef struct {
+struct sObjBoundMethod {
+	Obj obj;
+	Value receiver;
+	ObjClosure* method;
+};
+
+struct sObjClass {
 	Obj obj;
 	ObjString* name;
-} ObjClass;
+	Table methods;
+};
 
-typedef struct {
+struct sObjClosure {
+	Obj obj;
+	ObjFunction* function;
+	ObjUpvalue** upvalues;
+	int upvalueCount;
+};
+
+struct sObjFunction {
 	Obj obj;
 	int arity;
 	int upvalueCount;
 	Chunk chunk;
 	ObjString* name;
-} ObjFunction;
+};
 
-typedef struct {
+struct sObjInstance {
 	Obj obj;
 	ObjClass* klass;
 	Table fields;
-} ObjInstance;
+};
 
 typedef Value (*NativeFn)(int argCount, Value* args);
 
-typedef struct {
+struct sObjNative {
 	Obj obj;
 	int arity;
 	NativeFn function;
-} ObjNative;
+};
 
 struct sObjString {
 	Obj obj;
@@ -83,7 +109,7 @@ struct sObjString {
 	uint32_t hash;
 };
 
-typedef struct sUpvalue {
+struct sObjUpvalue {
 	Obj obj;
 
 	// Pointer to the variable this upvalue is referencing.
@@ -94,17 +120,11 @@ typedef struct sUpvalue {
 	Value closed;
 
 	// Open upvalues are stored in a linked list. This points to the next one in that list.
-	struct sUpvalue* next;
-} ObjUpvalue;
-
-typedef struct {
-	Obj obj;
-	ObjFunction* function;
-	ObjUpvalue** upvalues;
-	int upvalueCount;
-} ObjClosure;
+	ObjUpvalue* next;
+};
 
 ObjArray* newArray(uint32_t len);
+ObjBoundMethod* newBoundMethod(Value receiver, ObjClosure* method);
 ObjClass* newClass(ObjString* name);
 ObjClosure* newClosure(ObjFunction* function);
 ObjFunction* newFunction();

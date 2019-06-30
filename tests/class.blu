@@ -1,14 +1,34 @@
 class Person {
 
+    fn init(firstName, lastName) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+
+    fn fullName() {
+        return this.firstName + " " + this.lastName;
+    }
+
+    fn setFirstName(firstName) {
+        this.firstName = firstName;
+    }
+
+    fn setLastName(lastName) {
+        this.lastName = lastName;
+    }
+
 }
 
-var p1 = Person();
-var p2 = Person();
+var p1 = Person("Franta", "Sádlo");
+var p2 = Person("Jirka", "Máslo");
 
 assert p1 != p2;
 
-p1.name = "Franta";
-p2.name = "Lojza";
+assert p1.firstName == "Franta";
+assert p2.firstName == "Jirka";
 
-assert "Franta" == p1.name;
-assert "Lojza" == p2.name;
+assert p1.fullName() == "Franta Sádlo";
+assert p2.fullName() == "Jirka Máslo";
+
+p1.setFirstName("Pepa");
+assert p1.firstName == "Pepa";

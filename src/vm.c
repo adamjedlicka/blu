@@ -91,6 +91,8 @@ void initVM() {
 	initTable(&vm.globals);
 	initTable(&vm.strings);
 
+	vm.initString = copyString("init", 4);
+
 	defineNative("clock", clockNative, 0);
 	defineNative("print", printNative, 1);
 	defineNative("println", printlnNative, 1);
@@ -163,15 +165,34 @@ static bool callValue(Value callee, int argCount) {
 	if (IS_OBJ(callee)) {
 		switch (OBJ_TYPE(callee)) {
 
+		case OBJ_BOUND_METHOD: {
+			ObjBoundMethod* bound = AS_BOUND_METHOD(callee);
+
+			// Replace the bound method with the receiver so it's in the right slot when the method is called.
+			vm.stackTop[-argCount - 1] = bound->receiver;
+			return call(bound->method, argCount);
+		}
+
 		case OBJ_CLASS: {
 			ObjClass* klass = AS_CLASS(callee);
 
 			// Create the instance.
 			vm.stackTop[-argCount - 1] = OBJ_VAL(newInstance(klass));
+			// Call the initializer, if there is one.
+			Value initializer;
+			if (tableGet(&klass->methods, vm.initString, &initializer)) {
+				return call(AS_CLOSURE(initializer), argCount);
+			} else if (argCount != 0) {
+				runtimeError("Expected 0 arguments but got %d.", argCount);
+				return false;
+			}
+
 			return true;
 		}
 
-		case OBJ_CLOSURE: return call(AS_CLOSURE(callee), argCount);
+		case OBJ_CLOSURE: {
+			return call(AS_CLOSURE(callee), argCount);
+		}
 
 		case OBJ_NATIVE: {
 			ObjNative* native = AS_NATIVE(callee);
@@ -195,6 +216,50 @@ static bool callValue(Value callee, int argCount) {
 
 	runtimeError("Can only call functions and classes.");
 	return false;
+}
+
+static bool invokeFromClass(ObjClass* klass, ObjString* name, int argCount) {
+	// Look for the method.
+	Value method;
+	if (!tableGet(&klass->methods, name, &method)) {
+		runtimeError("Undefined property '%s'.", name->chars);
+		return false;
+	}
+
+	return call(AS_CLOSURE(method), argCount);
+}
+
+static bool invoke(ObjString* name, int argCount) {
+	Value receiver = peek(argCount);
+
+	if (!IS_INSTANCE(receiver)) {
+		runtimeError("Only instances have methods.");
+		return false;
+	}
+
+	ObjInstance* instance = AS_INSTANCE(receiver);
+
+	// First look for a field which may shadow a method.
+	Value value;
+	if (tableGet(&instance->fields, name, &value)) {
+		vm.stackTop[-argCount] = value;
+		return callValue(value, argCount);
+	}
+
+	return invokeFromClass(instance->klass, name, argCount);
+}
+
+static bool bindMethod(ObjClass* klass, ObjString* name) {
+	Value method;
+	if (!tableGet(&klass->methods, name, &method)) {
+		runtimeError("Undefined property '%s'.", name->chars);
+		return false;
+	}
+
+	ObjBoundMethod* bound = newBoundMethod(peek(0), AS_CLOSURE(method));
+	pop(); // Instance.
+	push(OBJ_VAL(bound));
+	return true;
 }
 
 // Captures the local variable [local] into an [Upvalue]. If that local is already in an upvalue, the existing one is
@@ -246,6 +311,14 @@ static void closeUpvalues(Value* last) {
 		// Pop it off the open upvalue list.
 		vm.openUpvalues = upvalue->next;
 	}
+}
+
+static void defineMethod(ObjString* name) {
+	Value method = peek(0);
+	ObjClass* klass = AS_CLASS(peek(1));
+	tableSet(&klass->methods, name, method);
+	pop();
+	pop();
 }
 
 static InterpretResult run() {
@@ -361,8 +434,9 @@ static InterpretResult run() {
 				break;
 			}
 
-			runtimeError("Undefined property '%s'.", name->chars);
-			return INTERPRET_RUNTIME_ERROR;
+			if (!bindMethod(instance->klass, name)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
 
 			break;
 		}
@@ -576,6 +650,24 @@ static InterpretResult run() {
 			break;
 		}
 
+		case OP_INVOKE_0:
+		case OP_INVOKE_1:
+		case OP_INVOKE_2:
+		case OP_INVOKE_3:
+		case OP_INVOKE_4:
+		case OP_INVOKE_5:
+		case OP_INVOKE_6:
+		case OP_INVOKE_7:
+		case OP_INVOKE_8: {
+			ObjString* method = READ_STRING();
+			int argCount = instruction - OP_INVOKE_0;
+			if (!invoke(method, argCount)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			frame = &vm.frames[vm.frameCount - 1];
+			break;
+		}
+
 		case OP_CLOSURE: {
 			ObjFunction* function = AS_FUNCTION(READ_CONSTANT());
 
@@ -606,6 +698,11 @@ static InterpretResult run() {
 
 		case OP_CLASS: {
 			push(OBJ_VAL(newClass(READ_STRING())));
+			break;
+		}
+
+		case OP_METHOD: {
+			defineMethod(READ_STRING());
 			break;
 		}
 

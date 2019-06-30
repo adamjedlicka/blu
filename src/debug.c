@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "debug.h"
 #include "object.h"
@@ -10,6 +11,14 @@ void disassembleChunk(Chunk* chunk, const char* name) {
 	for (int offset = 0; offset < chunk->count;) {
 		offset = disassembleInstruction(chunk, offset);
 	}
+}
+
+static int constantInstructionN(const char* name, int n, Chunk* chunk, int offset) {
+	uint8_t constant = chunk->code[offset + 1];
+	printf("%s_%-*d %4d '", name, 15 - (int)strlen(name), n, constant);
+	printValue(chunk->constants.values[constant]);
+	printf("'\n");
+	return offset + 2;
 }
 
 static int constantInstruction(const char* name, Chunk* chunk, int offset) {
@@ -82,6 +91,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
 	case OP_JUMP: return jumpInstruction("OP_JUMP", chunk, offset);
 	case OP_JUMP_IF_FALSE: return jumpInstruction("OP_JUMP_IF_FALSE", chunk, offset);
 	case OP_LOOP: return jumpInstruction("OP_LOOP", chunk, offset);
+
 	case OP_CALL_0:
 	case OP_CALL_1:
 	case OP_CALL_2:
@@ -91,6 +101,17 @@ int disassembleInstruction(Chunk* chunk, int offset) {
 	case OP_CALL_6:
 	case OP_CALL_7:
 	case OP_CALL_8: return simpleInstructionN("OP_CALL", instruction - OP_CALL_0, offset);
+
+	case OP_INVOKE_0:
+	case OP_INVOKE_1:
+	case OP_INVOKE_2:
+	case OP_INVOKE_3:
+	case OP_INVOKE_4:
+	case OP_INVOKE_5:
+	case OP_INVOKE_6:
+	case OP_INVOKE_7:
+	case OP_INVOKE_8: return constantInstructionN("OP_INVOKE_", instruction - OP_INVOKE_0, chunk, offset);
+
 	case OP_CLOSURE: {
 		offset++;
 		uint8_t constant = chunk->code[offset++];
@@ -107,9 +128,12 @@ int disassembleInstruction(Chunk* chunk, int offset) {
 
 		return offset;
 	}
+
 	case OP_CLOSE_UPVALUE: return simpleInstruction("OP_CLOSE_UPVALUE", offset);
 	case OP_RETURN: return simpleInstruction("OP_RETURN", offset);
 	case OP_CLASS: return constantInstruction("OP_CLASS", chunk, offset);
+	case OP_METHOD: return constantInstruction("OP_METHOD", chunk, offset);
+
 	default: printf("Unknown opcode %d\n", instruction); return offset + 1;
 	}
 }
