@@ -1,6 +1,6 @@
 class Person {
 
-    fn init(firstName, lastName) {
+    fn __init(firstName, lastName) {
         this.firstName = firstName;
         this.lastName = lastName;
     }

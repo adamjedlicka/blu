@@ -791,7 +791,7 @@ static void method() {
 
 	// If the method is named "init", it's an initializer.
 	FunctionType type = TYPE_METHOD;
-	if (parser.previous.length == 4 && memcmp(parser.previous.start, "init", 4) == 0) {
+	if (parser.previous.length == 6 && memcmp(parser.previous.start, "__init", 6) == 0) {
 		type = TYPE_INITIALIZER;
 	}
 

@@ -91,7 +91,7 @@ void initVM() {
 	initTable(&vm.globals);
 	initTable(&vm.strings);
 
-	vm.initString = copyString("init", 4);
+	vm.initString = copyString("__init", 6);
 
 	defineNative("clock", clockNative, 0);
 	defineNative("print", printNative, 1);
