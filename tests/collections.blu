@@ -1,0 +1,61 @@
+class Collection {
+
+    fn filter(callback) {
+        var collection = this.new();
+
+        for var i = 0; i < this.len(); i = i + 1 {
+            if callback(this.get(i)) == true {
+                collection.add(this.get(i));
+            }
+        }
+
+        return collection;
+    }
+
+    fn map(callback) {
+        var collection = this.new();
+
+        for var i = 0; i < this.len(); i = i + 1 {
+            collection.add(callback(this.get(i)));
+        }
+
+        return collection;
+    }
+
+}
+
+class Array < Collection {
+
+    fn __init(data) {
+        this.data = data;
+    }
+
+    fn new() {
+        return Array([]);
+    }
+
+    fn add(val) {
+        this.data = this.data + val;
+    }
+
+    fn len() {
+        return len(this.data);
+    }
+
+    fn get(i) {
+        return this.data[i];
+    }
+
+}
+
+var arr1 = Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+var arr2 = arr1
+    .filter(fn(val) : val % 2 == 0)
+    .map(fn(val) : val * 2);
+
+assert arr2.len() == 5;
+assert arr2.get(0) == 0;
+assert arr2.get(1) == 4;
+assert arr2.get(2) == 8;
+assert arr2.get(3) == 12;
+assert arr2.get(4) == 16;

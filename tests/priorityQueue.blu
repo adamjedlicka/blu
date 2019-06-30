@@ -64,13 +64,15 @@ fn push(arr, val) {
     if last(arr) < len(arr) {
         arr[last(arr)] = val;
     } else {
-        arr += val;
+        arr = arr + val;
     }
 
     trickleUp(arr, last(arr) - 1);
 
     print(".push(" + val + ") => ");
     println(arr);
+
+    return arr;
 }
 
 fn pop(arr) {
@@ -94,19 +96,19 @@ var arr = [];
 assert len(arr) == 0;
 assert last(arr) == 0;
 
-push(arr, 5);
+arr = push(arr, 5);
 assert len(arr) == 1;
 assert last(arr) == 1;
 
-push(arr, 3);
+arr = push(arr, 3);
 assert len(arr) == 2;
 assert last(arr) == 2;
 
-push(arr, 8);
+arr = push(arr, 8);
 assert len(arr) == 3;
 assert last(arr) == 3;
 
-push(arr, 1);
+arr = push(arr, 1);
 assert len(arr) == 4;
 assert last(arr) == 4;
 
@@ -118,15 +120,15 @@ assert pop(arr) == 3;
 assert len(arr) == 4;
 assert last(arr) == 2;
 
-push(arr, 2);
+arr = push(arr, 2);
 assert len(arr) == 4;
 assert last(arr) == 3;
 
-push(arr, 4);
+arr = push(arr, 4);
 assert len(arr) == 4;
 assert last(arr) == 4;
 
-push(arr, 0);
+arr = push(arr, 0);
 assert len(arr) == 5;
 assert last(arr) == 5;
 

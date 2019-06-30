@@ -75,6 +75,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
 	case OP_SET_UPVALUE: return byteInstruction("OP_SET_UPVALUE", chunk, offset);
 	case OP_GET_PROPERTY: return constantInstruction("OP_GET_PROPERTY", chunk, offset);
 	case OP_SET_PROPERTY: return constantInstruction("OP_SET_PROPERTY", chunk, offset);
+	case OP_GET_SUPER: return constantInstruction("OP_GET_SUPER", chunk, offset);
 	case OP_ARRAY: return byteInstruction("OP_ARRAY", chunk, offset);
 	case OP_ARRAY_GET: return simpleInstruction("OP_ARRAY_GET", offset);
 	case OP_ARRAY_SET: return simpleInstruction("OP_ARRAY_SET", offset);
@@ -112,6 +113,16 @@ int disassembleInstruction(Chunk* chunk, int offset) {
 	case OP_INVOKE_7:
 	case OP_INVOKE_8: return constantInstructionN("OP_INVOKE_", instruction - OP_INVOKE_0, chunk, offset);
 
+	case OP_SUPER_0:
+	case OP_SUPER_1:
+	case OP_SUPER_2:
+	case OP_SUPER_3:
+	case OP_SUPER_4:
+	case OP_SUPER_5:
+	case OP_SUPER_6:
+	case OP_SUPER_7:
+	case OP_SUPER_8: return constantInstructionN("OP_SUPER_", instruction - OP_SUPER_0, chunk, offset);
+
 	case OP_CLOSURE: {
 		offset++;
 		uint8_t constant = chunk->code[offset++];
@@ -132,6 +143,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
 	case OP_CLOSE_UPVALUE: return simpleInstruction("OP_CLOSE_UPVALUE", offset);
 	case OP_RETURN: return simpleInstruction("OP_RETURN", offset);
 	case OP_CLASS: return constantInstruction("OP_CLASS", chunk, offset);
+	case OP_INHERIT: return simpleInstruction("OP_INHERIT", offset);
 	case OP_METHOD: return constantInstruction("OP_METHOD", chunk, offset);
 
 	default: printf("Unknown opcode %d\n", instruction); return offset + 1;

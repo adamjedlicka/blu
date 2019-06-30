@@ -455,6 +455,15 @@ static InterpretResult run() {
 			break;
 		}
 
+		case OP_GET_SUPER: {
+			ObjString* name = READ_STRING();
+			ObjClass* superclass = AS_CLASS(pop());
+			if (!bindMethod(superclass, name)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			break;
+		}
+
 		case OP_EQUAL: {
 			Value b = pop();
 			Value a = pop();
@@ -497,7 +506,12 @@ static InterpretResult run() {
 				push(OBJ_VAL(arr));
 			} else if (IS_ARRAY(peek(1))) {
 				Value value = pop();
-				ObjArray* array = AS_ARRAY(pop());
+				ObjArray* arr = AS_ARRAY(pop());
+
+				ObjArray* array = newArray(arr->len);
+				for (uint32_t i = 0; i < arr->len; i++) {
+					array->data[i] = arr->data[i];
+				}
 
 				arrayPush(array, value);
 
@@ -668,6 +682,25 @@ static InterpretResult run() {
 			break;
 		}
 
+		case OP_SUPER_0:
+		case OP_SUPER_1:
+		case OP_SUPER_2:
+		case OP_SUPER_3:
+		case OP_SUPER_4:
+		case OP_SUPER_5:
+		case OP_SUPER_6:
+		case OP_SUPER_7:
+		case OP_SUPER_8: {
+			ObjString* method = READ_STRING();
+			int argCount = instruction - OP_SUPER_0;
+			ObjClass* superclass = AS_CLASS(pop());
+			if (!invokeFromClass(superclass, method, argCount)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			frame = &vm.frames[vm.frameCount - 1];
+			break;
+		}
+
 		case OP_CLOSURE: {
 			ObjFunction* function = AS_FUNCTION(READ_CONSTANT());
 
@@ -698,6 +731,19 @@ static InterpretResult run() {
 
 		case OP_CLASS: {
 			push(OBJ_VAL(newClass(READ_STRING())));
+			break;
+		}
+
+		case OP_INHERIT: {
+			Value superclass = peek(1);
+			if (!IS_CLASS(superclass)) {
+				runtimeError("Superclass must be a class.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			ObjClass* subclass = AS_CLASS(peek(0));
+			tableAddAll(&AS_CLASS(superclass)->methods, &subclass->methods);
+			pop(); // Subclass.
 			break;
 		}
 
