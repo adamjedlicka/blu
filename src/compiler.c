@@ -939,6 +939,8 @@ static void assertStatement() {
 }
 
 static void ifStatement() {
+	beginScope();
+
 	expression();
 	int ifJump = emitJump(OP_JUMP_IF_FALSE);
 	emitByte(OP_POP); // Condition
@@ -951,6 +953,7 @@ static void ifStatement() {
 		patchJump(ifJump);
 		emitByte(OP_POP); // Condition
 		patchJump(elseJump);
+		endScope();
 		return;
 	}
 
@@ -959,11 +962,11 @@ static void ifStatement() {
 	block();
 	endScope();
 
-	if (match(TOKEN_ELSE)) {
-		int elseJump = emitJump(OP_JUMP);
-		patchJump(ifJump);
-		emitByte(OP_POP);
+	int elseJump = emitJump(OP_JUMP);
+	patchJump(ifJump);
+	emitByte(OP_POP); // Condition
 
+	if (match(TOKEN_ELSE)) {
 		if (match(TOKEN_LEFT_BRACE)) {
 			beginScope();
 			block();
@@ -973,11 +976,11 @@ static void ifStatement() {
 		} else {
 			error("Expect 'if' or '{' after 'else'.");
 		}
-
-		patchJump(elseJump);
-	} else {
-		patchJump(ifJump);
 	}
+
+	patchJump(elseJump);
+
+	endScope();
 }
 
 static void returnStatement() {
