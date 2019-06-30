@@ -216,13 +216,16 @@ void collectGarbage() {
 #endif
 }
 
+/**
+ * TODO: Store objects in a hierarchical way so we can safely free them.
+ */
 void freeObjects() {
-	Obj* object = vm.objects;
-	while (object != NULL) {
-		Obj* next = object->next;
-		freeObject(object);
-		object = next;
-	}
+	// Obj* object = vm.objects;
+	// while (object != NULL) {
+	// 	Obj* next = object->next;
+	// 	freeObject(object);
+	// 	object = next;
+	// }
 
 	free(vm.grayStack);
 }

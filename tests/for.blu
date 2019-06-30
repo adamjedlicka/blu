@@ -25,3 +25,13 @@ for var i = 0; i < 10; i += 1 {
 
 assert a == 2;
 assert b == 2;
+
+for var i = 0; i < 10; i += 1 {
+    var tmp = 0;
+
+    for var j = 0; j < 10; j += 1 {
+        tmp += j;
+    }
+
+    assert 45 == tmp;
+}

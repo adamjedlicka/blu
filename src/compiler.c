@@ -220,8 +220,6 @@ static void initCompiler(Compiler* compiler, int scopeDepth, FunctionType type) 
 
 	switch (type) {
 	case TYPE_FUNCTION: current->function->name = copyString(parser.previous.start, parser.previous.length); break;
-	// case TYPE_ANONYMOUS: current->function->name = copyString("__ANONYMOUS__", 13); break;
-	// case TYPE_TOP_LEVEL: current->function->name = copyString("__TOP_LEVEL__", 13); break;
 	case TYPE_ANONYMOUS: current->function->name = NULL; break;
 	case TYPE_TOP_LEVEL: current->function->name = NULL; break;
 	}
@@ -919,7 +917,9 @@ static void forStatement() {
 		statement();
 	} else {
 		consume(TOKEN_LEFT_BRACE, "Expect '{' after for clause.");
+		beginScope();
 		block();
+		endScope();
 	}
 
 	// Jump back to the beginning (or the increment).

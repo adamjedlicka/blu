@@ -163,7 +163,7 @@ void printObject(Value value) {
 	switch (OBJ_TYPE(value)) {
 	case OBJ_CLOSURE: {
 		if (AS_CLOSURE(value)->function->name == NULL) {
-			printf("<fn __NONAMED__>");
+			printf("<anonymous fn>");
 		} else {
 			printf("<fn %s>", AS_CLOSURE(value)->function->name->chars);
 		}
@@ -171,7 +171,7 @@ void printObject(Value value) {
 	}
 	case OBJ_FUNCTION: {
 		if (AS_FUNCTION(value)->name == NULL) {
-			printf("<fn __NONAMED__>");
+			printf("<anonymous fn>");
 		} else {
 			printf("<fn %s>", AS_FUNCTION(value)->name->chars);
 		}
