@@ -16,9 +16,6 @@ void initTable(Table* table) {
 
 void freeTable(Table* table) {
 	FREE_ARRAY(Entry, table->entries, table->capacity);
-
-	// Reset table data
-	initTable(table);
 }
 
 static Entry* findEntry(Entry* entries, int capacity, ObjString* key) {
@@ -143,5 +140,22 @@ ObjString* tableFindString(Table* table, const char* chars, int length, uint32_t
 
 		// Try the next slot.
 		index = (index + 1) % table->capacity;
+	}
+}
+
+void tableRemoveWhite(Table* table) {
+	for (int i = 0; i < table->capacity; i++) {
+		Entry* entry = &table->entries[i];
+		if (entry->key != NULL && !entry->key->obj.isDark) {
+			tableDelete(table, entry->key);
+		}
+	}
+}
+
+void grayTable(Table* table) {
+	for (int i = 0; i < table->capacity; i++) {
+		Entry* entry = &table->entries[i];
+		grayObject((Obj*)entry->key);
+		grayValue(entry->value);
 	}
 }

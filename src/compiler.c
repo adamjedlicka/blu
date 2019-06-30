@@ -4,6 +4,7 @@
 
 #include "chunk.h"
 #include "compiler.h"
+#include "memory.h"
 #include "object.h"
 #include "scanner.h"
 
@@ -207,7 +208,6 @@ static void patchJump(int jump) {
 
 static void initCompiler(Compiler* compiler, int scopeDepth, FunctionType type) {
 	compiler->enclosing = current;
-	compiler->function = NULL;
 	compiler->type = type;
 	compiler->localCount = 0;
 	compiler->scopeDepth = scopeDepth;
@@ -220,7 +220,9 @@ static void initCompiler(Compiler* compiler, int scopeDepth, FunctionType type) 
 
 	switch (type) {
 	case TYPE_FUNCTION: current->function->name = copyString(parser.previous.start, parser.previous.length); break;
-	case TYPE_ANONYMOUS: current->function->name = copyString("anonymous", 9); break;
+	// case TYPE_ANONYMOUS: current->function->name = copyString("__ANONYMOUS__", 13); break;
+	// case TYPE_TOP_LEVEL: current->function->name = copyString("__TOP_LEVEL__", 13); break;
+	case TYPE_ANONYMOUS: current->function->name = NULL; break;
 	case TYPE_TOP_LEVEL: current->function->name = NULL; break;
 	}
 
@@ -1020,4 +1022,12 @@ ObjFunction* compile(const char* source) {
 	ObjFunction* function = endCompiler();
 
 	return parser.hadError ? NULL : function;
+}
+
+void grayCompilerRoots() {
+	Compiler* compiler = current;
+	while (compiler != NULL) {
+		grayObject((Obj*)compiler->function);
+		compiler = compiler->enclosing;
+	}
 }

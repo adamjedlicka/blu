@@ -12,9 +12,9 @@ LIBS =
 # General compiler flags
 COMPILE_FLAGS = -std=c11 -Wall -Wextra -Werror -Wno-unused-parameter
 # Additional release-specific flags
-RCOMPILE_FLAGS = -D NDEBUG
+RCOMPILE_FLAGS = -D NDEBUG -O3
 # Additional debug-specific flags
-DCOMPILE_FLAGS = -D DEBUG -g -fsanitize=address
+DCOMPILE_FLAGS = -D DEBUG -O0 -g -fsanitize=address
 # Add additional include paths
 INCLUDES = -I $(SRC_PATH)
 # General linker settings

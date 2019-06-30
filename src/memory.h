@@ -16,6 +16,10 @@
 
 void* reallocate(void* previous, size_t oldSize, size_t newSize);
 
+void grayObject(Obj* object);
+void grayValue(Value value);
+void collectGarbage();
+
 void freeObjects();
 
 #endif

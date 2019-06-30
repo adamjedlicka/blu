@@ -32,6 +32,7 @@ typedef enum {
 
 struct sObj {
 	ObjType type;
+	bool isDark;
 	struct sObj* next;
 };
 

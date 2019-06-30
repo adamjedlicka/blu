@@ -5,4 +5,6 @@
 
 ObjFunction* compile(const char* source);
 
+void grayCompilerRoots();
+
 #endif

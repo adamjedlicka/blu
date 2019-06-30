@@ -2,6 +2,7 @@
 
 #include "chunk.h"
 #include "memory.h"
+#include "vm.h"
 
 void initChunk(Chunk* chunk) {
 	chunk->count = 0;
@@ -16,9 +17,6 @@ void freeChunk(Chunk* chunk) {
 	FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
 	FREE_ARRAY(int, chunk->lines, chunk->capacity);
 	freeValueArray(&chunk->constants);
-
-	// Reset chunk data
-	initChunk(chunk);
 }
 
 void writeChunk(Chunk* chunk, uint8_t byte, int line) {
@@ -35,6 +33,12 @@ void writeChunk(Chunk* chunk, uint8_t byte, int line) {
 }
 
 int addConstant(Chunk* chunk, Value value) {
+	// Make sure the value doesn't get collected when resizing the array.
+	push(value);
+
 	writeValueArray(&chunk->constants, value);
+
+	pop();
+
 	return chunk->constants.count - 1;
 }
