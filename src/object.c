@@ -53,9 +53,17 @@ ObjArray* newArray(uint32_t len) {
 	cap++;
 
 	ObjArray* array = ALLOCATE_OBJ(ObjArray, OBJ_ARRAY);
+	array->cap = 0;
+	array->len = 0;
+
+	// Push the array to stack so GC won't collect it
+	push(OBJ_VAL(array));
+
+	array->data = ALLOCATE(Value, cap);
 	array->cap = cap;
 	array->len = len;
-	array->data = ALLOCATE(Value, cap);
+
+	pop();
 
 	return array;
 }
@@ -178,7 +186,10 @@ void printObject(Value value) {
 		for (uint32_t i = 0; i < AS_ARRAY(value)->len; i++) {
 			if (i > 0) printf(", ");
 
-			printValue(AS_ARRAY(value)->data[i]);
+			ObjArray* array = AS_ARRAY(value);
+			Value val = array->data[i];
+
+			printValue(val);
 		}
 		printf("]");
 		break;

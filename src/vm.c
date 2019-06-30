@@ -454,6 +454,7 @@ static InterpretResult run() {
 			uint8_t len = READ_BYTE();
 
 			ObjArray* array = newArray(len);
+
 			for (uint8_t i = 0; i < len; i++) {
 				Value val = pop();
 				array->data[len - 1 - i] = val;
