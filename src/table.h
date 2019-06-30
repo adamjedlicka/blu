@@ -12,7 +12,7 @@ typedef struct {
 
 typedef struct {
 	int count;
-	int capacity;
+	int capacityMask;
 	Entry* entries;
 } Table;
 
