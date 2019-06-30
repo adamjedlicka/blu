@@ -19,3 +19,34 @@ assert 4 == cnt1();
 assert 1 == cnt2();
 assert 2 == cnt2();
 assert 3 == cnt2();
+
+assert 5 == cnt1();
+
+assert 4 == cnt2();
+
+var cnt3 = counter();
+
+assert 1 == cnt3();
+assert 2 == cnt3();
+
+fn closure() {
+    var val = 0;
+
+    fn get() {
+        return val;
+    }
+
+    fn set(x) {
+        val = x;
+    }
+
+    return [get, set];
+}
+
+var arr = closure();
+var get = arr[0];
+var set = arr[1];
+
+assert 0 == get();
+set(3);
+assert 3 == get();

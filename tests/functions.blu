@@ -43,3 +43,17 @@ assert 1 == sub(3, 2);
 var bin = fn(x, y, f) : f(x, y);
 
 assert 15 == bin(3, 5, fn(x, y) : x * y);
+
+fn function(x) {
+    return x;
+}
+
+var f = function;
+
+assert 10 == f(10);
+
+fn recursive() {
+    return recursive;
+}
+
+assert recursive == recursive();
