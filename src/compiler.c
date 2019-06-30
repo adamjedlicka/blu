@@ -835,8 +835,6 @@ static void whileStatement() {
 
 	int loopStart = currentChunk()->count;
 
-	beginScope();
-
 	expression();
 
 	int exitJump = emitJump(OP_JUMP_IF_FALSE);
@@ -846,10 +844,10 @@ static void whileStatement() {
 		statement();
 	} else {
 		consume(TOKEN_LEFT_BRACE, "Expect '{' after while condition.");
+		beginScope();
 		block();
+		endScope();
 	}
-
-	endScope();
 
 	emitLoop(loopStart);
 
