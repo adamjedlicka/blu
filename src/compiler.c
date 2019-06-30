@@ -785,17 +785,17 @@ static void function(FunctionType type) {
 	consume(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
 
 	// The body.
-	beginScope();
 	if (type == TYPE_ANONYMOUS && match(TOKEN_COLON)) {
 		expression();
 		emitByte(OP_RETURN);
 	} else {
 		consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
+		beginScope();
 		block();
+		endScope();
 	}
 
 	// Create the function object.
-	endScope();
 	ObjFunction* function = endCompiler();
 
 	// Capture the upvalues in the new closure object.
