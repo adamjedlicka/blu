@@ -50,3 +50,24 @@ var set = arr[1];
 assert 0 == get();
 set(3);
 assert 3 == get();
+
+fn scope(a) {
+    var b = a + 1;
+
+    return fn() {
+        var c = b + a + 1;
+
+        return fn() {
+            var d = c + b + a + 1;
+
+            return fn() {
+                return d + c + b + a + 1;
+            };
+        };
+    };
+}
+
+var _1 = scope(1);
+var _2 = _1();
+var _3 = _2();
+assert 16 == _3();
