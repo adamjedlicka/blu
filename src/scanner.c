@@ -8,6 +8,7 @@ typedef struct {
 	const char* start;
 	const char* current;
 	int line;
+	bool emitEOF;
 } Scanner;
 
 Scanner scanner;
@@ -16,6 +17,7 @@ void initScanner(const char* source) {
 	scanner.start = source;
 	scanner.current = source;
 	scanner.line = 1;
+	scanner.emitEOF = false;
 }
 
 static bool isAlpha(char c) {
@@ -79,10 +81,6 @@ static void skipWhitespace() {
 		case ' ':
 		case '\r':
 		case '\t': advance(); break;
-		case '\n':
-			scanner.line++;
-			advance();
-			break;
 		case '/':
 			if (peekNext() == '/') {
 				// A comment goes until the end of the line.
@@ -95,6 +93,12 @@ static void skipWhitespace() {
 		default: return;
 		}
 	}
+}
+
+static Token newline() {
+	scanner.line++;
+
+	return makeToken(TOKEN_NEWLINE);
 }
 
 static TokenType checkKeyword(int start, int length, const char* rest, TokenType type) {
@@ -183,12 +187,20 @@ static Token string() {
 	return makeToken(TOKEN_STRING);
 }
 
+static Token eof() {
+	if (scanner.emitEOF) return makeToken(TOKEN_EOF);
+
+	scanner.emitEOF = true;
+
+	return makeToken(TOKEN_NEWLINE);
+}
+
 Token scanToken() {
 	skipWhitespace();
 
 	scanner.start = scanner.current;
 
-	if (isAtEnd()) return makeToken(TOKEN_EOF);
+	if (isAtEnd()) return eof();
 
 	char c = advance();
 	if (isAlpha(c)) return identifier();
@@ -215,6 +227,7 @@ Token scanToken() {
 	case '<': return makeToken(match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
 	case '>': return makeToken(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
 	case '"': return string();
+	case '\n': return newline();
 	}
 
 	return errorToken("Unexpected character.");

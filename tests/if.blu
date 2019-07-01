@@ -1,67 +1,67 @@
-var out = nil;
+var out = nil
 
-var x = 1;
-
-if x == 1 {
-    out = "one";
-} else if x == 2 {
-    out = "two";
-} else if x == 3 {
-    out = "three";
-} else {
-    out = "other";
-}
-
-assert out == "one";
-
-var x = 2;
+var x = 1
 
 if x == 1 {
-    out = "one";
+    out = "one"
 } else if x == 2 {
-    out = "two";
+    out = "two"
 } else if x == 3 {
-    out = "three";
+    out = "three"
 } else {
-    out = "other";
+    out = "other"
 }
 
-assert out == "two";
+assert out == "one"
 
-var x = 3;
+var x = 2
 
 if x == 1 {
-    out = "one";
+    out = "one"
 } else if x == 2 {
-    out = "two";
+    out = "two"
 } else if x == 3 {
-    out = "three";
+    out = "three"
 } else {
-    out = "other";
+    out = "other"
 }
 
-assert out == "three";
+assert out == "two"
 
-var x = 4;
+var x = 3
 
 if x == 1 {
-    out = "one";
+    out = "one"
 } else if x == 2 {
-    out = "two";
+    out = "two"
 } else if x == 3 {
-    out = "three";
+    out = "three"
 } else {
-    out = "other";
+    out = "other"
 }
 
-assert out == "other";
+assert out == "three"
 
-var a = true;
+var x = 4
 
-if a == true : a = false;
+if x == 1 {
+    out = "one"
+} else if x == 2 {
+    out = "two"
+} else if x == 3 {
+    out = "three"
+} else {
+    out = "other"
+}
 
-assert a == false;
+assert out == "other"
 
-if a == true : a = true;
+var a = true
 
-assert a == false;
+if a == true : a = false
+
+assert a == false
+
+if a == true : a = true
+
+assert a == false

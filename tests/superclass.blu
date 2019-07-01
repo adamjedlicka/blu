@@ -1,45 +1,45 @@
 class Animal {
     fn __init(name) {
-        this.name = name;
+        this.name = name
     }
 
     fn speak() {
-        return this.name + " says: ";
+        return this.name + " says: "
     }
 }
 
 class Dog < Animal {
     fn __init(name, breed) {
-        super(name);
-        this.breed = breed;
+        super(name)
+        this.breed = breed
     }
 
     fn speak() {
-        return "bark!";
+        return "bark!"
     }
 }
 
 class Cat < Animal {
     fn __init(name) {
-        super(name);
-        this.likesWater = false;
+        super(name)
+        this.likesWater = false
     }
 
     fn speak() {
-        return super.speak() + "meow";
+        return super.speak() + "meow"
     }
 }
 
-var a = Animal("a");
-var d = Dog("d", "XXX");
-var c = Cat("c");
+var a = Animal("a")
+var d = Dog("d", "XXX")
+var c = Cat("c")
 
-assert a.name == "a";
-assert a.speak() == "a says: ";
+assert a.name == "a"
+assert a.speak() == "a says: "
 
-assert d.name == "d";
-assert d.breed == "XXX";
-assert d.speak() == "bark!";
+assert d.name == "d"
+assert d.breed == "XXX"
+assert d.speak() == "bark!"
 
-assert c.name == "c";
-assert c.speak() == "c says: meow";
+assert c.name == "c"
+assert c.speak() == "c says: meow"

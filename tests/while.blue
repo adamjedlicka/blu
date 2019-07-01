@@ -1,25 +1,25 @@
-var cnt = 0;
+var cnt = 0
 
-var i = 0;
+var i = 0
 
 while i < 10 {
-    var j = 0;
+    var j = 0
 
     while j < i + 1 {
-        cnt = cnt + 1;
+        cnt = cnt + 1
 
-        j += 1;
+        j += 1
     }
 
-    assert j == i + 1;
+    assert j == i + 1
 
-    i += 1;
+    i += 1
 }
 
-assert cnt == 55;
+assert cnt == 55
 
-cnt = 0;
+cnt = 0
 
-while cnt < 10 : cnt += 1;
+while cnt < 10 : cnt += 1
 
-assert cnt == 10;
+assert cnt == 10

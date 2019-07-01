@@ -1,141 +1,141 @@
 fn div(x, y) {
-    var start = x;
+    var start = x
 
     while x * y > start {
-        x -= 1;
+        x -= 1
     }
 
-    return x;
+    return x
 }
 
 fn last(arr) {
     for var i = len(arr); i > 0; i -= 1 {
-        if arr[i - 1] != nil : return i;
+        if arr[i - 1] != nil : return i
     }
 
-    return 0;
+    return 0
 }
 
 fn trickleUp(arr, i) {
-    if i == 0 : return;
+    if i == 0 : return
 
-    var parent = div(i - 1, 2);
+    var parent = div(i - 1, 2)
 
     if arr[parent] > arr[i] {
-        var tmp = arr[parent];
-        arr[parent] = arr[i];
-        arr[i] = tmp;
+        var tmp = arr[parent]
+        arr[parent] = arr[i]
+        arr[i] = tmp
 
-        trickleUp(arr, parent);
+        trickleUp(arr, parent)
     }
 }
 
 fn trickleDown(arr, i) {
-    var left = i * 2 + 1;
-    var right = i * 2 + 2;
-    var lesser = 0;
+    var left = i * 2 + 1
+    var right = i * 2 + 2
+    var lesser = 0
 
     if left < last(arr) {
         if right < last(arr) {
             if arr[left] < arr[right] {
-                lesser = left;
+                lesser = left
             } else {
-                lesser = right;
+                lesser = right
             }
         } else {
-            lesser = left;
+            lesser = left
         }
     } else {
-        return;
+        return
     }
 
     if arr[lesser] < arr[i] {
-        var tmp = arr[lesser];
-        arr[lesser] = arr[i];
-        arr[i] = tmp;
+        var tmp = arr[lesser]
+        arr[lesser] = arr[i]
+        arr[i] = tmp
 
-        trickleDown(arr, lesser);
+        trickleDown(arr, lesser)
     }
 }
 
 fn push(arr, val) {
-    print(arr);
+    print(arr)
 
     if last(arr) < len(arr) {
-        arr[last(arr)] = val;
+        arr[last(arr)] = val
     } else {
-        arr = arr + val;
+        arr = arr + val
     }
 
-    trickleUp(arr, last(arr) - 1);
+    trickleUp(arr, last(arr) - 1)
 
-    print(".push(" + val + ") => ");
-    println(arr);
+    print(".push(" + val + ") => ")
+    println(arr)
 
-    return arr;
+    return arr
 }
 
 fn pop(arr) {
-    print(arr);
+    print(arr)
 
-    var val = arr[0];
+    var val = arr[0]
 
-    var i = last(arr) - 1;
-    arr[0] = arr[i];
-    arr[i] = nil;
+    var i = last(arr) - 1
+    arr[0] = arr[i]
+    arr[i] = nil
 
-    trickleDown(arr, 0);
+    trickleDown(arr, 0)
 
-    print(".pop() => ");
-    println(arr);
+    print(".pop() => ")
+    println(arr)
 
-    return val;
+    return val
 }
 
-var arr = [];
-assert len(arr) == 0;
-assert last(arr) == 0;
+var arr = []
+assert len(arr) == 0
+assert last(arr) == 0
 
-arr = push(arr, 5);
-assert len(arr) == 1;
-assert last(arr) == 1;
+arr = push(arr, 5)
+assert len(arr) == 1
+assert last(arr) == 1
 
-arr = push(arr, 3);
-assert len(arr) == 2;
-assert last(arr) == 2;
+arr = push(arr, 3)
+assert len(arr) == 2
+assert last(arr) == 2
 
-arr = push(arr, 8);
-assert len(arr) == 3;
-assert last(arr) == 3;
+arr = push(arr, 8)
+assert len(arr) == 3
+assert last(arr) == 3
 
-arr = push(arr, 1);
-assert len(arr) == 4;
-assert last(arr) == 4;
+arr = push(arr, 1)
+assert len(arr) == 4
+assert last(arr) == 4
 
-assert pop(arr) == 1;
-assert len(arr) == 4;
-assert last(arr) == 3;
+assert pop(arr) == 1
+assert len(arr) == 4
+assert last(arr) == 3
 
-assert pop(arr) == 3;
-assert len(arr) == 4;
-assert last(arr) == 2;
+assert pop(arr) == 3
+assert len(arr) == 4
+assert last(arr) == 2
 
-arr = push(arr, 2);
-assert len(arr) == 4;
-assert last(arr) == 3;
+arr = push(arr, 2)
+assert len(arr) == 4
+assert last(arr) == 3
 
-arr = push(arr, 4);
-assert len(arr) == 4;
-assert last(arr) == 4;
+arr = push(arr, 4)
+assert len(arr) == 4
+assert last(arr) == 4
 
-arr = push(arr, 0);
-assert len(arr) == 5;
-assert last(arr) == 5;
+arr = push(arr, 0)
+assert len(arr) == 5
+assert last(arr) == 5
 
-assert pop(arr) == 0;
-assert len(arr) == 5;
-assert last(arr) == 4;
+assert pop(arr) == 0
+assert len(arr) == 5
+assert last(arr) == 4
 
-assert pop(arr) == 2;
-assert len(arr) == 5;
-assert last(arr) == 3;
+assert pop(arr) == 2
+assert len(arr) == 5
+assert last(arr) == 3

@@ -106,6 +106,8 @@ static void errorAt(Token* token, const char* message) {
 
 	if (token->type == TOKEN_EOF) {
 		fprintf(stderr, " at end");
+	} else if (token->type == TOKEN_NEWLINE) {
+		fprintf(stderr, " at newline");
 	} else if (token->type == TOKEN_ERROR) {
 		// Nothing.
 	} else {
@@ -124,6 +126,23 @@ static void errorAtCurrent(const char* message) {
 	errorAt(&parser.current, message);
 }
 
+static void skipNewlines() {
+	switch (parser.previous.type) {
+	case TOKEN_NEWLINE:
+	case TOKEN_LEFT_BRACE:
+	case TOKEN_RIGHT_BRACE:
+	case TOKEN_DOT:
+		while (parser.current.type == TOKEN_NEWLINE) {
+			parser.current = scanToken();
+		}
+		break;
+
+	default:
+		// Do nothing.
+		break;
+	}
+}
+
 // Scans another token, skipping error tokens and sets parser.previous to parse.current.
 static void advance() {
 	parser.previous = parser.current;
@@ -134,22 +153,26 @@ static void advance() {
 
 		errorAtCurrent(parser.current.start);
 	}
-}
 
-// Consumes next token. If next token is not of the given type, throws an error with a message.
-static void consume(TokenType type, const char* message) {
-	if (parser.current.type == type) {
-		advance();
-		return;
-	}
-
-	errorAtCurrent(message);
+	skipNewlines();
 }
 
 // Checks whether next token is of the given type.
 // Returns true if so, otherwise returns false.
 static bool check(TokenType type) {
+	if (type == TOKEN_NEWLINE && parser.previous.type == TOKEN_RIGHT_BRACE) return true;
+
 	return parser.current.type == type;
+}
+
+// Consumes next token. If next token is not of the given type, throws an error with a message.
+static void consume(TokenType type, const char* message) {
+	if (check(type)) {
+		advance();
+		return;
+	}
+
+	errorAtCurrent(message);
 }
 
 // Checks whether next token is of the given type.
@@ -699,6 +722,7 @@ ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE},	// TOKEN_WHILE
 
 	{NULL, NULL, PREC_NONE}, // TOKEN_ERROR
+	{NULL, NULL, PREC_NONE}, // TOKEN_NEWLINE
 	{NULL, NULL, PREC_NONE}, // TOKEN_EOF
 };
 
@@ -921,7 +945,7 @@ static void varDeclaration() {
 		emitByte(OP_NIL);
 	}
 
-	consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
+	if (!match(TOKEN_SEMICOLON)) consume(TOKEN_NEWLINE, "Expect ';' or newline after variable declaration.");
 
 	defineVariable(name);
 }
@@ -929,12 +953,12 @@ static void varDeclaration() {
 static void expressionStatement() {
 	expression();
 	emitByte(OP_POP);
-	consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
+	if (!match(TOKEN_SEMICOLON)) consume(TOKEN_NEWLINE, "Expect ';' or newline after expression statement.");
 }
 
 static void assertStatement() {
 	expression();
-	consume(TOKEN_SEMICOLON, "Expect ';' after value.");
+	consume(TOKEN_NEWLINE, "Expect newline after value.");
 	emitByte(OP_ASSERT);
 }
 
@@ -988,16 +1012,19 @@ static void returnStatement() {
 		error("Cannot return from top-level code.");
 	}
 
-	if (match(TOKEN_SEMICOLON)) {
+	if (match(TOKEN_NEWLINE)) {
 		emitReturn();
 	} else {
+		bool needsNewline = !check(TOKEN_FN);
+
 		if (current->type == TYPE_INITIALIZER) {
 			error("Cannot return a value from an initializer.");
 		}
 
 		expression();
-		consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
 		emitByte(OP_RETURN);
+
+		if (needsNewline) consume(TOKEN_NEWLINE, "Expect newline after return value.");
 	}
 }
 
@@ -1117,7 +1144,7 @@ static void breakStatement() {
 		error("Break statement cannot be used outside of loop.");
 	}
 
-	consume(TOKEN_SEMICOLON, "Expect ';' after break statement.");
+	consume(TOKEN_NEWLINE, "Expect newline after break statement.");
 
 	current->currentBreak = emitJump(OP_JUMP);
 }
@@ -1187,7 +1214,9 @@ ObjFunction* compile(const char* source) {
 	parser.hadError = false;
 	parser.panicMode = false;
 
-	advance();
+	do {
+		advance();
+	} while (check(TOKEN_NEWLINE));
 
 	while (!match(TOKEN_EOF)) {
 		declaration();

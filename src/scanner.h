@@ -59,7 +59,8 @@ typedef enum {
 	TOKEN_WHILE,
 
 	TOKEN_ERROR,
-	TOKEN_EOF
+	TOKEN_NEWLINE,
+	TOKEN_EOF,
 } TokenType;
 
 typedef struct {

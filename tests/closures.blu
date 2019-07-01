@@ -1,73 +1,73 @@
 fn counter() {
-    var cnt = 0;
+    var cnt = 0
 
     return fn () {
-        cnt += 1;
+        cnt += 1
 
-        return cnt;
-    };
+        return cnt
+    }
 }
 
-var cnt1 = counter();
-var cnt2 = counter();
+var cnt1 = counter()
+var cnt2 = counter()
 
-assert 1 == cnt1();
-assert 2 == cnt1();
-assert 3 == cnt1();
-assert 4 == cnt1();
+assert 1 == cnt1()
+assert 2 == cnt1()
+assert 3 == cnt1()
+assert 4 == cnt1()
 
-assert 1 == cnt2();
-assert 2 == cnt2();
-assert 3 == cnt2();
+assert 1 == cnt2()
+assert 2 == cnt2()
+assert 3 == cnt2()
 
-assert 5 == cnt1();
+assert 5 == cnt1()
 
-assert 4 == cnt2();
+assert 4 == cnt2()
 
-var cnt3 = counter();
+var cnt3 = counter()
 
-assert 1 == cnt3();
-assert 2 == cnt3();
+assert 1 == cnt3()
+assert 2 == cnt3()
 
 fn closure() {
-    var val = 0;
+    var val = 0
 
     fn get() {
-        return val;
+        return val
     }
 
     fn set(x) {
-        val = x;
+        val = x
     }
 
-    return [get, set];
+    return [get, set]
 }
 
-var arr = closure();
-var get = arr[0];
-var set = arr[1];
+var arr = closure()
+var get = arr[0]
+var set = arr[1]
 
-assert 0 == get();
-set(3);
-assert 3 == get();
+assert 0 == get()
+set(3)
+assert 3 == get()
 
 fn scope(a) {
-    var b = a + 1;
+    var b = a + 1
 
     return fn() {
-        var c = b + a + 1;
+        var c = b + a + 1
 
         return fn() {
-            var d = c + b + a + 1;
+            var d = c + b + a + 1
 
             return fn() {
-                return d + c + b + a + 1;
-            };
-        };
-    };
+                return d + c + b + a + 1
+            }
+        }
+    }
 }
 
-var _1 = scope(1);
-var _2 = _1();
-var _3 = _2();
-assert 16 == _3();
+var _1 = scope(1)
+var _2 = _1()
+var _3 = _2()
+assert 16 == _3()

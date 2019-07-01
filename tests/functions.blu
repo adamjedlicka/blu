@@ -1,71 +1,71 @@
 fn add(x, y) {
-    return x + y;
+    return x + y
 }
 
-assert add(1, 2) == 3;
+assert add(1, 2) == 3
 
 fn fib(x) {
-    if x <= 1 : return 1;
+    if x <= 1 : return 1
 
-    return fib(x - 1) + fib(x - 2);
+    return fib(x - 1) + fib(x - 2)
 }
 
-assert fib(1) == 1;
-assert fib(2) == 2;
-assert fib(3) == 3;
-assert fib(4) == 5;
-assert fib(5) == 8;
+assert fib(1) == 1
+assert fib(2) == 2
+assert fib(3) == 3
+assert fib(4) == 5
+assert fib(5) == 8
 
 fn times(x, f) {
     for var i = 0; i < x; i += 1 {
-        f();
+        f()
     }
 }
 
-var cnt = 0;
+var cnt = 0
 
 times(3, fn () {
-    cnt += 1;
-});
+    cnt += 1
+})
 
-assert cnt == 3;
+assert cnt == 3
 
 var greeter = fn (name) {
-    return "Hello, " + name + "!";
-};
+    return "Hello, " + name + "!"
+}
 
-assert "Hello, World!" == greeter("World");
+assert "Hello, World!" == greeter("World")
 
-var sub = fn(x, y) : x - y;
+var sub = fn(x, y) : x - y
 
-assert 1 == sub(3, 2);
+assert 1 == sub(3, 2)
 
-var bin = fn(x, y, f) : f(x, y);
+var bin = fn(x, y, f) : f(x, y)
 
-assert 15 == bin(3, 5, fn(x, y) : x * y);
+assert 15 == bin(3, 5, fn(x, y) : x * y)
 
 fn function(x) {
-    return x;
+    return x
 }
 
-var f = function;
+var f = function
 
-assert 10 == f(10);
+assert 10 == f(10)
 
 fn recursive() {
-    return recursive;
+    return recursive
 }
 
-assert recursive == recursive();
+assert recursive == recursive()
 
 fn fib2(x) {
     fn fib(x) {
-        if x < 1 : return 1;
+        if x < 1 : return 1
 
-        return fib(x - 1) + fib(x - 2);
+        return fib(x - 1) + fib(x - 2)
     }
 
-    return fib(x) + fib(x);
+    return fib(x) + fib(x)
 }
 
-assert 288 == fib2(10);
+assert 288 == fib2(10)

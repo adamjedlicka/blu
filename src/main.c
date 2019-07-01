@@ -70,7 +70,7 @@ int main(int argc, const char* argv[]) {
 	if (argc == 1) {
 		repl();
 	} else if (argc == 2) {
-		if (strcmp(argv[1], "--help") || strcmp(argv[1], "-h")) {
+		if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
 			help();
 		} else {
 			runFile(argv[1]);
