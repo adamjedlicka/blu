@@ -4,7 +4,7 @@ assert 1 == 10 % 3
 var a = 10
 var b = 3
 
-a %= b
+a = a % b
 
 assert 1 == a
 

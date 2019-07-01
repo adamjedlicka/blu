@@ -572,31 +572,6 @@ static void namedVariable(Token name, bool canAssign) {
 	if (canAssign && match(TOKEN_EQUAL)) {
 		expression();
 		emitBytes(setOp, (uint8_t)arg);
-	} else if (canAssign && match(TOKEN_MINUS_EQUAL)) {
-		emitBytes(getOp, (uint8_t)arg);
-		expression();
-		emitByte(OP_SUBTRACT);
-		emitBytes(setOp, (uint8_t)arg);
-	} else if (canAssign && match(TOKEN_PLUS_EQUAL)) {
-		emitBytes(getOp, (uint8_t)arg);
-		expression();
-		emitByte(OP_ADD);
-		emitBytes(setOp, (uint8_t)arg);
-	} else if (canAssign && match(TOKEN_SLASH_EQUAL)) {
-		emitBytes(getOp, (uint8_t)arg);
-		expression();
-		emitByte(OP_DIVIDE);
-		emitBytes(setOp, (uint8_t)arg);
-	} else if (canAssign && match(TOKEN_STAR_EQUAL)) {
-		emitBytes(getOp, (uint8_t)arg);
-		expression();
-		emitByte(OP_MULTIPLY);
-		emitBytes(setOp, (uint8_t)arg);
-	} else if (canAssign && match(TOKEN_PERCENT_EQUAL)) {
-		emitBytes(getOp, (uint8_t)arg);
-		expression();
-		emitByte(OP_REMINDER);
-		emitBytes(setOp, (uint8_t)arg);
 	} else {
 		emitBytes(getOp, (uint8_t)arg);
 	}
@@ -696,15 +671,10 @@ ParseRule rules[] = {
 	{NULL, binary, PREC_COMPARISON}, // TOKEN_LESS
 	{NULL, binary, PREC_COMPARISON}, // TOKEN_LESS_EQUAL
 	{unary, binary, PREC_TERM},		 // TOKEN_MINUS
-	{NULL, NULL, PREC_NONE},		 // TOKEN_MINUS_EQUAL
 	{NULL, binary, PREC_FACTOR},	 // TOKEN_PERCENT
-	{NULL, NULL, PREC_NONE},		 // TOKEN_PERCENT_EQUAL
 	{NULL, binary, PREC_TERM},		 // TOKEN_PLUS
-	{NULL, NULL, PREC_NONE},		 // TOKEN_PLUS_EQUAL
 	{NULL, binary, PREC_FACTOR},	 // TOKEN_SLASH
-	{NULL, NULL, PREC_NONE},		 // TOKEN_SLASH_EQUAL
 	{NULL, binary, PREC_FACTOR},	 // TOKEN_STAR
-	{NULL, NULL, PREC_NONE},		 // TOKEN_STAR_EQUAL
 
 	{variable, NULL, PREC_NONE}, // TOKEN_IDENTIFIER
 	{string, NULL, PREC_NONE},   // TOKEN_STRING
@@ -751,8 +721,7 @@ static void parsePrecedence(Precedence precedence) {
 	}
 
 	if (canAssign) {
-		if (match(TOKEN_EQUAL) || match(TOKEN_MINUS_EQUAL) || match(TOKEN_PLUS_EQUAL) || match(TOKEN_SLASH_EQUAL) ||
-			match(TOKEN_STAR_EQUAL)) {
+		if (match(TOKEN_EQUAL)) {
 			error("Invalid assignment target.");
 			expression();
 		}

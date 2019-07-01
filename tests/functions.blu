@@ -17,7 +17,7 @@ assert fib(4) == 5
 assert fib(5) == 8
 
 fn times(x, f) {
-    for var i = 0; i < x; i += 1 {
+    for var i = 0; i < x; i = i + 1 {
         f()
     }
 }
@@ -25,7 +25,7 @@ fn times(x, f) {
 var cnt = 0
 
 times(3, fn () {
-    cnt += 1
+    cnt = cnt + 1
 })
 
 assert cnt == 3

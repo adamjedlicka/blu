@@ -2,7 +2,7 @@ fn counter() {
     var cnt = 0
 
     return fn () {
-        cnt += 1
+        cnt = cnt + 1
 
         return cnt
     }
