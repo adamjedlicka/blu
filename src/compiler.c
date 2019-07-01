@@ -412,6 +412,12 @@ static void dot(bool canAssign) {
 }
 
 static void arrayAccess(bool canAssign) {
+	if (match(TOKEN_RIGHT_BRACKET) && canAssign && match(TOKEN_EQUAL)) {
+		expression();
+		emitByte(OP_ARRAY_PUSH);
+		return;
+	}
+
 	expression();
 	consume(TOKEN_RIGHT_BRACKET, "Expect ']' after array access.");
 

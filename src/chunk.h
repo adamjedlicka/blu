@@ -28,6 +28,7 @@ typedef enum {
 	OP_ARRAY,
 	OP_ARRAY_GET,
 	OP_ARRAY_SET,
+	OP_ARRAY_PUSH,
 
 	OP_CALL_0,
 	OP_CALL_1,

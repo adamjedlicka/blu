@@ -647,6 +647,20 @@ static InterpretResult run() {
 			break;
 		}
 
+		case OP_ARRAY_PUSH: {
+			Value value = pop();
+			Value array = peek(0);
+
+			if (!IS_ARRAY(array)) {
+				runtimeError("Can only push to arrays.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			arrayPush(AS_ARRAY(array), value);
+
+			break;
+		}
+
 		case OP_CALL_0:
 		case OP_CALL_1:
 		case OP_CALL_2:

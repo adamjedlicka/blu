@@ -79,6 +79,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
 	case OP_ARRAY: return byteInstruction("OP_ARRAY", chunk, offset);
 	case OP_ARRAY_GET: return simpleInstruction("OP_ARRAY_GET", offset);
 	case OP_ARRAY_SET: return simpleInstruction("OP_ARRAY_SET", offset);
+	case OP_ARRAY_PUSH: return simpleInstruction("OP_ARRAY_PUSH", offset);
 	case OP_EQUAL: return simpleInstruction("OP_EQUAL", offset);
 	case OP_GREATER: return simpleInstruction("OP_GREATER", offset);
 	case OP_LESS: return simpleInstruction("OP_LESS", offset);
