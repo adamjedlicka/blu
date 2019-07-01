@@ -1,141 +1,141 @@
-fn div(x, y) {
-    var start = x
-
-    while x * y > start {
-        x = x - 1
+class PriorityQueue {
+    fn __init() {
+        this.arr = []
+        this.size = 0
     }
 
-    return x
-}
+    fn trickleUp(i) {
+        if i == 0 : return
 
-fn last(arr) {
-    for var i = len(arr); i > 0; i = i - 1 {
-        if arr[i - 1] != nil : return i
+        var parent = int(i / 2)
+
+        if this.arr[parent] > this.arr[i] {
+            var tmp = this.arr[parent]
+            this.arr[parent] = this.arr[i]
+            this.arr[i] = tmp
+
+            this.trickleUp(parent)
+        }
     }
 
-    return 0
-}
+    fn trickleDown(i) {
+        var left = i * 2 + 1
+        var right = i * 2 + 2
+        var lesser = 0
 
-fn trickleUp(arr, i) {
-    if i == 0 : return
-
-    var parent = div(i - 1, 2)
-
-    if arr[parent] > arr[i] {
-        var tmp = arr[parent]
-        arr[parent] = arr[i]
-        arr[i] = tmp
-
-        trickleUp(arr, parent)
-    }
-}
-
-fn trickleDown(arr, i) {
-    var left = i * 2 + 1
-    var right = i * 2 + 2
-    var lesser = 0
-
-    if left < last(arr) {
-        if right < last(arr) {
-            if arr[left] < arr[right] {
-                lesser = left
+        if left < this.last() {
+            if right < this.last() {
+                if this.arr[left] < this.arr[right] {
+                    lesser = left
+                } else {
+                    lesser = right
+                }
             } else {
-                lesser = right
+                lesser = left
             }
         } else {
-            lesser = left
+            return
         }
-    } else {
-        return
+
+        if this.arr[lesser] < this.arr[i] {
+            var tmp = this.arr[lesser]
+            this.arr[lesser] = this.arr[i]
+            this.arr[i] = tmp
+
+            this.trickleDown(lesser)
+        }
     }
 
-    if arr[lesser] < arr[i] {
-        var tmp = arr[lesser]
-        arr[lesser] = arr[i]
-        arr[i] = tmp
+    fn push(val) {
+        print(this.arr)
 
-        trickleDown(arr, lesser)
+        if this.last() < len(this.arr) {
+            this.arr[this.last()] = val
+        } else {
+            this.arr[] = val
+        }
+
+        this.size = this.size + 1
+
+        this.trickleUp(this.last() - 1)
+
+        print(".push(" + val + ") => ")
+        println(this.arr)
+
+        return this
+    }
+
+    fn pop() {
+        print(this.arr)
+
+        var val = this.arr[0]
+
+        var i = this.last() - 1
+        this.arr[0] = this.arr[i]
+
+        this.size = this.size - 1
+
+        this.trickleDown(0)
+
+        print(".pop() => ")
+        println(this.arr)
+
+        return val
+    }
+
+    fn last() {
+        return this.size
+    }
+
+    fn len() {
+        return len(this.arr)
     }
 }
 
-fn push(arr, val) {
-    print(arr)
+var q = PriorityQueue()
+assert q.len() == 0
+assert q.last() == 0
 
-    if last(arr) < len(arr) {
-        arr[last(arr)] = val
-    } else {
-        arr = arr + val
-    }
+q.push(5)
+assert q.len() == 1
+assert q.last() == 1
 
-    trickleUp(arr, last(arr) - 1)
+q.push(3)
+assert q.len() == 2
+assert q.last() == 2
 
-    print(".push(" + val + ") => ")
-    println(arr)
+q.push(8)
+assert q.len() == 3
+assert q.last() == 3
 
-    return arr
-}
+q.push(1)
+assert q.len() == 4
+assert q.last() == 4
 
-fn pop(arr) {
-    print(arr)
+assert q.pop() == 1
+assert q.len() == 4
+assert q.last() == 3
 
-    var val = arr[0]
+assert q.pop() == 3
+assert q.len() == 4
+assert q.last() == 2
 
-    var i = last(arr) - 1
-    arr[0] = arr[i]
-    arr[i] = nil
+q.push(2)
+assert q.len() == 4
+assert q.last() == 3
 
-    trickleDown(arr, 0)
+q.push(4)
+assert q.len() == 4
+assert q.last() == 4
 
-    print(".pop() => ")
-    println(arr)
+q.push(0)
+assert q.len() == 5
+assert q.last() == 5
 
-    return val
-}
+assert q.pop() == 0
+assert q.len() == 5
+assert q.last() == 4
 
-var arr = []
-assert len(arr) == 0
-assert last(arr) == 0
-
-arr = push(arr, 5)
-assert len(arr) == 1
-assert last(arr) == 1
-
-arr = push(arr, 3)
-assert len(arr) == 2
-assert last(arr) == 2
-
-arr = push(arr, 8)
-assert len(arr) == 3
-assert last(arr) == 3
-
-arr = push(arr, 1)
-assert len(arr) == 4
-assert last(arr) == 4
-
-assert pop(arr) == 1
-assert len(arr) == 4
-assert last(arr) == 3
-
-assert pop(arr) == 3
-assert len(arr) == 4
-assert last(arr) == 2
-
-arr = push(arr, 2)
-assert len(arr) == 4
-assert last(arr) == 3
-
-arr = push(arr, 4)
-assert len(arr) == 4
-assert last(arr) == 4
-
-arr = push(arr, 0)
-assert len(arr) == 5
-assert last(arr) == 5
-
-assert pop(arr) == 0
-assert len(arr) == 5
-assert last(arr) == 4
-
-assert pop(arr) == 2
-assert len(arr) == 5
-assert last(arr) == 3
+assert q.pop() == 2
+assert q.len() == 5
+assert q.last() == 3

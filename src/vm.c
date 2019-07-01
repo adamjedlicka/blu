@@ -38,6 +38,10 @@ static Value lenNative(int argCount, Value* args) {
 	return NUMBER_VAL(arr->len);
 }
 
+static Value intNative(int argCount, Value* args) {
+	return NUMBER_VAL((int)AS_NUMBER(args[0]));
+}
+
 static void resetStack() {
 	vm.stackTop = vm.stack;
 	vm.frameCount = 0;
@@ -97,6 +101,7 @@ void initVM() {
 	defineNative("print", printNative, 1);
 	defineNative("println", printlnNative, 1);
 	defineNative("len", lenNative, 1);
+	defineNative("int", intNative, 1);
 }
 
 void freeVM() {

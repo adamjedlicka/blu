@@ -27,3 +27,15 @@ var arr2 = [4, 5, 6]
 var arr3 = arr1 + arr2
 
 assert len(arr3) == len(arr1) + len(arr2)
+
+arr = []
+
+for var i = 0; i < 10; i = i + 1 {
+	arr[] = i
+}
+
+var index = int(3 * (0.1 + 0.2))
+
+print(index)
+
+assert arr[index] == 0
