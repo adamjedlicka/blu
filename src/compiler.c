@@ -131,6 +131,7 @@ static void skipNewlines() {
 	case TOKEN_NEWLINE:
 	case TOKEN_LEFT_BRACE:
 	case TOKEN_RIGHT_BRACE:
+	case TOKEN_SEMICOLON:
 	case TOKEN_DOT:
 		while (parser.current.type == TOKEN_NEWLINE) {
 			parser.current = scanToken();
@@ -945,7 +946,7 @@ static void varDeclaration() {
 		emitByte(OP_NIL);
 	}
 
-	if (!match(TOKEN_SEMICOLON)) consume(TOKEN_NEWLINE, "Expect ';' or newline after variable declaration.");
+	if (!match(TOKEN_SEMICOLON)) consume(TOKEN_NEWLINE, "Expect newline or ';' after variable declaration.");
 
 	defineVariable(name);
 }
@@ -953,12 +954,12 @@ static void varDeclaration() {
 static void expressionStatement() {
 	expression();
 	emitByte(OP_POP);
-	if (!match(TOKEN_SEMICOLON)) consume(TOKEN_NEWLINE, "Expect ';' or newline after expression statement.");
+	if (!match(TOKEN_SEMICOLON)) consume(TOKEN_NEWLINE, "Expect newline or ';' after expression statement.");
 }
 
 static void assertStatement() {
 	expression();
-	consume(TOKEN_NEWLINE, "Expect newline after value.");
+	if (!match(TOKEN_SEMICOLON)) consume(TOKEN_NEWLINE, "Expect newline or ';' after value.");
 	emitByte(OP_ASSERT);
 }
 
@@ -1024,7 +1025,8 @@ static void returnStatement() {
 		expression();
 		emitByte(OP_RETURN);
 
-		if (needsNewline) consume(TOKEN_NEWLINE, "Expect newline after return value.");
+		if (needsNewline && !match(TOKEN_SEMICOLON))
+			consume(TOKEN_NEWLINE, "Expect newline or ';' after return value.");
 	}
 }
 
@@ -1144,7 +1146,7 @@ static void breakStatement() {
 		error("Break statement cannot be used outside of loop.");
 	}
 
-	consume(TOKEN_NEWLINE, "Expect newline after break statement.");
+	if (!match(TOKEN_SEMICOLON)) consume(TOKEN_NEWLINE, "Expect newline or ';' after break statement.");
 
 	current->currentBreak = emitJump(OP_JUMP);
 }
