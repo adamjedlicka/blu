@@ -60,13 +60,21 @@ static void runFile(const char* path) {
 	if (result == INTERPRET_ASSERTION_ERROR) exit(75);
 }
 
+static void help() {
+	printf("%s %s\n", "blu", BLU_VERSION_STR);
+}
+
 int main(int argc, const char* argv[]) {
 	initVM();
 
 	if (argc == 1) {
 		repl();
 	} else if (argc == 2) {
-		runFile(argv[1]);
+		if (strcmp(argv[1], "--help") || strcmp(argv[1], "-h")) {
+			help();
+		} else {
+			runFile(argv[1]);
+		}
 	} else {
 		fprintf(stderr, "Usage: blu [path]\n");
 		exit(64);
