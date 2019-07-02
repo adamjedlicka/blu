@@ -78,6 +78,7 @@ typedef struct Compiler {
 	Upvalue upvalues[UINT8_COUNT];
 	int scopeDepth;
 
+	bool isPrivate;
 	bool inLoop;
 	int currentBreak;
 } Compiler;
@@ -257,6 +258,7 @@ static void initCompiler(Compiler* compiler, int scopeDepth, FunctionType type) 
 	compiler->scopeDepth = scopeDepth;
 	compiler->function = newFunction();
 
+	compiler->isPrivate = false;
 	compiler->inLoop = false;
 	compiler->currentBreak = 0;
 
@@ -399,6 +401,10 @@ static void call(bool canAssign) {
 static void dot(bool canAssign) {
 	consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
 	uint8_t name = identifierConstant(&parser.previous);
+
+	if (!current->isPrivate && *parser.previous.start == '_') {
+		error("Cannot access a private property.");
+	}
 
 	if (canAssign && match(TOKEN_EQUAL)) {
 		expression();
@@ -634,7 +640,9 @@ static void at(bool canAssign) {
 	} else {
 		variable(false);
 		if (check(TOKEN_IDENTIFIER)) {
+			current->isPrivate = true;
 			dot(canAssign);
+			current->isPrivate = false;
 		}
 	}
 }
