@@ -5,12 +5,17 @@
 #include "memory.h"
 #include "vm.h"
 
+#ifdef DEBUG
+#include <time.h>
+#endif
+
 #ifdef DEBUG_TRACE_GC
 #include "debug.h"
 #include <stdio.h>
 #endif
 
-#define GC_HEAP_GROW_FACTOR 2
+#define GC_HEAP_GROW_FACTOR 0.5
+#define GC_HEAP_MINIMUM 1024 * 1024
 
 void* reallocate(void* previous, size_t oldSize, size_t newSize) {
 	vm.bytesAllocated += newSize - oldSize;
@@ -211,6 +216,10 @@ void collectGarbage() {
 	size_t before = vm.bytesAllocated;
 #endif
 
+#ifdef DEBUG
+	double start = (double)clock() / CLOCKS_PER_SEC;
+#endif
+
 	// Mark the stack roots.
 	for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
 		grayValue(*slot);
@@ -256,7 +265,13 @@ void collectGarbage() {
 	}
 
 	// Adjust the heap size based on live memory.
-	vm.nextGC = vm.bytesAllocated * GC_HEAP_GROW_FACTOR;
+	vm.nextGC = vm.bytesAllocated < GC_HEAP_MINIMUM ? GC_HEAP_MINIMUM : vm.bytesAllocated * GC_HEAP_GROW_FACTOR;
+	// vm.nextGC = vm.bytesAllocated * GC_HEAP_GROW_FACTOR;
+
+#ifdef DEBUG
+	double end = (double)clock() / CLOCKS_PER_SEC;
+	vm.timeGC += (end - start);
+#endif
 
 #ifdef DEBUG_TRACE_GC
 	printf("-- gc collected %ld bytes (from %ld to %ld) next at %ld\n", before - vm.bytesAllocated, before,

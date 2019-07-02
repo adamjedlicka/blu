@@ -1,0 +1,164 @@
+class Set {
+	fn __init() {
+		@_arr = []
+	}
+
+	fn add(val) {
+		if @has(val) : return false
+
+		@_arr[] = val
+
+		return true
+	}
+
+	fn has(val) {
+		for var i = 0; i < len(@_arr); i = i + 1 {
+			if @_arr[i] == val : return true
+		}
+
+		return false
+	}
+}
+
+class Sudoku {
+	fn __init() {
+		@_arr = []
+		for var i = 0; i < 81; i = i + 1 {
+			@_arr[] = 0
+		}
+	}
+
+	fn solve() {
+		return @_solve(0, 0)
+	}
+
+	fn _solve(row, col) {
+		if col == 9 : return @_solve(row + 1, 0)
+		if row == 9 : return true
+		if @get(row, col) : return @_solve(row, col + 1)
+
+		for var i = 1; i <= 9; i = i + 1 {
+			@set(row, col, i)
+
+			if @_check(row, col) and @_solve(row, col + 1) : return true
+		}
+
+		@set(row, col, 0)
+
+		return false
+	}
+
+	fn _emptyIndex() {
+		for var i = 0; i < 81; i = i + 1 {
+			if !@_arr[i] : return i
+		}
+
+		return -1
+	}
+
+	fn get(row, col) : @_arr[row * 9 + col]
+
+	fn set(row, col, val) : @_arr[row * 9 + col] = val
+
+	fn _check(row, col) {
+		return @_checkRow(row) and @_checkCol(col) and @_checkSquare(row, col)
+	}
+
+	fn _checkRow(row) {
+		var set = Set()
+
+		for var i = 0; i < 9; i = i + 1 {
+			var val = @get(row, i)
+
+			if val and !set.add(val) : return false
+		}
+
+		return true
+	}
+
+	fn _checkCol(col) {
+		var set = Set()
+
+		for var i = 0; i < 9; i = i + 1 {
+			var val = @get(i, col)
+
+			if val and !set.add(val) : return false
+		}
+
+		return true
+	}
+
+	fn _checkSquare(row, col) {
+		var set = Set()
+
+		var rowStart = int(row / 3) * 3
+		var colStart = int(col / 3) * 3
+
+		for var i = rowStart; i < rowStart + 3; i = i + 1 {
+			for var j = colStart; j < colStart + 3; j = j + 1 {
+				var val = @get(i, j)
+
+				if val and !set.add(val) : return false
+			}
+		}
+
+		return true
+	}
+
+	fn print() {
+		for var i = 0; i < 9; i = i + 1 {
+			if i % 3 == 0 {
+				for var j = 0; j < 22; j = j + 1 : print("-")
+				println("")
+			}
+
+			for var j = 0; j < 9; j = j + 1 {
+				if j % 3 == 0 : print("|")
+
+				var cell = @_arr[i * 9 + j]
+				if cell {
+					print(" " + cell)
+				} else {
+					print("  ")
+				}
+			}
+
+			println("|")
+		}
+
+		for var j = 0; j < 22; j = j + 1 : print("-")
+		println("")
+	}
+}
+
+var s = Sudoku()
+
+var data = [
+	0, 1, 0,   0, 0, 0,   0, 9, 6,
+	6, 5, 0,   0, 0, 2,   0, 0, 0,
+	0, 0, 4,   0, 5, 0,   2, 0, 0,
+
+	8, 0, 0,   1, 0, 0,   0, 0, 5,
+	0, 6, 0,   0, 0, 0,   0, 3, 0,
+	2, 0, 0,   0, 0, 4,   0, 0, 1,
+
+	0, 0, 8,   0, 3, 0,   4, 0, 0,
+	0, 0, 0,   5, 0, 0,   0, 2, 9,
+	5, 9, 0,   0, 0, 0,   0, 6, 0
+]
+
+for var i = 0; i < 9; i = i + 1 {
+	for var j = 0; j < 9; j = j + 1 {
+		s.set(i, j, data[i * 9 + j])
+	}
+}
+
+println("Unsolved:")
+s.print()
+println("")
+
+assert true == s.solve()
+
+println("Solved:")
+s.print()
+println("")

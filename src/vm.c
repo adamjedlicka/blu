@@ -87,6 +87,7 @@ void initVM() {
 
 	vm.bytesAllocated = 0;
 	vm.nextGC = 1024 * 1024;
+	vm.timeGC = 0;
 
 	vm.grayCount = 0;
 	vm.grayCapacity = 0;
@@ -108,6 +109,10 @@ void freeVM() {
 	freeTable(&vm.globals);
 	freeTable(&vm.strings);
 	freeObjects();
+
+#ifdef DEBUG
+	printf("Time in GC: %f\n", vm.timeGC);
+#endif
 }
 
 void push(Value value) {

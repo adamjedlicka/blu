@@ -127,17 +127,19 @@ static void errorAtCurrent(const char* message) {
 	errorAt(&parser.current, message);
 }
 
+static void consumeNewlines() {
+	while (parser.current.type == TOKEN_NEWLINE) {
+		parser.current = scanToken();
+	}
+}
+
 static void skipNewlines() {
 	switch (parser.previous.type) {
 	case TOKEN_NEWLINE:
 	case TOKEN_LEFT_BRACE:
 	case TOKEN_RIGHT_BRACE:
 	case TOKEN_SEMICOLON:
-	case TOKEN_DOT:
-		while (parser.current.type == TOKEN_NEWLINE) {
-			parser.current = scanToken();
-		}
-		break;
+	case TOKEN_DOT: consumeNewlines(); break;
 
 	default:
 		// Do nothing.
@@ -826,12 +828,17 @@ static void function(FunctionType type) {
 static void array() {
 	uint8_t len = 0;
 
+	consumeNewlines();
+
 	while (!match(TOKEN_RIGHT_BRACKET)) {
 		if (len > 0) {
 			consume(TOKEN_COMMA, "Expect ',' between expressions.");
+			consumeNewlines();
 		}
 
 		expression();
+		consumeNewlines();
+
 		len++;
 	}
 
