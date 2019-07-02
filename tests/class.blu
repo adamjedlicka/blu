@@ -1,20 +1,20 @@
 class Person {
 
     fn __init(firstName, lastName) {
-        this.firstName = firstName
-        this.lastName = lastName
+        @firstName = firstName
+        @lastName = lastName
     }
 
     fn fullName() {
-        return this.firstName + " " + this.lastName
+        return @firstName + " " + @lastName
     }
 
     fn setFirstName(firstName) {
-        this.firstName = firstName
+        @firstName = firstName
     }
 
     fn setLastName(lastName) {
-        this.lastName = lastName
+        @lastName = lastName
     }
 
 }

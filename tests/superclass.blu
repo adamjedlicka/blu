@@ -1,17 +1,17 @@
 class Animal {
     fn __init(name) {
-        this.name = name
+        @name = name
     }
 
     fn speak() {
-        return this.name + " says: "
+        return @name + " says: "
     }
 }
 
 class Dog < Animal {
     fn __init(name, breed) {
         super(name)
-        this.breed = breed
+        @breed = breed
     }
 
     fn speak() {
@@ -22,7 +22,7 @@ class Dog < Animal {
 class Cat < Animal {
     fn __init(name) {
         super(name)
-        this.likesWater = false
+        @likesWater = false
     }
 
     fn speak() {

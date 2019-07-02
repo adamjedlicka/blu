@@ -1,11 +1,11 @@
 class Collection {
 
     fn filter(callback) {
-        var collection = this.new()
+        var collection = @new()
 
-        for var i = 0; i < this.len(); i = i + 1 {
-            if callback(this.get(i)) == true {
-                collection.add(this.get(i))
+        for var i = 0; i < @len(); i = i + 1 {
+            if callback(@get(i)) == true {
+                collection.add(@get(i))
             }
         }
 
@@ -13,10 +13,10 @@ class Collection {
     }
 
     fn map(callback) {
-        var collection = this.new()
+        var collection = @new()
 
-        for var i = 0; i < this.len(); i = i + 1 {
-            collection.add(callback(this.get(i)))
+        for var i = 0; i < @len(); i = i + 1 {
+            collection.add(callback(@get(i)))
         }
 
         return collection
@@ -27,7 +27,7 @@ class Collection {
 class Array < Collection {
 
     fn __init(data) {
-        this.data = data
+        @data = data
     }
 
     fn new() {
@@ -35,15 +35,15 @@ class Array < Collection {
     }
 
     fn add(val) {
-        this.data = this.data + val
+        @data = @data + val
     }
 
     fn len() {
-        return len(this.data)
+        return len(@data)
     }
 
     fn get(i) {
-        return this.data[i]
+        return @data[i]
     }
 
 }

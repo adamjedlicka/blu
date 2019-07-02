@@ -13,6 +13,7 @@ typedef enum {
 	TOKEN_COMMA,
 	TOKEN_DOT,
 	TOKEN_SEMICOLON,
+	TOKEN_AT,
 
 	// One or two character tokens.
 	TOKEN_BANG,
@@ -48,7 +49,6 @@ typedef enum {
 	TOKEN_ASSERT,
 	TOKEN_RETURN,
 	TOKEN_SUPER,
-	TOKEN_THIS,
 	TOKEN_TRUE,
 	TOKEN_VAR,
 	TOKEN_WHILE,

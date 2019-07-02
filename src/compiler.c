@@ -204,7 +204,7 @@ static void emitLoop(int loopStart) {
 }
 
 static void emitReturn() {
-	// An initializer automatically returns "this".
+	// An initializer automatically returns "@".
 	if (current->type == TYPE_INITIALIZER) {
 		emitBytes(OP_GET_LOCAL, 0);
 	} else {
@@ -276,9 +276,9 @@ static void initCompiler(Compiler* compiler, int scopeDepth, FunctionType type) 
 	local->isUpvalue = false;
 
 	if (type != TYPE_FUNCTION && type != TYPE_ANONYMOUS) {
-		// In a method, it holds the receiver, "this".
-		local->name.start = "this";
-		local->name.length = 4;
+		// In a method, it holds the receiver, "@".
+		local->name.start = "@";
+		local->name.length = 1;
 	} else {
 		// In a function, it holds the function, but cannot be referenced, so has no name.
 		local->name.start = "";
@@ -601,7 +601,7 @@ static void super_(bool canAssign) {
 	}
 
 	if (match(TOKEN_LEFT_PAREN)) {
-		namedVariable(syntheticToken("this"), false);
+		namedVariable(syntheticToken("@"), false);
 
 		uint8_t argCount = argumentList();
 
@@ -615,7 +615,7 @@ static void super_(bool canAssign) {
 	uint8_t name = identifierConstant(&parser.previous);
 
 	// Push the receiver.
-	namedVariable(syntheticToken("this"), false);
+	namedVariable(syntheticToken("@"), false);
 
 	if (match(TOKEN_LEFT_PAREN)) {
 		uint8_t argCount = argumentList();
@@ -628,11 +628,14 @@ static void super_(bool canAssign) {
 	}
 }
 
-static void this_(bool canAssign) {
+static void at(bool canAssign) {
 	if (currentClass == NULL) {
-		error("Cannot use 'this' outside of a class.");
+		error("Cannot use '@' outside of a class.");
 	} else {
 		variable(false);
+		if (check(TOKEN_IDENTIFIER)) {
+			dot(canAssign);
+		}
 	}
 }
 
@@ -661,6 +664,7 @@ ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE},		// TOKEN_COMMA
 	{NULL, dot, PREC_CALL},			// TOKEN_DOT
 	{NULL, NULL, PREC_NONE},		// TOKEN_SEMICOLON
+	{at, NULL, PREC_NONE},			// TOKEN_AT
 
 	{unary, NULL, PREC_NONE},		 // TOKEN_BANG
 	{NULL, binary, PREC_EQUALITY},   // TOKEN_BANG_EQUAL
@@ -693,7 +697,6 @@ ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE},	// TOKEN_ASSERT
 	{NULL, NULL, PREC_NONE},	// TOKEN_RETURN
 	{super_, NULL, PREC_NONE},  // TOKEN_SUPER
-	{this_, NULL, PREC_NONE},   // TOKEN_THIS
 	{literal, NULL, PREC_NONE}, // TOKEN_TRUE
 	{NULL, NULL, PREC_NONE},	// TOKEN_VAR
 	{NULL, NULL, PREC_NONE},	// TOKEN_WHILE
