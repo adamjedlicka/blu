@@ -1,34 +1,44 @@
 class Person {
+	fn __init(firstName, lastName) {
+		@_firstName = firstName
+		@_lastName = lastName
+	}
 
-    fn __init(firstName, lastName) {
-        @firstName = firstName
-        @lastName = lastName
-    }
+	fn firstName() : @_firstName
 
-    fn fullName() {
-        return @firstName + " " + @lastName
-    }
+	fn setFirstName(firstName) {
+		if !firstName : return
 
-    fn setFirstName(firstName) {
-        @firstName = firstName
-    }
+		@_firstName = firstName
+	}
 
-    fn setLastName(lastName) {
-        @lastName = lastName
-    }
+	fn lastName() : @_lastName
 
+	fn setLastName(lastName) {
+		if !lastName : return
+
+		@_lastName = lastName
+	}
+
+	fn toString() {
+		return @_firstName + " " + @_lastName
+	}
 }
+
 
 var p1 = Person("Franta", "Sádlo")
 var p2 = Person("Jirka", "Máslo")
 
 assert p1 != p2
 
-assert p1.firstName == "Franta"
-assert p2.firstName == "Jirka"
+p1.setFirstName("")
+p2.setFirstName(nil)
 
-assert p1.fullName() == "Franta Sádlo"
-assert p2.fullName() == "Jirka Máslo"
+assert p1.firstName() == "Franta"
+assert p2.firstName() == "Jirka"
+
+assert p1.toString() == "Franta Sádlo"
+assert p2.toString() == "Jirka Máslo"
 
 p1.setFirstName("Pepa")
-assert p1.firstName == "Pepa"
+assert p1.firstName() == "Pepa"
