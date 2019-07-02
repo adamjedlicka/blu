@@ -125,7 +125,9 @@ static Value peek(int distance) {
 }
 
 static bool isFalsey(Value value) {
-	return IS_NIL(value) || (IS_BOOL(value) && AS_BOOL(value) == false);
+	return IS_NIL(value) || (IS_BOOL(value) && AS_BOOL(value) == false) ||
+		   (IS_NUMBER(value) && AS_NUMBER(value) == 0) || (IS_STRING(value) && AS_STRING(value)->length == 0) ||
+		   (IS_ARRAY(value) && AS_ARRAY(value)->len == 0);
 }
 
 static void concatenate() {

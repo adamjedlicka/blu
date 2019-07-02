@@ -799,6 +799,10 @@ static void function(FunctionType type) {
 	if (type == TYPE_ANONYMOUS && match(TOKEN_COLON)) {
 		expression();
 		emitByte(OP_RETURN);
+	} else if (type != TYPE_INITIALIZER && match(TOKEN_COLON)) {
+		expression();
+		if (!match(TOKEN_SEMICOLON)) consume(TOKEN_NEWLINE, "Expect newline or ';' after function declaration.");
+		emitByte(OP_RETURN);
 	} else {
 		consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
 		beginScope();
