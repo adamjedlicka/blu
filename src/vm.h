@@ -24,10 +24,16 @@ typedef struct {
 	CallFrame frames[FRAMES_MAX];
 	int frameCount;
 
+	ObjClass* numberClass;
+	ObjClass* booleanClass;
+	ObjClass* nilClass;
+
 	Table globals;
 	Table strings;
-	ObjString* initString;
+
 	ObjUpvalue* openUpvalues;
+
+	ObjString* initString;
 
 	size_t bytesAllocated;
 	size_t nextGC;
@@ -55,5 +61,6 @@ void freeVM();
 InterpretResult interpret(const char* source);
 void push(Value value);
 Value pop();
+Value peek(int distance);
 
 #endif

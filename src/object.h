@@ -50,6 +50,7 @@ typedef enum {
 
 struct sObj {
 	ObjType type;
+	ObjClass* klass;
 	bool isDark;
 	struct sObj* next;
 };

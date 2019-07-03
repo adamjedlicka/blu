@@ -5,6 +5,7 @@
 
 #include "common.h"
 #include "compiler.h"
+#include "core.h"
 #include "memory.h"
 #include "object.h"
 #include "value.h"
@@ -103,6 +104,8 @@ void initVM() {
 	defineNative("println", printlnNative, 1);
 	defineNative("len", lenNative, 1);
 	defineNative("int", intNative, 1);
+
+	initCore();
 }
 
 void freeVM() {
@@ -125,7 +128,7 @@ Value pop() {
 	return *vm.stackTop;
 }
 
-static Value peek(int distance) {
+Value peek(int distance) {
 	return vm.stackTop[-1 - distance];
 }
 
@@ -238,15 +241,31 @@ static bool invokeFromClass(ObjClass* klass, ObjString* name, int argCount) {
 		return false;
 	}
 
+	if (IS_NATIVE(method)) {
+		return callValue(method, argCount);
+	}
+
 	return call(AS_CLOSURE(method), argCount);
+}
+
+static ObjClass* getClass(Value value) {
+	switch (value.type) {
+	case VAL_BOOL: return vm.booleanClass; break;
+	case VAL_NIL: return vm.nilClass; break;
+	case VAL_NUMBER: return vm.numberClass; break;
+	case VAL_OBJ: return AS_OBJ(value)->klass; break;
+	default:
+		// Unreachable
+		return NULL;
+		break;
+	}
 }
 
 static bool invoke(ObjString* name, int argCount) {
 	Value receiver = peek(argCount);
 
 	if (!IS_INSTANCE(receiver)) {
-		runtimeError("Only instances have methods.");
-		return false;
+		return invokeFromClass(getClass(receiver), name, argCount);
 	}
 
 	ObjInstance* instance = AS_INSTANCE(receiver);
