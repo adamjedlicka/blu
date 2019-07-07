@@ -24,14 +24,14 @@ class Collection {
 
 }
 
-class Array < Collection {
+class MyArray < Collection {
 
     fn __init(data) {
         @data = data
     }
 
     fn new() {
-        return Array([])
+        return MyArray([])
     }
 
     fn add(val) {
@@ -48,7 +48,7 @@ class Array < Collection {
 
 }
 
-var arr1 = Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+var arr1 = MyArray([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 var arr2 = arr1.
     filter(fn(val) : val % 2 == 0).
     map(fn(val) : val * 2)
