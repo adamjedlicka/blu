@@ -902,6 +902,17 @@ static void classDeclaration() {
 
 		namedVariable(className, false);
 		emitByte(OP_INHERIT);
+	} else if (strncmp("Object", parser.previous.start, 5) != 0) {
+		classCompiler.hasSuperclass = true;
+
+		beginScope();
+
+		namedVariable(syntheticToken("Object"), false);
+		addLocal(syntheticToken("super"));
+		defineVariable(0);
+
+		namedVariable(className, false);
+		emitByte(OP_INHERIT);
 	}
 
 	consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");

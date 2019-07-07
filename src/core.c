@@ -4,28 +4,28 @@
 #include "core.h"
 #include "vm.h"
 
-static Value number_toString(int argCount, Value* args) {
-	double number = AS_NUMBER(peek(argCount));
+// static Value number_toString(int argCount, Value* args) {
+// 	double number = AS_NUMBER(peek(argCount));
 
-	char output[50];
+// 	char output[50];
 
-	if (number == (int)number) {
-		snprintf(output, 50, "%d", (int)number);
-	} else {
-		snprintf(output, 50, "%g", number);
-	}
+// 	if (number == (int)number) {
+// 		snprintf(output, 50, "%d", (int)number);
+// 	} else {
+// 		snprintf(output, 50, "%g", number);
+// 	}
 
-	return OBJ_VAL(copyString(output, strlen(output)));
-}
+// 	return OBJ_VAL(copyString(output, strlen(output)));
+// }
 
 void initCore() {
 	interpret("\
-        class Number{\
-            fn square(): @ * @;\
-            fn toString(): nil;\
-        }\
-        class Boolean{}\
-        class Nil{}\
+		class Object {\
+			fn toString(): \"Object\";\
+		}\
+        class Number {}\
+        class Boolean {}\
+        class Nil {}\
     ");
 
 	Value value;
@@ -39,5 +39,13 @@ void initCore() {
 	tableGet(&vm.globals, copyString("Nil", 3), &value);
 	vm.nilClass = AS_CLASS(value);
 
-	tableSet(&vm.numberClass->methods, copyString("toString", 8), OBJ_VAL(newNative(number_toString, 0)));
+	// Value name = OBJ_VAL(copyString("toString", 8));
+	// push(name);
+	// Value method = OBJ_VAL(newNative(number_toString, 0));
+	// push(method);
+
+	// tableSet(&vm.numberClass->methods, AS_STRING(name), method);
+
+	// pop();
+	// pop();
 }
