@@ -72,6 +72,7 @@ struct sObjClass {
 	Obj obj;
 	ObjString* name;
 	Table methods;
+	ObjClass* superclass;
 };
 
 struct sObjClosure {

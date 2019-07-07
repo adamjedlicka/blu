@@ -236,9 +236,14 @@ static bool callValue(Value callee, int argCount) {
 static bool invokeFromClass(ObjClass* klass, ObjString* name, int argCount) {
 	// Look for the method.
 	Value method;
+
 	if (!tableGet(&klass->methods, name, &method)) {
-		runtimeError("Undefined property '%s'.", name->chars);
-		return false;
+		if (klass->superclass != NULL && invokeFromClass(klass->superclass, name, argCount)) {
+			return true;
+		} else {
+			runtimeError("Undefined property '%s'.", name->chars);
+			return false;
+		}
 	}
 
 	if (IS_NATIVE(method)) {
@@ -787,7 +792,7 @@ static InterpretResult run() {
 			}
 
 			ObjClass* subclass = AS_CLASS(peek(0));
-			tableAddAll(&AS_CLASS(superclass)->methods, &subclass->methods);
+			subclass->superclass = AS_CLASS(superclass);
 			pop(); // Subclass.
 			break;
 		}
