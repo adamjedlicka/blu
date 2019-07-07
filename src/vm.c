@@ -132,7 +132,7 @@ Value peek(int distance) {
 	return vm.stackTop[-1 - distance];
 }
 
-static bool isFalsey(Value value) {
+bool isFalsey(Value value) {
 	return IS_NIL(value) || (IS_BOOL(value) && AS_BOOL(value) == false) ||
 		   (IS_NUMBER(value) && AS_NUMBER(value) == 0) || (IS_STRING(value) && AS_STRING(value)->length == 0) ||
 		   (IS_ARRAY(value) && AS_ARRAY(value)->len == 0);

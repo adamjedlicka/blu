@@ -7,3 +7,15 @@ assert 3.1415.toString() == "3.1415"
 assert nil.toString() == "nil"
 assert true.toString() == "true"
 assert false.toString() == "false"
+
+assert false.isFalsey()
+assert !true.isFalsey()
+assert nil.isFalsey()
+assert 0.isFalsey()
+assert 1.isTruthy()
+
+assert 420.getClass() == Number
+assert true.getClass() == Boolean
+assert false.getClass() == Boolean
+assert nil.getClass() == Nil
+assert MyClass().getClass() == MyClass

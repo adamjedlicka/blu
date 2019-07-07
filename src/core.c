@@ -22,6 +22,29 @@ static Value Object_toString(int argCount, Value* args) {
 	return OBJ_VAL(klass->name);
 }
 
+static Value Object_isNil(int argCount, Value* args) {
+	return BOOL_VAL(false);
+}
+
+static Value Object_isFalsey(int argCount, Value* args) {
+	Value receiver = peek(argCount);
+
+	return BOOL_VAL(isFalsey(receiver));
+}
+
+static Value Object_isTruthy(int argCount, Value* args) {
+	Value receiver = peek(argCount);
+
+	return BOOL_VAL(!isFalsey(receiver));
+}
+
+static Value Object_getClass(int argCount, Value* args) {
+	Value receiver = peek(argCount);
+	ObjClass* klass = getClass(receiver);
+
+	return OBJ_VAL(klass);
+}
+
 static Value Number_toString(int argCount, Value* args) {
 	double number = AS_NUMBER(peek(argCount));
 
@@ -45,6 +68,7 @@ void initCore() {
 		}\
         class Nil {\
 			fn toString(): \"nil\";\
+			fn isNil(): true;\
 		}\
     ");
 
@@ -63,6 +87,11 @@ void initCore() {
 	vm.nilClass = AS_CLASS(value);
 
 	ADD_METHOD(&objectClass, "toString", 8, Object_toString, 0);
+	ADD_METHOD(&objectClass, "isNil", 5, Object_isNil, 0);
+	ADD_METHOD(&objectClass, "isFalsey", 8, Object_isFalsey, 0);
+	ADD_METHOD(&objectClass, "isTruthy", 8, Object_isTruthy, 0);
+	ADD_METHOD(&objectClass, "getClass", 8, Object_getClass, 0);
+
 	ADD_METHOD(&vm.numberClass, "toString", 8, Number_toString, 0);
 
 	// Value name = OBJ_VAL(copyString("toString", 8));
