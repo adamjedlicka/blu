@@ -5,7 +5,7 @@ fn fib(x) {
         return 1
     }
 
-    if len(arr) > x {
+    if arr.len() > x {
         return arr[x]
     }
 

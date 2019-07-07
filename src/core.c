@@ -59,6 +59,39 @@ static Value Number_toString(int argCount, Value* args) {
 	return OBJ_VAL(copyString(output, strlen(output)));
 }
 
+static Value Number_floor(int argCount, Value* args) {
+	double number = AS_NUMBER(peek(argCount));
+
+	return NUMBER_VAL((int)number);
+}
+
+static Value Number_ceil(int argCount, Value* args) {
+	double number = AS_NUMBER(peek(argCount));
+
+	return NUMBER_VAL((int)number + 1);
+}
+
+static Value Array_len(int argCount, Value* args) {
+	ObjArray* receiver = AS_ARRAY(peek(argCount));
+
+	return NUMBER_VAL(receiver->len);
+}
+
+static Value Array_cap(int argCount, Value* args) {
+	ObjArray* receiver = AS_ARRAY(peek(argCount));
+
+	return NUMBER_VAL(receiver->cap);
+}
+
+static Value Array_push(int argCount, Value* args) {
+	ObjArray* receiver = AS_ARRAY(peek(argCount));
+	Value value = peek(0);
+
+	arrayPush(receiver, value);
+
+	return OBJ_VAL(receiver);
+}
+
 void initCore() {
 	interpret("\
 		class Object {}\
@@ -101,14 +134,10 @@ void initCore() {
 	ADD_METHOD(&objectClass, "getClass", 8, Object_getClass, 0);
 
 	ADD_METHOD(&vm.numberClass, "toString", 8, Number_toString, 0);
+	ADD_METHOD(&vm.numberClass, "floor", 5, Number_floor, 0);
+	ADD_METHOD(&vm.numberClass, "ceil", 4, Number_ceil, 0);
 
-	// Value name = OBJ_VAL(copyString("toString", 8));
-	// push(name);
-	// Value method = OBJ_VAL(newNative(Number_toString, 0));
-	// push(method);
-
-	// tableSet(&vm.numberClass->methods, AS_STRING(name), method);
-
-	// pop();
-	// pop();
+	ADD_METHOD(&vm.arrayClass, "len", 3, Array_len, 0);
+	ADD_METHOD(&vm.arrayClass, "cap", 3, Array_cap, 0);
+	ADD_METHOD(&vm.arrayClass, "push", 4, Array_push, 1);
 }

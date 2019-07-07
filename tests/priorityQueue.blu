@@ -7,7 +7,7 @@ class PriorityQueue {
     fn trickleUp(i) {
         if i == 0 : return
 
-        var parent = int(i / 2)
+        var parent = (i / 2).floor()
 
         if @arr[parent] > @arr[i] {
             var tmp = @arr[parent]
@@ -49,7 +49,7 @@ class PriorityQueue {
     fn push(val) {
         print(@arr)
 
-        if @last() < len(@arr) {
+        if @last() < @arr.len() {
             @arr[@last()] = val
         } else {
             @arr[] = val
@@ -88,7 +88,7 @@ class PriorityQueue {
     }
 
     fn len() {
-        return len(@arr)
+        return @arr.len()
     }
 }
 

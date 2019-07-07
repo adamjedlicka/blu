@@ -39,7 +39,7 @@ class Array < Collection {
     }
 
     fn len() {
-        return len(@data)
+        return @data.len()
     }
 
     fn get(i) {
