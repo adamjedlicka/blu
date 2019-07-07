@@ -34,6 +34,7 @@ ObjArray* newArray(uint32_t len) {
 	cap++;
 
 	ObjArray* array = ALLOCATE_OBJ(ObjArray, OBJ_ARRAY);
+	array->obj.klass = vm.arrayClass;
 	array->cap = 0;
 	array->len = 0;
 
@@ -127,6 +128,7 @@ void arrayPush(ObjArray* array, Value value) {
 
 static ObjString* allocateString(char* chars, int length, uint32_t hash) {
 	ObjString* string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
+	string->obj.klass = vm.stringClass;
 	string->length = length;
 	string->chars = chars;
 	string->hash = hash;

@@ -663,18 +663,38 @@ static void unary(bool canAssign) {
 	}
 }
 
+static void array(bool canAssign) {
+	uint8_t len = 0;
+
+	consumeNewlines();
+
+	while (!match(TOKEN_RIGHT_BRACKET)) {
+		if (len > 0) {
+			consume(TOKEN_COMMA, "Expect ',' between expressions.");
+			consumeNewlines();
+		}
+
+		expression();
+		consumeNewlines();
+
+		len++;
+	}
+
+	emitBytes(OP_ARRAY, len);
+}
+
 ParseRule rules[] = {
-	{grouping, call, PREC_CALL},	// TOKEN_LEFT_PAREN
-	{NULL, NULL, PREC_NONE},		// TOKEN_RIGHT_PAREN
-	{NULL, arrayAccess, PREC_CALL}, // TOKEN_LEFT_BACKET
-	{NULL, NULL, PREC_NONE},		// TOKEN_RIGHT_BRACKET
-	{NULL, NULL, PREC_NONE},		// TOKEN_LEFT_BRACE
-	{NULL, NULL, PREC_NONE},		// TOKEN_RIGHT_BRACE
-	{NULL, NULL, PREC_NONE},		// TOKEN_COLON
-	{NULL, NULL, PREC_NONE},		// TOKEN_COMMA
-	{NULL, dot, PREC_CALL},			// TOKEN_DOT
-	{NULL, NULL, PREC_NONE},		// TOKEN_SEMICOLON
-	{at, NULL, PREC_NONE},			// TOKEN_AT
+	{grouping, call, PREC_CALL},	 // TOKEN_LEFT_PAREN
+	{NULL, NULL, PREC_NONE},		 // TOKEN_RIGHT_PAREN
+	{array, arrayAccess, PREC_CALL}, // TOKEN_LEFT_BACKET
+	{NULL, NULL, PREC_NONE},		 // TOKEN_RIGHT_BRACKET
+	{NULL, NULL, PREC_NONE},		 // TOKEN_LEFT_BRACE
+	{NULL, NULL, PREC_NONE},		 // TOKEN_RIGHT_BRACE
+	{NULL, NULL, PREC_NONE},		 // TOKEN_COLON
+	{NULL, NULL, PREC_NONE},		 // TOKEN_COMMA
+	{NULL, dot, PREC_CALL},			 // TOKEN_DOT
+	{NULL, NULL, PREC_NONE},		 // TOKEN_SEMICOLON
+	{at, NULL, PREC_NONE},			 // TOKEN_AT
 
 	{unary, NULL, PREC_NONE},		 // TOKEN_BANG
 	{NULL, binary, PREC_EQUALITY},   // TOKEN_BANG_EQUAL
@@ -825,31 +845,9 @@ static void function(FunctionType type) {
 	}
 }
 
-static void array() {
-	uint8_t len = 0;
-
-	consumeNewlines();
-
-	while (!match(TOKEN_RIGHT_BRACKET)) {
-		if (len > 0) {
-			consume(TOKEN_COMMA, "Expect ',' between expressions.");
-			consumeNewlines();
-		}
-
-		expression();
-		consumeNewlines();
-
-		len++;
-	}
-
-	emitBytes(OP_ARRAY, len);
-}
-
 static void expression() {
 	if (match(TOKEN_FN)) {
 		function(TYPE_ANONYMOUS);
-	} else if (match(TOKEN_LEFT_BRACKET)) {
-		array();
 	} else {
 		parsePrecedence(PREC_ASSIGNMENT);
 	}

@@ -70,6 +70,8 @@ void initCore() {
 			fn toString(): \"nil\";\
 			fn isNil(): true;\
 		}\
+		class String {}\
+		class Array {}\
     ");
 
 	Value value;
@@ -85,6 +87,12 @@ void initCore() {
 
 	tableGet(&vm.globals, copyString("Nil", 3), &value);
 	vm.nilClass = AS_CLASS(value);
+
+	tableGet(&vm.globals, copyString("String", 6), &value);
+	vm.stringClass = AS_CLASS(value);
+
+	tableGet(&vm.globals, copyString("Array", 5), &value);
+	vm.arrayClass = AS_CLASS(value);
 
 	ADD_METHOD(&objectClass, "toString", 8, Object_toString, 0);
 	ADD_METHOD(&objectClass, "isNil", 5, Object_isNil, 0);

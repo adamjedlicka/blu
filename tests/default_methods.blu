@@ -18,4 +18,9 @@ assert 420.getClass() == Number
 assert true.getClass() == Boolean
 assert false.getClass() == Boolean
 assert nil.getClass() == Nil
+assert "".getClass() == String
+assert "Hello, World!".getClass() == String
+assert [].getClass() == Array
+assert [1, 2, 3, 4].getClass() == Array
+// assert [0, 1, 2, 3, 4].getClass() == Array
 assert MyClass().getClass() == MyClass
