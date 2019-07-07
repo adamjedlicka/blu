@@ -122,7 +122,7 @@ static void blackenObject(Obj* object) {
 
 	case OBJ_INSTANCE: {
 		ObjInstance* instance = (ObjInstance*)object;
-		grayObject((Obj*)instance->klass);
+		grayObject((Obj*)instance->obj.klass);
 		grayTable(&instance->fields);
 		break;
 	}

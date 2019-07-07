@@ -902,7 +902,7 @@ static void classDeclaration() {
 
 		namedVariable(className, false);
 		emitByte(OP_INHERIT);
-	} else if (strncmp("Object", parser.previous.start, 5) != 0) {
+	} else if (strncmp("Object", parser.previous.start, 6) != 0) {
 		classCompiler.hasSuperclass = true;
 
 		beginScope();

@@ -4,31 +4,54 @@
 #include "core.h"
 #include "vm.h"
 
-// static Value number_toString(int argCount, Value* args) {
-// 	double number = AS_NUMBER(peek(argCount));
+#define ADD_METHOD(klass, name, len, method, arity)                                                                    \
+	do {                                                                                                               \
+		Value _name = OBJ_VAL(copyString(name, len));                                                                  \
+		push(_name);                                                                                                   \
+		Value _method = OBJ_VAL(newNative(method, arity));                                                             \
+		push(_method);                                                                                                 \
+		tableSet(klass->methods, AS_STRING(_name), _method);                                                           \
+		pop();                                                                                                         \
+		pop();                                                                                                         \
+	} while (false);
 
-// 	char output[50];
+static Value Object_toString(int argCount, Value* args) {
+	Value receiver = peek(argCount);
+	ObjClass* klass = getClass(receiver);
 
-// 	if (number == (int)number) {
-// 		snprintf(output, 50, "%d", (int)number);
-// 	} else {
-// 		snprintf(output, 50, "%g", number);
-// 	}
+	return OBJ_VAL(klass->name);
+}
 
-// 	return OBJ_VAL(copyString(output, strlen(output)));
-// }
+static Value Number_toString(int argCount, Value* args) {
+	double number = AS_NUMBER(peek(argCount));
+
+	char output[50];
+
+	if (number == (int)number) {
+		snprintf(output, 50, "%d", (int)number);
+	} else {
+		snprintf(output, 50, "%g", number);
+	}
+
+	return OBJ_VAL(copyString(output, strlen(output)));
+}
 
 void initCore() {
 	interpret("\
-		class Object {\
-			fn toString(): \"Object\";\
-		}\
+		class Object {}\
         class Number {}\
-        class Boolean {}\
-        class Nil {}\
+        class Boolean {\
+			fn toString(): @ and \"true\" or \"false\";\
+		}\
+        class Nil {\
+			fn toString(): \"nil\";\
+		}\
     ");
 
 	Value value;
+
+	tableGet(&vm.globals, copyString("Object", 6), &value);
+	ObjClass* objectClass = AS_CLASS(value);
 
 	tableGet(&vm.globals, copyString("Number", 6), &value);
 	vm.numberClass = AS_CLASS(value);
@@ -39,9 +62,12 @@ void initCore() {
 	tableGet(&vm.globals, copyString("Nil", 3), &value);
 	vm.nilClass = AS_CLASS(value);
 
+	ADD_METHOD(&objectClass, "toString", 8, Object_toString, 0);
+	ADD_METHOD(&vm.numberClass, "toString", 8, Number_toString, 0);
+
 	// Value name = OBJ_VAL(copyString("toString", 8));
 	// push(name);
-	// Value method = OBJ_VAL(newNative(number_toString, 0));
+	// Value method = OBJ_VAL(newNative(Number_toString, 0));
 	// push(method);
 
 	// tableSet(&vm.numberClass->methods, AS_STRING(name), method);

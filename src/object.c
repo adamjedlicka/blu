@@ -93,7 +93,7 @@ ObjFunction* newFunction() {
 
 ObjInstance* newInstance(ObjClass* klass) {
 	ObjInstance* instance = ALLOCATE_OBJ(ObjInstance, OBJ_INSTANCE);
-	instance->klass = klass;
+	instance->obj.klass = klass;
 	initTable(&instance->fields);
 	return instance;
 }
@@ -230,7 +230,7 @@ void printObject(Value value) {
 	}
 
 	case OBJ_INSTANCE: {
-		printf("%s instance", AS_INSTANCE(value)->klass->name->chars);
+		printf("%s instance", AS_INSTANCE(value)->obj.klass->name->chars);
 		break;
 	}
 

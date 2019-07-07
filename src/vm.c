@@ -253,17 +253,15 @@ static bool invokeFromClass(ObjClass* klass, ObjString* name, int argCount) {
 	return call(AS_CLOSURE(method), argCount);
 }
 
-static ObjClass* getClass(Value value) {
+ObjClass* getClass(Value value) {
 	switch (value.type) {
 	case VAL_BOOL: return vm.booleanClass; break;
 	case VAL_NIL: return vm.nilClass; break;
 	case VAL_NUMBER: return vm.numberClass; break;
 	case VAL_OBJ: return AS_OBJ(value)->klass; break;
-	default:
-		// Unreachable
-		return NULL;
-		break;
 	}
+
+	__builtin_unreachable();
 }
 
 static bool invoke(ObjString* name, int argCount) {
@@ -282,7 +280,7 @@ static bool invoke(ObjString* name, int argCount) {
 		return callValue(value, argCount);
 	}
 
-	return invokeFromClass(instance->klass, name, argCount);
+	return invokeFromClass(instance->obj.klass, name, argCount);
 }
 
 static bool bindMethod(ObjClass* klass, ObjString* name) {
@@ -470,7 +468,7 @@ static InterpretResult run() {
 				break;
 			}
 
-			if (!bindMethod(instance->klass, name)) {
+			if (!bindMethod(instance->obj.klass, name)) {
 				return INTERPRET_RUNTIME_ERROR;
 			}
 

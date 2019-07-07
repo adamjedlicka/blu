@@ -1,0 +1,9 @@
+class MyClass {}
+
+assert MyClass().toString() == "MyClass"
+
+assert 42.toString() == "42"
+assert 3.1415.toString() == "3.1415"
+assert nil.toString() == "nil"
+assert true.toString() == "true"
+assert false.toString() == "false"

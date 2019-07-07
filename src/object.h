@@ -92,7 +92,6 @@ struct sObjFunction {
 
 struct sObjInstance {
 	Obj obj;
-	ObjClass* klass;
 	Table fields;
 };
 
