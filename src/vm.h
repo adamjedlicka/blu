@@ -29,6 +29,8 @@ typedef struct {
 	ObjClass* nilClass;
 	ObjClass* stringClass;
 	ObjClass* arrayClass;
+	ObjClass* classClass;
+	ObjClass* functionClass;
 
 	Table globals;
 	Table strings;

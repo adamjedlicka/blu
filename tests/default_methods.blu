@@ -1,6 +1,17 @@
-class MyClass {}
+class MyClass {
+    fn myMethod() {
 
-assert MyClass().toString() == "MyClass"
+    }
+}
+
+var myInstance = MyClass()
+
+fn myFunction() {
+
+}
+
+assert myInstance.toString() == "MyClass"
+assert myInstance.getClass().toString() == "Class"
 
 assert 42.toString() == "42"
 assert 3.1415.toString() == "3.1415"
@@ -19,6 +30,10 @@ assert true.getClass() == Boolean
 assert false.getClass() == Boolean
 assert nil.getClass() == Nil
 assert "".getClass() == String
+assert myInstance.getClass() == MyClass
+assert myFunction.getClass() == Function
+assert myInstance.myMethod.getClass() == Function
+
 assert "Hello, World!".getClass() == String
 assert [].getClass() == Array
 assert [1, 2, 3, 4].getClass() == Array

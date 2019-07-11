@@ -105,6 +105,8 @@ void initCore() {
 		}\
 		class String {}\
 		class Array {}\
+		class Class {}\
+		class Function {}\
     ");
 
 	Value value;
@@ -126,6 +128,12 @@ void initCore() {
 
 	tableGet(&vm.globals, copyString("Array", 5), &value);
 	vm.arrayClass = AS_CLASS(value);
+
+	tableGet(&vm.globals, copyString("Class", 5), &value);
+	vm.classClass = AS_CLASS(value);
+
+	tableGet(&vm.globals, copyString("Function", 8), &value);
+	vm.functionClass = AS_CLASS(value);
 
 	ADD_METHOD(&objectClass, "toString", 8, Object_toString, 0);
 	ADD_METHOD(&objectClass, "isNil", 5, Object_isNil, 0);

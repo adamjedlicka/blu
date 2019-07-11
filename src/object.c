@@ -52,6 +52,7 @@ ObjArray* newArray(uint32_t len) {
 
 ObjBoundMethod* newBoundMethod(Value receiver, ObjClosure* method) {
 	ObjBoundMethod* bound = ALLOCATE_OBJ(ObjBoundMethod, OBJ_BOUND_METHOD);
+	bound->obj.klass = method->obj.klass;
 	bound->receiver = receiver;
 	bound->method = method;
 
@@ -60,6 +61,7 @@ ObjBoundMethod* newBoundMethod(Value receiver, ObjClosure* method) {
 
 ObjClass* newClass(ObjString* name) {
 	ObjClass* klass = ALLOCATE_OBJ(ObjClass, OBJ_CLASS);
+	klass->obj.klass = vm.classClass;
 	klass->name = name;
 	klass->superclass = NULL;
 	initTable(&klass->methods);
@@ -74,6 +76,7 @@ ObjClosure* newClosure(ObjFunction* function) {
 	}
 
 	ObjClosure* closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
+	closure->obj.klass = function->obj.klass;
 	closure->function = function;
 	closure->upvalues = upvalues;
 	closure->upvalueCount = function->upvalueCount;
@@ -83,6 +86,7 @@ ObjClosure* newClosure(ObjFunction* function) {
 
 ObjFunction* newFunction() {
 	ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
+	function->obj.klass = vm.functionClass;
 	function->arity = 0;
 	function->upvalueCount = 0;
 	function->name = NULL;
@@ -101,6 +105,7 @@ ObjInstance* newInstance(ObjClass* klass) {
 
 ObjNative* newNative(NativeFn function, int arity) {
 	ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
+	native->obj.klass = vm.functionClass;
 	native->function = function;
 	native->arity = arity;
 
@@ -109,6 +114,7 @@ ObjNative* newNative(NativeFn function, int arity) {
 
 ObjUpvalue* newUpvalue(Value* slot) {
 	ObjUpvalue* upvalue = ALLOCATE_OBJ(ObjUpvalue, OBJ_UPVALUE);
+	upvalue->obj.klass = getClass(*slot);
 	upvalue->closed = NIL_VAL;
 	upvalue->value = slot;
 	upvalue->next = NULL;
