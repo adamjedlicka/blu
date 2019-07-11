@@ -3,7 +3,9 @@
 
 #include "blu.h"
 #include "chunk.h"
+#include "compiler.h"
 #include "object.h"
+#include "scanner.h"
 #include "table.h"
 #include "value.h"
 
@@ -17,6 +19,10 @@ typedef struct {
 } bluCallFrame;
 
 struct _bluVM {
+	bluScanner scanner;
+	bluParser parser;
+	bluCompiler compiler;
+
 	bluChunk* chunk;
 
 	bluValue stack[STACK_MAX];
