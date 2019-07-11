@@ -8,22 +8,22 @@
 
 #define TABLE_MAX_LOAD 0.75
 
-void initTable(Table* table) {
+void bluInitTable(bluVM* vm, bluTable* table) {
 	table->count = 0;
 	table->capacityMask = -1;
 	table->entries = NULL;
 }
 
-void freeTable(Table* table) {
-	FREE_ARRAY(Entry, table->entries, table->capacityMask + 1);
+void bluFreeTable(bluVM* vm, bluTable* table) {
+	FREE_ARRAY(vm, bluEntry, table->entries, table->capacityMask + 1);
 }
 
-static Entry* findEntry(Entry* entries, int capacityMask, ObjString* key) {
+static bluEntry* findEntry(bluEntry* entries, int capacityMask, bluObjString* key) {
 	uint32_t index = key->hash & capacityMask;
-	Entry* tombstone = NULL;
+	bluEntry* tombstone = NULL;
 
 	for (;;) {
-		Entry* entry = &entries[index];
+		bluEntry* entry = &entries[index];
 
 		if (entry->key == NULL) {
 			if (IS_NIL(entry->value)) {
@@ -42,18 +42,18 @@ static Entry* findEntry(Entry* entries, int capacityMask, ObjString* key) {
 	}
 }
 
-bool tableGet(Table* table, ObjString* key, Value* value) {
+bool bluTableGet(bluVM* vm, bluTable* table, bluObjString* key, bluValue* value) {
 	if (table->entries == NULL) return false;
 
-	Entry* entry = findEntry(table->entries, table->capacityMask, key);
+	bluEntry* entry = findEntry(table->entries, table->capacityMask, key);
 	if (entry->key == NULL) return false;
 
 	*value = entry->value;
 	return true;
 }
 
-static void adjustCapacity(Table* table, int capacityMask) {
-	Entry* entries = ALLOCATE(Entry, capacityMask + 1);
+static void adjustCapacity(bluVM* vm, bluTable* table, int capacityMask) {
+	bluEntry* entries = ALLOCATE(vm, bluEntry, capacityMask + 1);
 
 	for (int i = 0; i <= capacityMask; i++) {
 		entries[i].key = NULL;
@@ -63,29 +63,29 @@ static void adjustCapacity(Table* table, int capacityMask) {
 	table->count = 0;
 
 	for (int i = 0; i <= table->capacityMask; i++) {
-		Entry* entry = &table->entries[i];
+		bluEntry* entry = &table->entries[i];
 		if (entry->key == NULL) continue;
 
-		Entry* dest = findEntry(entries, capacityMask, entry->key);
+		bluEntry* dest = findEntry(entries, capacityMask, entry->key);
 		dest->key = entry->key;
 		dest->value = entry->value;
 		table->count++;
 	}
 
-	FREE_ARRAY(Entry, table->entries, table->capacityMask + 1);
+	FREE_ARRAY(vm, bluEntry, table->entries, table->capacityMask + 1);
 
 	table->entries = entries;
 	table->capacityMask = capacityMask;
 }
 
-bool tableSet(Table* table, ObjString* key, Value value) {
+bool bluTableSet(bluVM* vm, bluTable* table, bluObjString* key, bluValue value) {
 	if (table->count + 1 > (table->capacityMask + 1) * TABLE_MAX_LOAD) {
 		// Figure out the new table size.
 		int capacityMask = GROW_CAPACITY(table->capacityMask + 1) - 1;
-		adjustCapacity(table, capacityMask);
+		adjustCapacity(vm, table, capacityMask);
 	}
 
-	Entry* entry = findEntry(table->entries, table->capacityMask, key);
+	bluEntry* entry = findEntry(table->entries, table->capacityMask, key);
 
 	bool isNewKey = entry->key == NULL;
 	// Increase count only if we are inserting into empty bucket, not when replacing tombstone
@@ -96,11 +96,11 @@ bool tableSet(Table* table, ObjString* key, Value value) {
 	return isNewKey;
 }
 
-bool tableDelete(Table* table, ObjString* key) {
+bool bluTableDelete(bluVM* vm, bluTable* table, bluObjString* key) {
 	if (table->count == 0) return false;
 
 	// Find the entry.
-	Entry* entry = findEntry(table->entries, table->capacityMask, key);
+	bluEntry* entry = findEntry(table->entries, table->capacityMask, key);
 	if (entry->key == NULL) return false;
 
 	// Place a tombstone in the entry.
@@ -110,25 +110,25 @@ bool tableDelete(Table* table, ObjString* key) {
 	return true;
 }
 
-void tableAddAll(Table* from, Table* to) {
+void bluTableAddAll(bluVM* vm, bluTable* from, bluTable* to) {
 	for (int i = 0; i <= from->capacityMask; i++) {
-		Entry* entry = &from->entries[i];
+		bluEntry* entry = &from->entries[i];
 		if (entry->key != NULL) {
-			tableSet(to, entry->key, entry->value);
+			bluTableSet(vm, to, entry->key, entry->value);
 		}
 	}
 }
 
 // Function tableGet uses findEntry which compares keys with double equals, so if they are in the same place in memory.
 // For string interning we want to compare keys fully with memcmp.
-ObjString* tableFindString(Table* table, const char* chars, int length, uint32_t hash) {
+bluObjString* bluTableFindString(bluVM* vm, bluTable* table, const char* chars, int length, uint32_t hash) {
 	// If the table is empty, we definitely won't find it.
 	if (table->entries == NULL) return NULL;
 
 	uint32_t index = hash & table->capacityMask;
 
 	for (;;) {
-		Entry* entry = &table->entries[index];
+		bluEntry* entry = &table->entries[index];
 
 		if (entry->key == NULL) {
 			// Stop if we find an empty non-tombstone entry.
@@ -144,19 +144,19 @@ ObjString* tableFindString(Table* table, const char* chars, int length, uint32_t
 	}
 }
 
-void tableRemoveWhite(Table* table) {
+void bluTableRemoveWhite(bluVM* vm, bluTable* table) {
 	for (int i = 0; i <= table->capacityMask; i++) {
-		Entry* entry = &table->entries[i];
+		bluEntry* entry = &table->entries[i];
 		if (entry->key != NULL && !entry->key->obj.isDark) {
-			tableDelete(table, entry->key);
+			bluTableDelete(vm, table, entry->key);
 		}
 	}
 }
 
-void grayTable(Table* table) {
+void bluGrayTable(bluVM* vm, bluTable* table) {
 	for (int i = 0; i <= table->capacityMask; i++) {
-		Entry* entry = &table->entries[i];
-		grayObject((Obj*)entry->key);
-		grayValue(entry->value);
+		bluEntry* entry = &table->entries[i];
+		bluGrayObject(vm, (bluObj*)entry->key);
+		bluGrayValue(vm, entry->value);
 	}
 }

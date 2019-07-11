@@ -1,31 +1,32 @@
 #ifndef blu_table_h
 #define blu_table_h
 
+#include "blu.h"
 #include "common.h"
 #include "object.h"
 #include "value.h"
 
 typedef struct {
-	ObjString* key;
-	Value value;
-} Entry;
+	bluObjString* key;
+	bluValue value;
+} bluEntry;
 
 typedef struct {
 	int count;
 	int capacityMask;
-	Entry* entries;
-} Table;
+	bluEntry* entries;
+} bluTable;
 
-void initTable(Table* table);
-void freeTable(Table* table);
+void bluInitTable(bluVM* vm, bluTable* table);
+void bluFreeTable(bluVM* vm, bluTable* table);
 
-bool tableGet(Table* table, ObjString* key, Value* value);
-bool tableSet(Table* table, ObjString* key, Value value);
-bool tableDelete(Table* table, ObjString* key);
-void tableAddAll(Table* from, Table* to);
-ObjString* tableFindString(Table* table, const char* chars, int length, uint32_t hash);
+bool bluTableGet(bluVM* vm, bluTable* table, bluObjString* key, bluValue* value);
+bool bluTableSet(bluVM* vm, bluTable* table, bluObjString* key, bluValue value);
+bool bluTableDelete(bluVM* vm, bluTable* table, bluObjString* key);
+void bluTableAddAll(bluVM* vm, bluTable* from, bluTable* to);
+bluObjString* bluTableFindString(bluVM* vm, bluTable* table, const char* chars, int length, uint32_t hash);
 
-void tableRemoveWhite(Table* table);
-void grayTable(Table* table);
+void bluTableRemoveWhite(bluVM* vm, bluTable* table);
+void bluGrayTable(bluVM* vm, bluTable* table);
 
 #endif

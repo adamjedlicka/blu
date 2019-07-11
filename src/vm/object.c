@@ -8,15 +8,15 @@
 #include "value.h"
 #include "vm.h"
 
-#define ALLOCATE_OBJ(type, objectType) (type*)allocateObject(sizeof(type), objectType)
+#define ALLOCATE_OBJ(type, objectType) (type*)allocateObject(vm, sizeof(type), objectType)
 
-static Obj* allocateObject(size_t size, ObjType type) {
-	Obj* object = (Obj*)reallocate(NULL, 0, size);
+static bluObj* allocateObject(bluVM* vm, size_t size, bluObjType type) {
+	bluObj* object = (bluObj*)bluReallocate(vm, NULL, 0, size);
 	object->type = type;
 	object->isDark = false;
 
-	object->next = vm.objects;
-	vm.objects = object;
+	object->next = vm->objects;
+	vm->objects = object;
 
 #ifdef DEBUG_TRACE_GC
 	printf("%p allocate %ld for %d\n", object, size, type);
@@ -25,7 +25,7 @@ static Obj* allocateObject(size_t size, ObjType type) {
 	return object;
 }
 
-ObjArray* newArray(uint32_t len) {
+bluObjArray* bluNewArray(bluVM* vm, uint32_t len) {
 	// Set cap to the closest higher power of two.
 	uint32_t cap = len;
 	cap |= cap >> 1;
@@ -33,25 +33,25 @@ ObjArray* newArray(uint32_t len) {
 	cap |= cap >> 4;
 	cap++;
 
-	ObjArray* array = ALLOCATE_OBJ(ObjArray, OBJ_ARRAY);
-	array->obj.klass = vm.arrayClass;
+	bluObjArray* array = ALLOCATE_OBJ(bluObjArray, OBJ_ARRAY);
+	array->obj.klass = vm->arrayClass;
 	array->cap = 0;
 	array->len = 0;
 
 	// Push the array to stack so GC won't collect it
-	push(OBJ_VAL(array));
+	bluPush(vm, OBJ_VAL(array));
 
-	array->data = ALLOCATE(Value, cap);
+	array->data = ALLOCATE(vm, bluValue, cap);
 	array->cap = cap;
 	array->len = len;
 
-	pop();
+	bluPop(vm);
 
 	return array;
 }
 
-ObjBoundMethod* newBoundMethod(Value receiver, ObjClosure* method) {
-	ObjBoundMethod* bound = ALLOCATE_OBJ(ObjBoundMethod, OBJ_BOUND_METHOD);
+bluObjBoundMethod* bluNewBoundMethod(bluVM* vm, bluValue receiver, bluObjClosure* method) {
+	bluObjBoundMethod* bound = ALLOCATE_OBJ(bluObjBoundMethod, OBJ_BOUND_METHOD);
 	bound->obj.klass = method->obj.klass;
 	bound->receiver = receiver;
 	bound->method = method;
@@ -59,23 +59,23 @@ ObjBoundMethod* newBoundMethod(Value receiver, ObjClosure* method) {
 	return bound;
 }
 
-ObjClass* newClass(ObjString* name) {
-	ObjClass* klass = ALLOCATE_OBJ(ObjClass, OBJ_CLASS);
-	klass->obj.klass = vm.classClass;
+bluObjClass* bluNewClass(bluVM* vm, bluObjString* name) {
+	bluObjClass* klass = ALLOCATE_OBJ(bluObjClass, OBJ_CLASS);
+	klass->obj.klass = vm->classClass;
 	klass->name = name;
 	klass->superclass = NULL;
-	initTable(&klass->methods);
+	bluInitTable(vm, &klass->methods);
 	return klass;
 }
 
-ObjClosure* newClosure(ObjFunction* function) {
+bluObjClosure* bluNewClosure(bluVM* vm, bluObjFunction* function) {
 	// Allocate the upvalue array first so it doesn't cause the closure to get collected.
-	ObjUpvalue** upvalues = ALLOCATE(ObjUpvalue*, function->upvalueCount);
+	bluObjUpvalue** upvalues = ALLOCATE(vm, bluObjUpvalue*, function->upvalueCount);
 	for (int i = 0; i < function->upvalueCount; i++) {
 		upvalues[i] = NULL;
 	}
 
-	ObjClosure* closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
+	bluObjClosure* closure = ALLOCATE_OBJ(bluObjClosure, OBJ_CLOSURE);
 	closure->obj.klass = function->obj.klass;
 	closure->function = function;
 	closure->upvalues = upvalues;
@@ -84,37 +84,37 @@ ObjClosure* newClosure(ObjFunction* function) {
 	return closure;
 }
 
-ObjFunction* newFunction() {
-	ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
-	function->obj.klass = vm.functionClass;
+bluObjFunction* bluNewFunction(bluVM* vm) {
+	bluObjFunction* function = ALLOCATE_OBJ(bluObjFunction, OBJ_FUNCTION);
+	function->obj.klass = vm->functionClass;
 	function->arity = 0;
 	function->upvalueCount = 0;
 	function->name = NULL;
 
-	initChunk(&function->chunk);
+	bluInitChunk(vm, &function->chunk);
 
 	return function;
 }
 
-ObjInstance* newInstance(ObjClass* klass) {
-	ObjInstance* instance = ALLOCATE_OBJ(ObjInstance, OBJ_INSTANCE);
+bluObjInstance* bluNewInstance(bluVM* vm, bluObjClass* klass) {
+	bluObjInstance* instance = ALLOCATE_OBJ(bluObjInstance, OBJ_INSTANCE);
 	instance->obj.klass = klass;
-	initTable(&instance->fields);
+	bluInitTable(vm, &instance->fields);
 	return instance;
 }
 
-ObjNative* newNative(NativeFn function, int arity) {
-	ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
-	native->obj.klass = vm.functionClass;
+bluObjNative* bluNewNative(bluVM* vm, bluNativeFn function, int arity) {
+	bluObjNative* native = ALLOCATE_OBJ(bluObjNative, OBJ_NATIVE);
+	native->obj.klass = vm->functionClass;
 	native->function = function;
 	native->arity = arity;
 
 	return native;
 }
 
-ObjUpvalue* newUpvalue(Value* slot) {
-	ObjUpvalue* upvalue = ALLOCATE_OBJ(ObjUpvalue, OBJ_UPVALUE);
-	upvalue->obj.klass = getClass(*slot);
+bluObjUpvalue* bluNewUpvalue(bluVM* vm, bluValue* slot) {
+	bluObjUpvalue* upvalue = ALLOCATE_OBJ(bluObjUpvalue, OBJ_UPVALUE);
+	upvalue->obj.klass = bluGetClass(vm, *slot);
 	upvalue->closed = NIL_VAL;
 	upvalue->value = slot;
 	upvalue->next = NULL;
@@ -122,28 +122,28 @@ ObjUpvalue* newUpvalue(Value* slot) {
 	return upvalue;
 }
 
-void arrayPush(ObjArray* array, Value value) {
+void bluArrayPush(bluVM* vm, bluObjArray* array, bluValue value) {
 	if (array->len == array->cap) {
 		int cap = GROW_CAPACITY(array->cap);
-		array->data = GROW_ARRAY(array->data, Value, array->cap, cap);
+		array->data = GROW_ARRAY(vm, array->data, bluValue, array->cap, cap);
 		array->cap = cap;
 	}
 
 	array->data[array->len++] = value;
 }
 
-static ObjString* allocateString(char* chars, int length, uint32_t hash) {
-	ObjString* string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
-	string->obj.klass = vm.stringClass;
+static bluObjString* allocateString(bluVM* vm, char* chars, int length, uint32_t hash) {
+	bluObjString* string = ALLOCATE_OBJ(bluObjString, OBJ_STRING);
+	string->obj.klass = vm->stringClass;
 	string->length = length;
 	string->chars = chars;
 	string->hash = hash;
 
-	push(OBJ_VAL(string));
+	bluPush(vm, OBJ_VAL(string));
 
-	tableSet(&vm.strings, string, NIL_VAL);
+	bluTableSet(vm, &vm->strings, string, NIL_VAL);
 
-	pop();
+	bluPop(vm);
 
 	return string;
 }
@@ -162,35 +162,35 @@ static uint32_t hashString(const char* key, int length) {
 /**
  * Takes string dynamically allocated on the heap.
  */
-ObjString* takeString(char* chars, int length) {
+bluObjString* bluTakeString(bluVM* vm, char* chars, int length) {
 	uint32_t hash = hashString(chars, length);
 
-	ObjString* interned = tableFindString(&vm.strings, chars, length, hash);
+	bluObjString* interned = bluTableFindString(vm, &vm->strings, chars, length, hash);
 	if (interned != NULL) {
-		FREE_ARRAY(char, chars, length + 1);
+		FREE_ARRAY(vm, char, chars, length + 1);
 		return interned;
 	}
 
-	return allocateString(chars, length, hash);
+	return allocateString(vm, chars, length, hash);
 }
 
 /**
  * Copies static C string.
  */
-ObjString* copyString(const char* chars, int length) {
+bluObjString* bluCopyString(bluVM* vm, const char* chars, int length) {
 	uint32_t hash = hashString(chars, length);
 
-	ObjString* interned = tableFindString(&vm.strings, chars, length, hash);
+	bluObjString* interned = bluTableFindString(vm, &vm->strings, chars, length, hash);
 	if (interned != NULL) return interned;
 
-	char* heapChars = ALLOCATE(char, length + 1);
+	char* heapChars = ALLOCATE(vm, char, length + 1);
 	memcpy(heapChars, chars, length);
 	heapChars[length] = '\0';
 
-	return allocateString(heapChars, length, hash);
+	return allocateString(vm, heapChars, length, hash);
 }
 
-void printObject(Value value) {
+void bluPrintObject(bluVM* vm, bluValue value) {
 
 	switch (OBJ_TYPE(value)) {
 
@@ -199,10 +199,10 @@ void printObject(Value value) {
 		for (uint32_t i = 0; i < AS_ARRAY(value)->len; i++) {
 			if (i > 0) printf(", ");
 
-			ObjArray* array = AS_ARRAY(value);
-			Value val = array->data[i];
+			bluObjArray* array = AS_ARRAY(value);
+			bluValue val = array->data[i];
 
-			printValue(val);
+			bluPrintValue(vm, val);
 		}
 		printf("]");
 		break;

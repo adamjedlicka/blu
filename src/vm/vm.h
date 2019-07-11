@@ -1,6 +1,7 @@
 #ifndef blu_vm_h
 #define blu_vm_h
 
+#include "blu.h"
 #include "chunk.h"
 #include "object.h"
 #include "table.h"
@@ -10,34 +11,34 @@
 #define STACK_MAX (FRAMES_MAX * UINT8_COUNT)
 
 typedef struct {
-	ObjClosure* closure;
+	bluObjClosure* closure;
 	uint8_t* ip;
-	Value* slots;
-} CallFrame;
+	bluValue* slots;
+} bluCallFrame;
 
-typedef struct {
-	Chunk* chunk;
+struct _bluVM {
+	bluChunk* chunk;
 
-	Value stack[STACK_MAX];
-	Value* stackTop;
+	bluValue stack[STACK_MAX];
+	bluValue* stackTop;
 
-	CallFrame frames[FRAMES_MAX];
+	bluCallFrame frames[FRAMES_MAX];
 	int frameCount;
 
-	ObjClass* numberClass;
-	ObjClass* booleanClass;
-	ObjClass* nilClass;
-	ObjClass* stringClass;
-	ObjClass* arrayClass;
-	ObjClass* classClass;
-	ObjClass* functionClass;
+	bluObjClass* numberClass;
+	bluObjClass* booleanClass;
+	bluObjClass* nilClass;
+	bluObjClass* stringClass;
+	bluObjClass* arrayClass;
+	bluObjClass* classClass;
+	bluObjClass* functionClass;
 
-	Table globals;
-	Table strings;
+	bluTable globals;
+	bluTable strings;
 
-	ObjUpvalue* openUpvalues;
+	bluObjUpvalue* openUpvalues;
 
-	ObjString* initString;
+	bluObjString* initString;
 
 	size_t bytesAllocated;
 	size_t nextGC;
@@ -45,29 +46,27 @@ typedef struct {
 
 	int grayCount;
 	int grayCapacity;
-	Obj** grayStack;
+	bluObj** grayStack;
 
-	Obj* objects;
-} VM;
+	bluObj* objects;
+};
 
 typedef enum {
 	INTERPRET_OK,
 	INTERPRET_COMPILE_ERROR,
 	INTERPRET_RUNTIME_ERROR,
 	INTERPRET_ASSERTION_ERROR,
-} InterpretResult;
+} bluInterpretResult;
 
-extern VM vm;
+void bluInitVM(bluVM* vm);
+void bluFreeVM(bluVM* vm);
 
-void initVM();
-void freeVM();
+bluInterpretResult bluInterpret(bluVM* vm, const char* source);
+void bluPush(bluVM* vm, bluValue value);
+bluValue bluPop(bluVM* vm);
+bluValue bluPeek(bluVM* vm, int distance);
 
-InterpretResult interpret(const char* source);
-void push(Value value);
-Value pop();
-Value peek(int distance);
-
-bool isFalsey(Value value);
-ObjClass* getClass(Value value);
+bool bluIsFalsey(bluVM* vm, bluValue value);
+bluObjClass* bluGetClass(bluVM* vm, bluValue value);
 
 #endif

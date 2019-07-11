@@ -1,6 +1,7 @@
 #ifndef blu_chunk_h
 #define blu_chunk_h
 
+#include "blu.h"
 #include "value.h"
 
 typedef enum {
@@ -79,21 +80,21 @@ typedef enum {
 	OP_METHOD,
 
 	OP_ASSERT,
-} OpCode;
+} bluOpCode;
 
 typedef struct {
 	int count;
 	int capacity;
 	uint8_t* code;
 	int* lines;
-	ValueArray constants;
-} Chunk;
+	bluValueArray constants;
+} bluChunk;
 
-void initChunk(Chunk* chunk);
-void freeChunk(Chunk* chunk);
+void bluInitChunk(bluVM* vm, bluChunk* chunk);
+void bluFreeChunk(bluVM* vm, bluChunk* chunk);
 
-void writeChunk(Chunk* chunk, uint8_t byte, int line);
+void bluWriteChunk(bluVM* vm, bluChunk* chunk, uint8_t byte, int line);
 
-int addConstant(Chunk* chunk, Value value);
+int bluAddConstant(bluVM* vm, bluChunk* chunk, bluValue value);
 
 #endif

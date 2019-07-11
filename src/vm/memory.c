@@ -17,16 +17,16 @@
 #define GC_HEAP_GROW_FACTOR 0.5
 #define GC_HEAP_MINIMUM 1024 * 1024
 
-void* reallocate(void* previous, size_t oldSize, size_t newSize) {
-	vm.bytesAllocated += newSize - oldSize;
+void* bluReallocate(bluVM* vm, void* previous, size_t oldSize, size_t newSize) {
+	vm->bytesAllocated += newSize - oldSize;
 
 	if (newSize > oldSize) {
 #ifdef DEBUG_STRESS_GC
-		collectGarbage();
+		bluCollectGarbage(vm);
 #endif
 
-		if (vm.bytesAllocated > vm.nextGC) {
-			collectGarbage();
+		if (vm->bytesAllocated > vm->nextGC) {
+			bluCollectGarbage(vm);
 		}
 	}
 
@@ -38,92 +38,81 @@ void* reallocate(void* previous, size_t oldSize, size_t newSize) {
 	return realloc(previous, newSize);
 }
 
-void grayObject(Obj* object) {
+void bluGrayObject(bluVM* vm, bluObj* object) {
 	if (object == NULL) return;
 
 	// Don't get caught in cycle.
 	if (object->isDark) return;
 
-#ifdef DEBUG_TRACE_GC
-	printf("%p gray ", object);
-	printValue(OBJ_VAL(object));
-	printf("\n");
-#endif
-
 	object->isDark = true;
 
-	if (vm.grayCapacity < vm.grayCount + 1) {
-		vm.grayCapacity = GROW_CAPACITY(vm.grayCapacity);
+	if (vm->grayCapacity < vm->grayCount + 1) {
+		vm->grayCapacity = GROW_CAPACITY(vm->grayCapacity);
 
 		// Not using reallocate() here because we don't want to trigger the GC inside a GC!
-		vm.grayStack = realloc(vm.grayStack, sizeof(Obj*) * vm.grayCapacity);
+		vm->grayStack = realloc(vm->grayStack, sizeof(bluObj*) * vm->grayCapacity);
 	}
 
-	vm.grayStack[vm.grayCount++] = object;
+	vm->grayStack[vm->grayCount++] = object;
 }
 
-void grayValue(Value value) {
+void bluGrayValue(bluVM* vm, bluValue value) {
 	if (!IS_OBJ(value)) return;
-	grayObject(AS_OBJ(value));
+	bluGrayObject(vm, AS_OBJ(value));
 }
 
-static void grayArray(ValueArray* array) {
+static void grayArray(bluVM* vm, bluValueArray* array) {
 	for (int i = 0; i < array->count; i++) {
-		grayValue(array->values[i]);
+		bluGrayValue(vm, array->values[i]);
 	}
 }
 
-static void blackenObject(Obj* object) {
-#ifdef DEBUG_TRACE_GC
-	printf("%p blacken ", object);
-	printValue(OBJ_VAL(object));
-	printf("\n");
-#endif
+static void blackenObject(bluVM* vm, bluObj* object) {
 
 	switch (object->type) {
 
 	case OBJ_ARRAY: {
-		ObjArray* array = (ObjArray*)object;
+		bluObjArray* array = (bluObjArray*)object;
 		for (uint32_t i = 0; i < array->cap; i++) {
-			grayValue(array->data[i]);
+			bluGrayValue(vm, array->data[i]);
 		}
 		break;
 	}
 
 	case OBJ_BOUND_METHOD: {
-		ObjBoundMethod* bound = (ObjBoundMethod*)object;
-		grayValue(bound->receiver);
-		grayObject((Obj*)bound->method);
+		bluObjBoundMethod* bound = (bluObjBoundMethod*)object;
+		bluGrayValue(vm, bound->receiver);
+		bluGrayObject(vm, (bluObj*)bound->method);
 		break;
 	}
 
 	case OBJ_CLASS: {
-		ObjClass* klass = (ObjClass*)object;
-		grayObject((Obj*)klass->name);
-		grayTable(&klass->methods);
+		bluObjClass* klass = (bluObjClass*)object;
+		bluGrayObject(vm, (bluObj*)klass->name);
+		bluGrayTable(vm, &klass->methods);
 		break;
 	}
 
 	case OBJ_CLOSURE: {
-		ObjClosure* closure = (ObjClosure*)object;
-		grayObject((Obj*)closure->function);
+		bluObjClosure* closure = (bluObjClosure*)object;
+		bluGrayObject(vm, (bluObj*)closure->function);
 		for (int i = 0; i < closure->upvalueCount; i++) {
-			grayObject((Obj*)closure->upvalues[i]);
+			bluGrayObject(vm, (bluObj*)closure->upvalues[i]);
 		}
 		break;
 	}
 
 	case OBJ_FUNCTION: {
-		ObjFunction* function = (ObjFunction*)object;
-		grayObject((Obj*)function->name);
-		grayArray(&function->chunk.constants);
+		bluObjFunction* function = (bluObjFunction*)object;
+		bluGrayObject(vm, (bluObj*)function->name);
+		grayArray(vm, &function->chunk.constants);
 		break;
 	}
 
 	case OBJ_INSTANCE: {
-		ObjInstance* instance = (ObjInstance*)object;
-		grayObject((Obj*)instance->obj.klass);
-		grayTable(&instance->fields);
+		bluObjInstance* instance = (bluObjInstance*)object;
+		bluGrayObject(vm, (bluObj*)instance->obj.klass);
+		bluGrayTable(vm, &instance->fields);
 		break;
 	}
 
@@ -136,84 +125,79 @@ static void blackenObject(Obj* object) {
 	}
 
 	case OBJ_UPVALUE: {
-		grayValue(((ObjUpvalue*)object)->closed);
+		bluGrayValue(vm, ((bluObjUpvalue*)object)->closed);
 		break;
 	}
 	}
 }
 
-static void freeObject(Obj* object) {
-#ifdef DEBUG_TRACE_GC
-	printf("%p free ", object);
-	printValue(OBJ_VAL(object));
-	printf("\n");
-#endif
+static void freeObject(bluVM* vm, bluObj* object) {
 
 	switch (object->type) {
 
 	case OBJ_ARRAY: {
-		ObjArray* array = (ObjArray*)object;
-		FREE_ARRAY(Value, array->data, array->cap);
-		FREE(ObjArray, object);
+		bluObjArray* array = (bluObjArray*)object;
+		FREE_ARRAY(vm, bluValue, array->data, array->cap);
+		FREE(vm, bluObjArray, object);
 		break;
 	}
 
 	case OBJ_BOUND_METHOD: {
-		FREE(ObjBoundMethod, object);
+		FREE(vm, bluObjBoundMethod, object);
 		break;
 	}
 
 	case OBJ_CLASS: {
-		ObjClass* klass = (ObjClass*)object;
-		freeTable(&klass->methods);
-		FREE(ObjClass, object);
+		bluObjClass* klass = (bluObjClass*)object;
+		bluFreeTable(vm, &klass->methods);
+		FREE(vm, bluObjClass, object);
 		break;
 	}
 
 	case OBJ_CLOSURE: {
-		ObjClosure* closure = (ObjClosure*)object;
-		FREE_ARRAY(Value, closure->upvalues, closure->upvalueCount);
-		FREE(ObjClosure, object);
+		bluObjClosure* closure = (bluObjClosure*)object;
+		FREE_ARRAY(vm, bluValue, closure->upvalues, closure->upvalueCount);
+		FREE(vm, bluObjClosure, object);
 		break;
 	}
 
 	case OBJ_FUNCTION: {
-		ObjFunction* function = (ObjFunction*)object;
-		freeChunk(&function->chunk);
-		FREE(ObjFunction, object);
+		bluObjFunction* function = (bluObjFunction*)object;
+		bluFreeChunk(vm, &function->chunk);
+		FREE(vm, bluObjFunction, object);
 		break;
 	}
 
 	case OBJ_INSTANCE: {
-		ObjInstance* instance = (ObjInstance*)object;
-		freeTable(&instance->fields);
-		FREE(ObjInstance, object);
+		bluObjInstance* instance = (bluObjInstance*)object;
+		bluFreeTable(vm, &instance->fields);
+		FREE(vm, bluObjInstance, object);
 		break;
 	}
 
 	case OBJ_NATIVE: {
-		FREE(ObjNative, object);
+		FREE(vm, bluObjNative, object);
 		break;
 	}
 
 	case OBJ_STRING: {
-		ObjString* string = (ObjString*)object;
-		FREE_ARRAY(char, string->chars, string->length + 1);
-		FREE(ObjString, object);
+		bluObjString* string = (bluObjString*)object;
+		FREE_ARRAY(vm, char, string->chars, string->length + 1);
+		FREE(vm, bluObjString, object);
 		break;
 	}
 
 	case OBJ_UPVALUE: {
-		FREE(ObjUpvalue, object);
+		FREE(vm, bluObjUpvalue, object);
 		break;
 	}
 	}
 }
 
-void collectGarbage() {
+void bluCollectGarbage(bluVM* vm) {
 #ifdef DEBUG_TRACE_GC
 	printf("-- gc begin\n");
-	size_t before = vm.bytesAllocated;
+	size_t before = vm->bytesAllocated;
 #endif
 
 #ifdef DEBUG
@@ -221,42 +205,42 @@ void collectGarbage() {
 #endif
 
 	// Mark the stack roots.
-	for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-		grayValue(*slot);
+	for (bluValue* slot = vm->stack; slot < vm->stackTop; slot++) {
+		bluGrayValue(vm, *slot);
 	}
 
-	for (int i = 0; i < vm.frameCount; i++) {
-		grayObject((Obj*)vm.frames[i].closure);
+	for (int i = 0; i < vm->frameCount; i++) {
+		bluGrayObject(vm, (bluObj*)vm->frames[i].closure);
 	}
 
 	// Mark the open upvalues.
-	for (ObjUpvalue* upvalue = vm.openUpvalues; upvalue != NULL; upvalue = upvalue->next) {
-		grayObject((Obj*)upvalue);
+	for (bluObjUpvalue* upvalue = vm->openUpvalues; upvalue != NULL; upvalue = upvalue->next) {
+		bluGrayObject(vm, (bluObj*)upvalue);
 	}
 
 	// Mark the global roots.
-	grayTable(&vm.globals);
-	grayCompilerRoots();
-	grayObject((Obj*)vm.initString);
+	bluGrayTable(vm, &vm->globals);
+	bluGrayCompilerRoots(vm);
+	bluGrayObject(vm, (bluObj*)vm->initString);
 
 	// Traverse the references.
-	while (vm.grayCount > 0) {
+	while (vm->grayCount > 0) {
 		// Pop an item from the gray stack.
-		Obj* object = vm.grayStack[--vm.grayCount];
-		blackenObject(object);
+		bluObj* object = vm->grayStack[--vm->grayCount];
+		blackenObject(vm, object);
 	}
 
 	// Delete unused interned strings.
-	tableRemoveWhite(&vm.strings);
+	bluTableRemoveWhite(vm, &vm->strings);
 
 	// Collect the white objects.
-	Obj** object = &vm.objects;
+	bluObj** object = &vm->objects;
 	while (*object != NULL) {
 		if (!((*object)->isDark)) {
 			// This object wasn't reached, so remove it from the list and free it.
-			Obj* unreached = *object;
+			bluObj* unreached = *object;
 			*object = unreached->next;
-			freeObject(unreached);
+			freeObject(vm, unreached);
 		} else {
 			// This object was reached, so unmark it (for the next GC) and move on to the next.
 			(*object)->isDark = false;
@@ -265,30 +249,30 @@ void collectGarbage() {
 	}
 
 	// Adjust the heap size based on live memory.
-	vm.nextGC = vm.bytesAllocated < GC_HEAP_MINIMUM ? GC_HEAP_MINIMUM : vm.bytesAllocated * GC_HEAP_GROW_FACTOR;
-	// vm.nextGC = vm.bytesAllocated * GC_HEAP_GROW_FACTOR;
+	vm->nextGC = vm->bytesAllocated < GC_HEAP_MINIMUM ? GC_HEAP_MINIMUM : vm->bytesAllocated * GC_HEAP_GROW_FACTOR;
+	// vm->nextGC = vm->bytesAllocated * GC_HEAP_GROW_FACTOR;
 
 #ifdef DEBUG
 	double end = (double)clock() / CLOCKS_PER_SEC;
-	vm.timeGC += (end - start);
+	vm->timeGC += (end - start);
 #endif
 
 #ifdef DEBUG_TRACE_GC
-	printf("-- gc collected %ld bytes (from %ld to %ld) next at %ld\n", before - vm.bytesAllocated, before,
-		   vm.bytesAllocated, vm.nextGC);
+	printf("-- gc collected %ld bytes (from %ld to %ld) next at %ld\n", before - vm->bytesAllocated, before,
+		   vm->bytesAllocated, vm->nextGC);
 #endif
 }
 
 /**
  * TODO: Store objects in a hierarchical way so we can safely free them.
  */
-void freeObjects() {
-	// Obj* object = vm.objects;
-	// while (object != NULL) {
-	// 	Obj* next = object->next;
-	// 	freeObject(object);
-	// 	object = next;
-	// }
+void bluFreeObjects(bluVM* vm) {
+	bluObj* object = vm->objects;
+	while (object != NULL) {
+		bluObj* next = object->next;
+		freeObject(vm, object);
+		object = next;
+	}
 
-	free(vm.grayStack);
+	free(vm->grayStack);
 }

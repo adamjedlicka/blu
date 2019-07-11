@@ -4,49 +4,49 @@
 #include "core.h"
 #include "vm.h"
 
-#define ADD_METHOD(klass, name, len, method, arity)                                                                    \
+#define ADD_METHOD(vm, klass, name, len, method, arity)                                                                \
 	do {                                                                                                               \
-		Value _name = OBJ_VAL(copyString(name, len));                                                                  \
-		push(_name);                                                                                                   \
-		Value _method = OBJ_VAL(newNative(method, arity));                                                             \
-		push(_method);                                                                                                 \
-		tableSet(klass->methods, AS_STRING(_name), _method);                                                           \
-		pop();                                                                                                         \
-		pop();                                                                                                         \
+		bluValue _name = OBJ_VAL(bluCopyString(vm, name, len));                                                        \
+		bluPush(vm, _name);                                                                                            \
+		bluValue _method = OBJ_VAL(bluNewNative(vm, method, arity));                                                   \
+		bluPush(vm, _method);                                                                                          \
+		bluTableSet(vm, klass->methods, AS_STRING(_name), _method);                                                    \
+		bluPop(vm);                                                                                                    \
+		bluPop(vm);                                                                                                    \
 	} while (false);
 
-static Value Object_toString(int argCount, Value* args) {
-	Value receiver = peek(argCount);
-	ObjClass* klass = getClass(receiver);
+static bluValue Object_toString(bluVM* vm, int argCount, bluValue* args) {
+	bluValue receiver = bluPeek(vm, argCount);
+	bluObjClass* klass = bluGetClass(vm, receiver);
 
 	return OBJ_VAL(klass->name);
 }
 
-static Value Object_isNil(int argCount, Value* args) {
+static bluValue Object_isNil(bluVM* vm, int argCount, bluValue* args) {
 	return BOOL_VAL(false);
 }
 
-static Value Object_isFalsey(int argCount, Value* args) {
-	Value receiver = peek(argCount);
+static bluValue Object_isFalsey(bluVM* vm, int argCount, bluValue* args) {
+	bluValue receiver = bluPeek(vm, argCount);
 
-	return BOOL_VAL(isFalsey(receiver));
+	return BOOL_VAL(bluIsFalsey(vm, receiver));
 }
 
-static Value Object_isTruthy(int argCount, Value* args) {
-	Value receiver = peek(argCount);
+static bluValue Object_isTruthy(bluVM* vm, int argCount, bluValue* args) {
+	bluValue receiver = bluPeek(vm, argCount);
 
-	return BOOL_VAL(!isFalsey(receiver));
+	return BOOL_VAL(!bluIsFalsey(vm, receiver));
 }
 
-static Value Object_getClass(int argCount, Value* args) {
-	Value receiver = peek(argCount);
-	ObjClass* klass = getClass(receiver);
+static bluValue Object_getClass(bluVM* vm, int argCount, bluValue* args) {
+	bluValue receiver = bluPeek(vm, argCount);
+	bluObjClass* klass = bluGetClass(vm, receiver);
 
 	return OBJ_VAL(klass);
 }
 
-static Value Number_toString(int argCount, Value* args) {
-	double number = AS_NUMBER(peek(argCount));
+static bluValue Number_toString(bluVM* vm, int argCount, bluValue* args) {
+	double number = AS_NUMBER(bluPeek(vm, argCount));
 
 	char output[50];
 
@@ -56,44 +56,45 @@ static Value Number_toString(int argCount, Value* args) {
 		snprintf(output, 50, "%g", number);
 	}
 
-	return OBJ_VAL(copyString(output, strlen(output)));
+	return OBJ_VAL(bluCopyString(vm, output, strlen(output)));
 }
 
-static Value Number_floor(int argCount, Value* args) {
-	double number = AS_NUMBER(peek(argCount));
+static bluValue Number_floor(bluVM* vm, int argCount, bluValue* args) {
+	double number = AS_NUMBER(bluPeek(vm, argCount));
 
 	return NUMBER_VAL((int)number);
 }
 
-static Value Number_ceil(int argCount, Value* args) {
-	double number = AS_NUMBER(peek(argCount));
+static bluValue Number_ceil(bluVM* vm, int argCount, bluValue* args) {
+	double number = AS_NUMBER(bluPeek(vm, argCount));
 
 	return NUMBER_VAL((int)number + 1);
 }
 
-static Value Array_len(int argCount, Value* args) {
-	ObjArray* receiver = AS_ARRAY(peek(argCount));
+static bluValue Array_len(bluVM* vm, int argCount, bluValue* args) {
+	bluObjArray* receiver = AS_ARRAY(bluPeek(vm, argCount));
 
 	return NUMBER_VAL(receiver->len);
 }
 
-static Value Array_cap(int argCount, Value* args) {
-	ObjArray* receiver = AS_ARRAY(peek(argCount));
+static bluValue Array_cap(bluVM* vm, int argCount, bluValue* args) {
+	bluObjArray* receiver = AS_ARRAY(bluPeek(vm, argCount));
 
 	return NUMBER_VAL(receiver->cap);
 }
 
-static Value Array_push(int argCount, Value* args) {
-	ObjArray* receiver = AS_ARRAY(peek(argCount));
-	Value value = peek(0);
+static bluValue Array_push(bluVM* vm, int argCount, bluValue* args) {
+	bluObjArray* receiver = AS_ARRAY(bluPeek(vm, argCount));
+	bluValue value = bluPeek(vm, 0);
 
-	arrayPush(receiver, value);
+	bluArrayPush(vm, receiver, value);
 
 	return OBJ_VAL(receiver);
 }
 
-void initCore() {
-	interpret("\
+void initCore(bluVM* vm) {
+
+	bluInterpret(vm, "\
 		class Object {}\
         class Number {}\
         class Boolean {\
@@ -109,43 +110,43 @@ void initCore() {
 		class Function {}\
     ");
 
-	Value value;
+	bluValue value;
 
-	tableGet(&vm.globals, copyString("Object", 6), &value);
-	ObjClass* objectClass = AS_CLASS(value);
+	bluTableGet(vm, &vm->globals, bluCopyString(vm, "Object", 6), &value);
+	bluObjClass* objectClass = AS_CLASS(value);
 
-	tableGet(&vm.globals, copyString("Number", 6), &value);
-	vm.numberClass = AS_CLASS(value);
+	bluTableGet(vm, &vm->globals, bluCopyString(vm, "Number", 6), &value);
+	vm->numberClass = AS_CLASS(value);
 
-	tableGet(&vm.globals, copyString("Boolean", 7), &value);
-	vm.booleanClass = AS_CLASS(value);
+	bluTableGet(vm, &vm->globals, bluCopyString(vm, "Boolean", 7), &value);
+	vm->booleanClass = AS_CLASS(value);
 
-	tableGet(&vm.globals, copyString("Nil", 3), &value);
-	vm.nilClass = AS_CLASS(value);
+	bluTableGet(vm, &vm->globals, bluCopyString(vm, "Nil", 3), &value);
+	vm->nilClass = AS_CLASS(value);
 
-	tableGet(&vm.globals, copyString("String", 6), &value);
-	vm.stringClass = AS_CLASS(value);
+	bluTableGet(vm, &vm->globals, bluCopyString(vm, "String", 6), &value);
+	vm->stringClass = AS_CLASS(value);
 
-	tableGet(&vm.globals, copyString("Array", 5), &value);
-	vm.arrayClass = AS_CLASS(value);
+	bluTableGet(vm, &vm->globals, bluCopyString(vm, "Array", 5), &value);
+	vm->arrayClass = AS_CLASS(value);
 
-	tableGet(&vm.globals, copyString("Class", 5), &value);
-	vm.classClass = AS_CLASS(value);
+	bluTableGet(vm, &vm->globals, bluCopyString(vm, "Class", 5), &value);
+	vm->classClass = AS_CLASS(value);
 
-	tableGet(&vm.globals, copyString("Function", 8), &value);
-	vm.functionClass = AS_CLASS(value);
+	bluTableGet(vm, &vm->globals, bluCopyString(vm, "Function", 8), &value);
+	vm->functionClass = AS_CLASS(value);
 
-	ADD_METHOD(&objectClass, "toString", 8, Object_toString, 0);
-	ADD_METHOD(&objectClass, "isNil", 5, Object_isNil, 0);
-	ADD_METHOD(&objectClass, "isFalsey", 8, Object_isFalsey, 0);
-	ADD_METHOD(&objectClass, "isTruthy", 8, Object_isTruthy, 0);
-	ADD_METHOD(&objectClass, "getClass", 8, Object_getClass, 0);
+	ADD_METHOD(vm, &objectClass, "toString", 8, Object_toString, 0);
+	ADD_METHOD(vm, &objectClass, "isNil", 5, Object_isNil, 0);
+	ADD_METHOD(vm, &objectClass, "isFalsey", 8, Object_isFalsey, 0);
+	ADD_METHOD(vm, &objectClass, "isTruthy", 8, Object_isTruthy, 0);
+	ADD_METHOD(vm, &objectClass, "getClass", 8, Object_getClass, 0);
 
-	ADD_METHOD(&vm.numberClass, "toString", 8, Number_toString, 0);
-	ADD_METHOD(&vm.numberClass, "floor", 5, Number_floor, 0);
-	ADD_METHOD(&vm.numberClass, "ceil", 4, Number_ceil, 0);
+	ADD_METHOD(vm, &vm->numberClass, "toString", 8, Number_toString, 0);
+	ADD_METHOD(vm, &vm->numberClass, "floor", 5, Number_floor, 0);
+	ADD_METHOD(vm, &vm->numberClass, "ceil", 4, Number_ceil, 0);
 
-	ADD_METHOD(&vm.arrayClass, "len", 3, Array_len, 0);
-	ADD_METHOD(&vm.arrayClass, "cap", 3, Array_cap, 0);
-	ADD_METHOD(&vm.arrayClass, "push", 4, Array_push, 1);
+	ADD_METHOD(vm, &vm->arrayClass, "len", 3, Array_len, 0);
+	ADD_METHOD(vm, &vm->arrayClass, "cap", 3, Array_cap, 0);
+	ADD_METHOD(vm, &vm->arrayClass, "push", 4, Array_push, 1);
 }

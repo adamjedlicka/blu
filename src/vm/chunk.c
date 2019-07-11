@@ -1,30 +1,30 @@
 #include <stdlib.h>
 
+#include "blu.h"
 #include "chunk.h"
 #include "memory.h"
-#include "vm.h"
 
-void initChunk(Chunk* chunk) {
+void bluInitChunk(bluVM* vm, bluChunk* chunk) {
 	chunk->count = 0;
 	chunk->capacity = 0;
 	chunk->code = NULL;
 	chunk->lines = NULL;
 
-	initValueArray(&chunk->constants);
+	bluInitValueArray(vm, &chunk->constants);
 }
 
-void freeChunk(Chunk* chunk) {
-	FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
-	FREE_ARRAY(int, chunk->lines, chunk->capacity);
-	freeValueArray(&chunk->constants);
+void bluFreeChunk(bluVM* vm, bluChunk* chunk) {
+	FREE_ARRAY(vm, uint8_t, chunk->code, chunk->capacity);
+	FREE_ARRAY(vm, int, chunk->lines, chunk->capacity);
+	bluFreeValueArray(vm, &chunk->constants);
 }
 
-void writeChunk(Chunk* chunk, uint8_t byte, int line) {
+void bluWriteChunk(bluVM* vm, bluChunk* chunk, uint8_t byte, int line) {
 	if (chunk->capacity < chunk->count + 1) {
 		int oldCapacity = chunk->capacity;
 		chunk->capacity = GROW_CAPACITY(oldCapacity);
-		chunk->code = GROW_ARRAY(chunk->code, uint8_t, oldCapacity, chunk->capacity);
-		chunk->lines = GROW_ARRAY(chunk->lines, int, oldCapacity, chunk->capacity);
+		chunk->code = GROW_ARRAY(vm, chunk->code, uint8_t, oldCapacity, chunk->capacity);
+		chunk->lines = GROW_ARRAY(vm, chunk->lines, int, oldCapacity, chunk->capacity);
 	}
 
 	chunk->code[chunk->count] = byte;
@@ -32,13 +32,13 @@ void writeChunk(Chunk* chunk, uint8_t byte, int line) {
 	chunk->count++;
 }
 
-int addConstant(Chunk* chunk, Value value) {
+int bluAddConstant(bluVM* vm, bluChunk* chunk, bluValue value) {
 	// Make sure the value doesn't get collected when resizing the array.
-	push(value);
+	bluPush(vm, value);
 
-	writeValueArray(&chunk->constants, value);
+	bluWriteValueArray(vm, &chunk->constants, value);
 
-	pop();
+	bluPop(vm);
 
 	return chunk->constants.count - 1;
 }

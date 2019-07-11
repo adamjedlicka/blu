@@ -66,11 +66,13 @@ typedef enum {
 } FunctionType;
 
 typedef struct Compiler {
+	bluVM* vm;
+
 	// The compiler for the enclosing function, if any.
 	struct Compiler* enclosing;
 
 	// The function being compiled.
-	ObjFunction* function;
+	bluObjFunction* function;
 	FunctionType type;
 
 	Local locals[UINT8_COUNT];
@@ -95,7 +97,7 @@ ClassCompiler* currentClass = NULL;
 
 Parser parser;
 
-static Chunk* currentChunk() {
+static bluChunk* currentChunk() {
 	return &current->function->chunk;
 }
 
@@ -188,7 +190,7 @@ static bool match(TokenType type) {
 }
 
 static void emitByte(uint8_t byte) {
-	writeChunk(currentChunk(), byte, parser.previous.line);
+	bluWriteChunk(current->vm, currentChunk(), byte, parser.previous.line);
 }
 
 static void emitBytes(uint8_t byte1, uint8_t byte2) {
@@ -217,8 +219,8 @@ static void emitReturn() {
 	emitByte(OP_RETURN);
 }
 
-static uint8_t makeConstant(Value value) {
-	int constant = addConstant(currentChunk(), value);
+static uint8_t makeConstant(bluValue value) {
+	int constant = bluAddConstant(current->vm, currentChunk(), value);
 	if (constant > UINT8_MAX) {
 		error("Too many constants in one chunk.");
 		return 0;
@@ -228,10 +230,10 @@ static uint8_t makeConstant(Value value) {
 }
 
 static uint8_t identifierConstant(Token* name) {
-	return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
+	return makeConstant(OBJ_VAL(bluCopyString(current->vm, name->start, name->length)));
 }
 
-static uint8_t emitConstant(Value value) {
+static uint8_t emitConstant(bluValue value) {
 	uint8_t constant = makeConstant(value);
 
 	emitBytes(OP_CONSTANT, constant);
@@ -239,7 +241,7 @@ static uint8_t emitConstant(Value value) {
 	return constant;
 }
 
-static int emitJump(OpCode code) {
+static int emitJump(bluOpCode code) {
 	emitByte(code);
 	emitBytes(0, 0);
 
@@ -253,12 +255,13 @@ static void patchJump(int jump) {
 	currentChunk()->code[jump + 1] = length & 0xff;
 }
 
-static void initCompiler(Compiler* compiler, int scopeDepth, FunctionType type) {
+static void initCompiler(Compiler* compiler, bluVM* vm, int scopeDepth, FunctionType type) {
+	compiler->vm = vm;
 	compiler->enclosing = current;
 	compiler->type = type;
 	compiler->localCount = 0;
 	compiler->scopeDepth = scopeDepth;
-	compiler->function = newFunction();
+	compiler->function = bluNewFunction(vm);
 
 	compiler->isPrivate = false;
 	compiler->inLoop = false;
@@ -269,7 +272,9 @@ static void initCompiler(Compiler* compiler, int scopeDepth, FunctionType type) 
 	switch (type) {
 	case TYPE_INITIALIZER:
 	case TYPE_METHOD:
-	case TYPE_FUNCTION: current->function->name = copyString(parser.previous.start, parser.previous.length); break;
+	case TYPE_FUNCTION:
+		current->function->name = bluCopyString(current->vm, parser.previous.start, parser.previous.length);
+		break;
 	case TYPE_ANONYMOUS:
 	case TYPE_TOP_LEVEL: current->function->name = NULL; break;
 	}
@@ -290,18 +295,18 @@ static void initCompiler(Compiler* compiler, int scopeDepth, FunctionType type) 
 	}
 }
 
-static ObjFunction* endCompiler() {
+static bluObjFunction* endCompiler() {
 	if (current->currentBreak != 0) {
 		patchJump(current->currentBreak);
 	}
 
 	emitReturn();
 
-	ObjFunction* function = current->function;
+	bluObjFunction* function = current->function;
 
 #ifdef DEBUG_PRINT_CODE
 	if (!parser.hadError) {
-		disassembleChunk(currentChunk(), function->name != NULL ? function->name->chars : "<top>");
+		bluDisassembleChunk(current->vm, currentChunk(), function->name != NULL ? function->name->chars : "<top>");
 	}
 #endif
 
@@ -457,7 +462,7 @@ static void number(bool canAssign) {
 }
 
 static void string(bool canAssign) {
-	emitConstant(OBJ_VAL(copyString(parser.previous.start + 1, parser.previous.length - 2)));
+	emitConstant(OBJ_VAL(bluCopyString(current->vm, parser.previous.start + 1, parser.previous.length - 2)));
 }
 
 static bool identifiersEqual(Token* a, Token* b) {
@@ -614,7 +619,7 @@ static void super_(bool canAssign) {
 		uint8_t argCount = argumentList();
 
 		pushSuperclass();
-		emitBytes(OP_SUPER_0 + argCount, makeConstant(OBJ_VAL(copyString("__init", 6))));
+		emitBytes(OP_SUPER_0 + argCount, makeConstant(OBJ_VAL(bluCopyString(current->vm, "__init", 6))));
 		return;
 	}
 
@@ -798,7 +803,7 @@ static void block() {
 
 static void function(FunctionType type) {
 	Compiler compiler;
-	initCompiler(&compiler, 1, type);
+	initCompiler(&compiler, current->vm, 1, type);
 
 	// Compile the parameter list.
 	consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
@@ -833,7 +838,7 @@ static void function(FunctionType type) {
 	}
 
 	// Create the function object.
-	ObjFunction* function = endCompiler();
+	bluObjFunction* function = endCompiler();
 
 	// Capture the upvalues in the new closure object.
 	emitBytes(OP_CLOSURE, makeConstant(OBJ_VAL(function)));
@@ -1214,10 +1219,10 @@ static void statement() {
 	}
 }
 
-ObjFunction* compile(const char* source) {
+bluObjFunction* bluCompile(bluVM* vm, const char* source) {
 	initScanner(source);
 	Compiler compiler;
-	initCompiler(&compiler, 0, TYPE_TOP_LEVEL);
+	initCompiler(&compiler, vm, 0, TYPE_TOP_LEVEL);
 
 	parser.hadError = false;
 	parser.panicMode = false;
@@ -1230,15 +1235,15 @@ ObjFunction* compile(const char* source) {
 		declaration();
 	}
 
-	ObjFunction* function = endCompiler();
+	bluObjFunction* function = endCompiler();
 
 	return parser.hadError ? NULL : function;
 }
 
-void grayCompilerRoots() {
+void bluGrayCompilerRoots(bluVM* vm) {
 	Compiler* compiler = current;
 	while (compiler != NULL) {
-		grayObject((Obj*)compiler->function);
+		bluGrayObject(vm, (bluObj*)compiler->function);
 		compiler = compiler->enclosing;
 	}
 }

@@ -7,7 +7,7 @@
 #include "debug.h"
 #include "vm.h"
 
-static void repl() {
+static void repl(bluVM* vm) {
 	char line[1024];
 	for (;;) {
 		printf("> ");
@@ -17,7 +17,7 @@ static void repl() {
 			break;
 		}
 
-		interpret(line);
+		bluInterpret(vm, line);
 	}
 }
 
@@ -50,9 +50,9 @@ static char* readFile(const char* path) {
 	return buffer;
 }
 
-static void runFile(const char* path) {
+static void runFile(bluVM* vm, const char* path) {
 	char* source = readFile(path);
-	InterpretResult result = interpret(source);
+	bluInterpretResult result = bluInterpret(vm, source);
 	free(source);
 
 	if (result == INTERPRET_COMPILE_ERROR) exit(65);
@@ -65,22 +65,23 @@ static void help() {
 }
 
 int main(int argc, const char* argv[]) {
-	initVM();
+	bluVM vm;
+	bluInitVM(&vm);
 
 	if (argc == 1) {
-		repl();
+		repl(&vm);
 	} else if (argc == 2) {
 		if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
 			help();
 		} else {
-			runFile(argv[1]);
+			runFile(&vm, argv[1]);
 		}
 	} else {
 		fprintf(stderr, "Usage: blu [path]\n");
 		exit(64);
 	}
 
-	freeVM();
+	bluFreeVM(&vm);
 
 	return 0;
 }

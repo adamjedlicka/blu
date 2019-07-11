@@ -2,9 +2,10 @@
 #define blu_compiler_h
 
 #include "object.h"
+#include "vm.h"
 
-ObjFunction* compile(const char* source);
+bluObjFunction* bluCompile(bluVM* vm, const char* source);
 
-void grayCompilerRoots();
+void bluGrayCompilerRoots(bluVM* vm);
 
 #endif

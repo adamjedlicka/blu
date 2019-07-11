@@ -6,28 +6,28 @@
 #include "object.h"
 #include "value.h"
 
-void initValueArray(ValueArray* array) {
+void bluInitValueArray(bluVM* vm, bluValueArray* array) {
 	array->values = NULL;
 	array->capacity = 0;
 	array->count = 0;
 }
 
-void writeValueArray(ValueArray* array, Value value) {
+void bluWriteValueArray(bluVM* vm, bluValueArray* array, bluValue value) {
 	if (array->capacity < array->count + 1) {
 		int oldCapacity = array->capacity;
 		array->capacity = GROW_CAPACITY(oldCapacity);
-		array->values = GROW_ARRAY(array->values, Value, oldCapacity, array->capacity);
+		array->values = GROW_ARRAY(vm, array->values, bluValue, oldCapacity, array->capacity);
 	}
 
 	array->values[array->count] = value;
 	array->count++;
 }
 
-void freeValueArray(ValueArray* array) {
-	FREE_ARRAY(Value, array->values, array->capacity);
+void bluFreeValueArray(bluVM* vm, bluValueArray* array) {
+	FREE_ARRAY(vm, bluValue, array->values, array->capacity);
 }
 
-bool valuesEqual(Value a, Value b) {
+bool bluValuesEqual(bluVM* vm, bluValue a, bluValue b) {
 	if (a.type != b.type) return false;
 
 	switch (a.type) {
@@ -39,7 +39,7 @@ bool valuesEqual(Value a, Value b) {
 	}
 }
 
-void printValue(Value value) {
+void bluPrintValue(bluVM* vm, bluValue value) {
 	switch (value.type) {
 	case VAL_BOOL: printf(AS_BOOL(value) ? "true" : "false"); break;
 	case VAL_NIL: printf("nil"); break;
@@ -51,6 +51,6 @@ void printValue(Value value) {
 		}
 		break;
 	}
-	case VAL_OBJ: printObject(value); break;
+	case VAL_OBJ: bluPrintObject(vm, value); break;
 	}
 }

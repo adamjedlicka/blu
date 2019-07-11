@@ -8,33 +8,33 @@
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
-#define IS_ARRAY(value) isObjType(value, OBJ_ARRAY)
-#define IS_BOUND_METHOD(value) isObjType(value, OBJ_BOUND_METHOD)
-#define IS_CLASS(value) isObjType(value, OBJ_CLASS)
-#define IS_CLOSURE(value) isObjType(value, OBJ_CLOSURE)
-#define IS_FUNCTION(value) isObjType(value, OBJ_FUNCTION)
-#define IS_INSTANCE(value) isObjType(value, OBJ_INSTANCE)
-#define IS_NATIVE(value) isObjType(value, OBJ_NATIVE)
-#define IS_STRING(value) isObjType(value, OBJ_STRING)
+#define IS_ARRAY(value) bluIsObjType(value, OBJ_ARRAY)
+#define IS_BOUND_METHOD(value) bluIsObjType(value, OBJ_BOUND_METHOD)
+#define IS_CLASS(value) bluIsObjType(value, OBJ_CLASS)
+#define IS_CLOSURE(value) bluIsObjType(value, OBJ_CLOSURE)
+#define IS_FUNCTION(value) bluIsObjType(value, OBJ_FUNCTION)
+#define IS_INSTANCE(value) bluIsObjType(value, OBJ_INSTANCE)
+#define IS_NATIVE(value) bluIsObjType(value, OBJ_NATIVE)
+#define IS_STRING(value) bluIsObjType(value, OBJ_STRING)
 
-#define AS_ARRAY(value) ((ObjArray*)AS_OBJ(value))
-#define AS_BOUND_METHOD(value) ((ObjBoundMethod*)AS_OBJ(value))
-#define AS_CLASS(value) ((ObjClass*)AS_OBJ(value))
-#define AS_CLOSURE(value) ((ObjClosure*)AS_OBJ(value))
-#define AS_CSTRING(value) (((ObjString*)AS_OBJ(value))->chars)
-#define AS_FUNCTION(value) ((ObjFunction*)AS_OBJ(value))
-#define AS_INSTANCE(value) ((ObjInstance*)AS_OBJ(value))
-#define AS_NATIVE(value) (((ObjNative*)AS_OBJ(value)))
-#define AS_STRING(value) ((ObjString*)AS_OBJ(value))
+#define AS_ARRAY(value) ((bluObjArray*)AS_OBJ(value))
+#define AS_BOUND_METHOD(value) ((bluObjBoundMethod*)AS_OBJ(value))
+#define AS_CLASS(value) ((bluObjClass*)AS_OBJ(value))
+#define AS_CLOSURE(value) ((bluObjClosure*)AS_OBJ(value))
+#define AS_CSTRING(value) (((bluObjString*)AS_OBJ(value))->chars)
+#define AS_FUNCTION(value) ((bluObjFunction*)AS_OBJ(value))
+#define AS_INSTANCE(value) ((bluObjInstance*)AS_OBJ(value))
+#define AS_NATIVE(value) (((bluObjNative*)AS_OBJ(value)))
+#define AS_STRING(value) ((bluObjString*)AS_OBJ(value))
 
-typedef struct sObjArray ObjArray;
-typedef struct sObjBoundMethod ObjBoundMethod;
-typedef struct sObjClass ObjClass;
-typedef struct sObjClosure ObjClosure;
-typedef struct sObjFunction ObjFunction;
-typedef struct sObjInstance ObjInstance;
-typedef struct sObjNative ObjNative;
-typedef struct sObjUpvalue ObjUpvalue;
+typedef struct _ObjArray bluObjArray;
+typedef struct _ObjBoundMethod bluObjBoundMethod;
+typedef struct _ObjClass bluObjClass;
+typedef struct _ObjClosure bluObjClosure;
+typedef struct _ObjFunction bluObjFunction;
+typedef struct _ObjInstance bluObjInstance;
+typedef struct _ObjNative bluObjNative;
+typedef struct _ObjUpvalue bluObjUpvalue;
 
 typedef enum {
 	OBJ_ARRAY,
@@ -46,101 +46,101 @@ typedef enum {
 	OBJ_NATIVE,
 	OBJ_STRING,
 	OBJ_UPVALUE,
-} ObjType;
+} bluObjType;
 
-struct sObj {
-	ObjType type;
-	ObjClass* klass;
+struct _Obj {
+	bluObjType type;
+	bluObjClass* klass;
 	bool isDark;
-	struct sObj* next;
+	struct _Obj* next;
 };
 
-struct sObjArray {
-	Obj obj;
+struct _ObjArray {
+	bluObj obj;
 	uint32_t len;
 	uint32_t cap;
-	Value* data;
+	bluValue* data;
 };
 
-struct sObjBoundMethod {
-	Obj obj;
-	Value receiver;
-	ObjClosure* method;
+struct _ObjBoundMethod {
+	bluObj obj;
+	bluValue receiver;
+	bluObjClosure* method;
 };
 
-struct sObjClass {
-	Obj obj;
-	ObjString* name;
-	Table methods;
-	ObjClass* superclass;
+struct _ObjClass {
+	bluObj obj;
+	bluObjString* name;
+	bluTable methods;
+	bluObjClass* superclass;
 };
 
-struct sObjClosure {
-	Obj obj;
-	ObjFunction* function;
-	ObjUpvalue** upvalues;
+struct _ObjClosure {
+	bluObj obj;
+	bluObjFunction* function;
+	bluObjUpvalue** upvalues;
 	int upvalueCount;
 };
 
-struct sObjFunction {
-	Obj obj;
+struct _ObjFunction {
+	bluObj obj;
 	int arity;
 	int upvalueCount;
-	Chunk chunk;
-	ObjString* name;
+	bluChunk chunk;
+	bluObjString* name;
 };
 
-struct sObjInstance {
-	Obj obj;
-	Table fields;
+struct _ObjInstance {
+	bluObj obj;
+	bluTable fields;
 };
 
-typedef Value (*NativeFn)(int argCount, Value* args);
+typedef bluValue (*bluNativeFn)(bluVM* vm, int argCount, bluValue* args);
 
-struct sObjNative {
-	Obj obj;
+struct _ObjNative {
+	bluObj obj;
 	int arity;
-	NativeFn function;
+	bluNativeFn function;
 };
 
-struct sObjString {
-	Obj obj;
+struct _ObjString {
+	bluObj obj;
 	int length;
 	char* chars;
 	uint32_t hash;
 };
 
-struct sObjUpvalue {
-	Obj obj;
+struct _ObjUpvalue {
+	bluObj obj;
 
 	// Pointer to the variable this upvalue is referencing.
-	Value* value;
+	bluValue* value;
 
 	// If the upvalue is closed (i.e. the local variable it was pointing to has been popped off the stack) then the
 	// closed-over value is hoisted out of the stack into here. [value] is then be changed to point to this.
-	Value closed;
+	bluValue closed;
 
 	// Open upvalues are stored in a linked list. This points to the next one in that list.
-	ObjUpvalue* next;
+	bluObjUpvalue* next;
 };
 
-ObjArray* newArray(uint32_t len);
-ObjBoundMethod* newBoundMethod(Value receiver, ObjClosure* method);
-ObjClass* newClass(ObjString* name);
-ObjClosure* newClosure(ObjFunction* function);
-ObjFunction* newFunction();
-ObjInstance* newInstance(ObjClass* klass);
-ObjNative* newNative(NativeFn function, int arity);
-ObjUpvalue* newUpvalue(Value* slot);
+bluObjArray* bluNewArray(bluVM*, uint32_t len);
+bluObjBoundMethod* bluNewBoundMethod(bluVM*, bluValue receiver, bluObjClosure* method);
+bluObjClass* bluNewClass(bluVM*, bluObjString* name);
+bluObjClosure* bluNewClosure(bluVM*, bluObjFunction* function);
+bluObjFunction* bluNewFunction(bluVM*);
+bluObjInstance* bluNewInstance(bluVM*, bluObjClass* klass);
+bluObjNative* bluNewNative(bluVM*, bluNativeFn function, int arity);
+bluObjUpvalue* bluNewUpvalue(bluVM*, bluValue* slot);
 
-void arrayPush(ObjArray*, Value);
+void bluArrayPush(bluVM* vm, bluObjArray*, bluValue);
 
-ObjString* takeString(char* chars, int length);
-ObjString* copyString(const char* chars, int length);
+bluObjString* bluTakeString(bluVM* vm, char* chars, int length);
+bluObjString* bluCopyString(bluVM* vm, const char* chars, int length);
 
-void printObject(Value value);
+void bluPrintObject(bluVM* vm, bluValue value);
 
-static inline bool isObjType(Value value, ObjType type) {
+static inline bool bluIsObjType(bluValue value, bluObjType type) {
 	return IS_OBJ(value) && AS_OBJ(value)->type == type;
 }
 

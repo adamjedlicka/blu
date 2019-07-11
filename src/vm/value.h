@@ -3,24 +3,24 @@
 
 #include "common.h"
 
-typedef struct sObj Obj;
-typedef struct sObjString ObjString;
+typedef struct _Obj bluObj;
+typedef struct _ObjString bluObjString;
 
 typedef enum {
 	VAL_BOOL,
 	VAL_NIL,
 	VAL_NUMBER,
 	VAL_OBJ,
-} ValueType;
+} bluValueType;
 
 typedef struct {
-	ValueType type;
+	bluValueType type;
 	union {
 		bool boolean;
 		double number;
-		Obj* obj;
+		bluObj* obj;
 	} as;
-} Value;
+} bluValue;
 
 #define IS_BOOL(value) ((value).type == VAL_BOOL)
 #define IS_NIL(value) ((value).type == VAL_NIL)
@@ -31,23 +31,23 @@ typedef struct {
 #define AS_NUMBER(value) ((value).as.number)
 #define AS_OBJ(value) ((value).as.obj)
 
-#define BOOL_VAL(value) ((Value){VAL_BOOL, {.boolean = value}})
-#define NIL_VAL ((Value){VAL_NIL, {.number = 0}})
-#define NUMBER_VAL(value) ((Value){VAL_NUMBER, {.number = value}})
-#define OBJ_VAL(object) ((Value){VAL_OBJ, {.obj = (Obj*)object}})
+#define BOOL_VAL(value) ((bluValue){VAL_BOOL, {.boolean = value}})
+#define NIL_VAL ((bluValue){VAL_NIL, {.number = 0}})
+#define NUMBER_VAL(value) ((bluValue){VAL_NUMBER, {.number = value}})
+#define OBJ_VAL(object) ((bluValue){VAL_OBJ, {.obj = (bluObj*)object}})
 
 typedef struct {
 	int capacity;
 	int count;
-	Value* values;
-} ValueArray;
+	bluValue* values;
+} bluValueArray;
 
-void initValueArray(ValueArray* array);
-void writeValueArray(ValueArray* array, Value value);
-void freeValueArray(ValueArray* array);
+void bluInitValueArray(bluVM* vm, bluValueArray* array);
+void bluWriteValueArray(bluVM* vm, bluValueArray* array, bluValue value);
+void bluFreeValueArray(bluVM* vm, bluValueArray* array);
 
-bool valuesEqual(Value a, Value b);
+bool bluValuesEqual(bluVM* vm, bluValue a, bluValue b);
 
-void printValue(Value value);
+void bluPrintValue(bluVM* vm, bluValue value);
 
 #endif
