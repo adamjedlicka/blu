@@ -13,8 +13,8 @@
 #endif
 
 typedef struct {
-	Token current;
-	Token previous;
+	bluToken current;
+	bluToken previous;
 	bool hadError;
 	bool panicMode;
 } Parser;
@@ -42,7 +42,7 @@ typedef struct {
 } ParseRule;
 
 typedef struct {
-	Token name;
+	bluToken name;
 	int depth;
 
 	// True if this local variable is captured as an upvalue by a function.
@@ -66,6 +66,7 @@ typedef enum {
 } FunctionType;
 
 typedef struct Compiler {
+	bluScanner* scanner;
 	bluVM* vm;
 
 	// The compiler for the enclosing function, if any.
@@ -88,7 +89,7 @@ typedef struct Compiler {
 typedef struct ClassCompiler {
 	struct ClassCompiler* enclosing;
 
-	Token name;
+	bluToken name;
 	bool hasSuperclass;
 } ClassCompiler;
 
@@ -101,7 +102,7 @@ static bluChunk* currentChunk() {
 	return &current->function->chunk;
 }
 
-static void errorAt(Token* token, const char* message) {
+static void errorAt(bluToken* token, const char* message) {
 	if (parser.panicMode) return;
 	parser.panicMode = true;
 
@@ -131,7 +132,7 @@ static void errorAtCurrent(const char* message) {
 
 static void consumeNewlines() {
 	while (parser.current.type == TOKEN_NEWLINE) {
-		parser.current = scanToken();
+		parser.current = bluScanToken(current->scanner);
 	}
 }
 
@@ -154,7 +155,7 @@ static void advance() {
 	parser.previous = parser.current;
 
 	for (;;) {
-		parser.current = scanToken();
+		parser.current = bluScanToken(current->scanner);
 		if (parser.current.type != TOKEN_ERROR) break;
 
 		errorAtCurrent(parser.current.start);
@@ -165,14 +166,14 @@ static void advance() {
 
 // Checks whether next token is of the given type.
 // Returns true if so, otherwise returns false.
-static bool check(TokenType type) {
+static bool check(bluTokenType type) {
 	if (type == TOKEN_NEWLINE && parser.previous.type == TOKEN_RIGHT_BRACE) return true;
 
 	return parser.current.type == type;
 }
 
 // Consumes next token. If next token is not of the given type, throws an error with a message.
-static void consume(TokenType type, const char* message) {
+static void consume(bluTokenType type, const char* message) {
 	if (check(type)) {
 		advance();
 		return;
@@ -183,7 +184,7 @@ static void consume(TokenType type, const char* message) {
 
 // Checks whether next token is of the given type.
 // If yes, consumes it and returns true, otherwise it does not consume any tokens and return false.
-static bool match(TokenType type) {
+static bool match(bluTokenType type) {
 	if (!check(type)) return false;
 	advance();
 	return true;
@@ -229,7 +230,7 @@ static uint8_t makeConstant(bluValue value) {
 	return (uint8_t)constant;
 }
 
-static uint8_t identifierConstant(Token* name) {
+static uint8_t identifierConstant(bluToken* name) {
 	return makeConstant(OBJ_VAL(bluCopyString(current->vm, name->start, name->length)));
 }
 
@@ -255,7 +256,8 @@ static void patchJump(int jump) {
 	currentChunk()->code[jump + 1] = length & 0xff;
 }
 
-static void initCompiler(Compiler* compiler, bluVM* vm, int scopeDepth, FunctionType type) {
+static void initCompiler(Compiler* compiler, bluScanner* scanner, bluVM* vm, int scopeDepth, FunctionType type) {
+	compiler->scanner = scanner;
 	compiler->vm = vm;
 	compiler->enclosing = current;
 	compiler->type = type;
@@ -335,12 +337,12 @@ static void endScope() {
 static void expression();
 static void statement();
 static void declaration();
-static ParseRule* getRule(TokenType type);
+static ParseRule* getRule(bluTokenType type);
 static void parsePrecedence(Precedence precedence);
 
 static void binary(bool canAssign) {
 	// Remember the operator.
-	TokenType operatorType = parser.previous.type;
+	bluTokenType operatorType = parser.previous.type;
 
 	// Compile the right operand.
 	ParseRule* rule = getRule(operatorType);
@@ -465,12 +467,12 @@ static void string(bool canAssign) {
 	emitConstant(OBJ_VAL(bluCopyString(current->vm, parser.previous.start + 1, parser.previous.length - 2)));
 }
 
-static bool identifiersEqual(Token* a, Token* b) {
+static bool identifiersEqual(bluToken* a, bluToken* b) {
 	if (a->length != b->length) return false;
 	return memcmp(a->start, b->start, a->length) == 0;
 }
 
-static int resolveLocal(Compiler* compiler, Token* name) {
+static int resolveLocal(Compiler* compiler, bluToken* name) {
 	for (int i = compiler->localCount - 1; i >= 0; i--) {
 		Local* local = &compiler->locals[i];
 		if (identifiersEqual(name, &local->name)) {
@@ -513,7 +515,7 @@ static int addUpvalue(Compiler* compiler, uint8_t index, bool isLocal) {
 //
 // If the name is found outside of the immediately enclosing function, this will flatten the closure and add upvalues to
 // all of the intermediate functions so that it gets walked down to this one.
-static int resolveUpvalue(Compiler* compiler, Token* name) {
+static int resolveUpvalue(Compiler* compiler, bluToken* name) {
 	// If we are at the top level, we didn't find it.
 	if (compiler->enclosing == NULL) return -1;
 
@@ -539,7 +541,7 @@ static int resolveUpvalue(Compiler* compiler, Token* name) {
 	return -1;
 }
 
-static void addLocal(Token name) {
+static void addLocal(bluToken name) {
 	if (current->localCount == UINT8_COUNT) {
 		error("Too many local variables in function.");
 		return;
@@ -555,7 +557,7 @@ static void declareVariable() {
 	// Global variables are implicitly declared.
 	if (current->scopeDepth == 0) return;
 
-	Token* name = &parser.previous;
+	bluToken* name = &parser.previous;
 	for (int i = current->localCount - 1; i >= 0; i--) {
 		Local* local = &current->locals[i];
 		if (local->depth != -1 && local->depth < current->scopeDepth) break;
@@ -567,7 +569,7 @@ static void declareVariable() {
 	addLocal(*name);
 }
 
-static void namedVariable(Token name, bool canAssign) {
+static void namedVariable(bluToken name, bool canAssign) {
 	uint8_t getOp, setOp;
 	int arg = resolveLocal(current, &name);
 	if (arg != -1) {
@@ -594,8 +596,8 @@ static void variable(bool canAssign) {
 	namedVariable(parser.previous, canAssign);
 }
 
-static Token syntheticToken(const char* text) {
-	Token token;
+static bluToken syntheticToken(const char* text) {
+	bluToken token;
 	token.start = text;
 	token.length = (int)strlen(text);
 	return token;
@@ -655,7 +657,7 @@ static void at(bool canAssign) {
 }
 
 static void unary(bool canAssign) {
-	TokenType operatorType = parser.previous.type;
+	bluTokenType operatorType = parser.previous.type;
 
 	// Compile the operand.
 	parsePrecedence(PREC_UNARY);
@@ -789,7 +791,7 @@ static void defineVariable(uint8_t global) {
 	emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
-static ParseRule* getRule(TokenType type) {
+static ParseRule* getRule(bluTokenType type) {
 	return &rules[type];
 }
 
@@ -803,7 +805,7 @@ static void block() {
 
 static void function(FunctionType type) {
 	Compiler compiler;
-	initCompiler(&compiler, current->vm, 1, type);
+	initCompiler(&compiler, current->scanner, current->vm, 1, type);
 
 	// Compile the parameter list.
 	consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
@@ -875,7 +877,7 @@ static void method() {
 
 static void classDeclaration() {
 	uint8_t name = parseVariable("Expect class name.");
-	Token className = parser.previous;
+	bluToken className = parser.previous;
 
 	emitBytes(OP_CLASS, name);
 	defineVariable(name);
@@ -1220,9 +1222,11 @@ static void statement() {
 }
 
 bluObjFunction* bluCompile(bluVM* vm, const char* source) {
-	initScanner(source);
+	bluScanner scanner;
+	bluInitScanner(&scanner, source);
+
 	Compiler compiler;
-	initCompiler(&compiler, vm, 0, TYPE_TOP_LEVEL);
+	initCompiler(&compiler, &scanner, vm, 0, TYPE_TOP_LEVEL);
 
 	parser.hadError = false;
 	parser.panicMode = false;

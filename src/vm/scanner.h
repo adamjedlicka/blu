@@ -1,6 +1,13 @@
 #ifndef blu_scanner_h
 #define blu_scanner_h
 
+typedef struct {
+	const char* start;
+	const char* current;
+	int line;
+	bool emitEOF;
+} bluScanner;
+
 typedef enum {
 	// Single-character tokens.
 	TOKEN_LEFT_PAREN,
@@ -56,17 +63,17 @@ typedef enum {
 	TOKEN_ERROR,
 	TOKEN_NEWLINE,
 	TOKEN_EOF,
-} TokenType;
+} bluTokenType;
 
 typedef struct {
-	TokenType type;
+	bluTokenType type;
 	const char* start;
 	int length;
 	int line;
-} Token;
+} bluToken;
 
-void initScanner(const char* source);
+void bluInitScanner(bluScanner* scanner, const char* source);
 
-Token scanToken();
+bluToken bluScanToken(bluScanner* scanner);
 
 #endif
