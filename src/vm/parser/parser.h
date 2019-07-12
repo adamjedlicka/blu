@@ -15,8 +15,8 @@ typedef struct {
 	bool emitEOF;
 } bluParser;
 
-void bluInitParser(bluParser* parser, const char* source);
+void bluParserInit(bluParser* parser, const char* source);
 
-bluToken bluNextToken(bluParser* parser);
+bluToken bluParserNextToken(bluParser* parser);
 
 #endif

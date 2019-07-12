@@ -1,0 +1,308 @@
+#include <stdio.h>
+
+#include "compiler.h"
+#include "vm/value/value.h"
+
+DEFINE_BUFFER(bluOpCode, bluOpCode);
+
+typedef enum {
+	PREC_NONE,
+	PREC_ASSIGNMENT, // =
+	PREC_EQUALITY,   // == !=
+	PREC_COMPARISON, // < > <= >=
+	PREC_OR,		 // or
+	PREC_AND,		 // and
+	PREC_TERM,		 // + -
+	PREC_FACTOR,	 // * /
+	PREC_UNARY,		 // ! -
+	PREC_CALL,		 // . () []
+	PREC_PRIMARY,
+} Precedence;
+
+typedef void (*ParseFn)(bluCompiler* compiler, bool canAssign);
+
+typedef struct {
+	ParseFn prefix;
+	ParseFn infix;
+	Precedence precedence;
+} ParseRule;
+
+static void errorAt(bluCompiler* compiler, bluToken* token, const char* message) {
+	if (compiler->panicMode) return;
+	compiler->panicMode = true;
+
+	fprintf(stderr, "[line %d:%d] Error", token->line, token->column);
+
+	if (token->type == TOKEN_EOF) {
+		fprintf(stderr, " at end");
+	} else if (token->type == TOKEN_NEWLINE) {
+		fprintf(stderr, " at newline");
+	} else if (token->type == TOKEN_ERROR) {
+		// Nothing.
+	} else {
+		fprintf(stderr, " at '%.*s'", token->length, token->start);
+	}
+
+	fprintf(stderr, ": %s\n", message);
+
+	compiler->hadError = true;
+}
+
+static void error(bluCompiler* compiler, const char* message) {
+	errorAt(compiler, &compiler->previous, message);
+}
+
+static void errorAtCurrent(bluCompiler* compiler, const char* message) {
+	errorAt(compiler, &compiler->current, message);
+}
+
+static void consumeNewlines(bluCompiler* compiler) {
+	while (compiler->current.type == TOKEN_NEWLINE) {
+		compiler->current = bluParserNextToken(&compiler->parser);
+	}
+}
+
+static void skipNewlines(bluCompiler* compiler) {
+	switch (compiler->previous.type) {
+	case TOKEN_NEWLINE:
+	case TOKEN_LEFT_BRACE:
+	case TOKEN_RIGHT_BRACE:
+	case TOKEN_SEMICOLON:
+	case TOKEN_DOT: consumeNewlines(compiler); break;
+
+	default:
+		// Do nothing.
+		break;
+	}
+}
+
+static void advance(bluCompiler* compiler) {
+	compiler->previous = compiler->current;
+
+	while (true) {
+		compiler->current = bluParserNextToken(&compiler->parser);
+		if (compiler->current.type != TOKEN_ERROR) break;
+
+		errorAtCurrent(compiler, compiler->current.start);
+	}
+
+	skipNewlines(compiler);
+}
+
+// Checks whether next token is of the given type.
+// Returns true if so, otherwise returns false.
+static bool check(bluCompiler* compiler, bluTokenType type) {
+	if (type == TOKEN_NEWLINE && compiler->previous.type == TOKEN_RIGHT_BRACE) return true;
+
+	return compiler->current.type == type;
+}
+
+// Consumes next token. If next token is not of the given type, throws an error with a message.
+static void consume(bluCompiler* compiler, bluTokenType type, const char* message) {
+	if (check(compiler, type)) {
+		advance(compiler);
+		return;
+	}
+
+	errorAtCurrent(compiler, message);
+}
+
+// Checks whether next token is of the given type.
+// If yes, consumes it and returns true, otherwise it does not consume any tokens and return false.
+static bool match(bluCompiler* compiler, bluTokenType type) {
+	if (!check(compiler, type)) return false;
+
+	advance(compiler);
+
+	return true;
+}
+
+static void synchronize(bluCompiler* compiler) {
+	compiler->panicMode = false;
+
+	while (compiler->current.type != TOKEN_EOF) {
+		if (compiler->previous.type == TOKEN_SEMICOLON) return;
+
+		switch (compiler->current.type) {
+		case TOKEN_CLASS:
+		case TOKEN_FN:
+		case TOKEN_VAR:
+		case TOKEN_FOR:
+		case TOKEN_IF:
+		case TOKEN_WHILE:
+		case TOKEN_RETURN: return;
+		default:; // Do nothing.
+		}
+
+		advance(compiler);
+	}
+}
+
+static void emitByte(bluCompiler* compiler, uint8_t byte) {
+	bluOpCodeBufferWrite(&compiler->opCodeBuffer, byte);
+}
+
+static void emitBytes(bluCompiler* compiler, uint8_t byte1, uint8_t byte2) {
+	emitByte(compiler, byte1);
+	emitByte(compiler, byte2);
+}
+
+static uint8_t makeConstant(bluCompiler* compiler, bluValue value) {
+	uint32_t constant = bluValueBufferWrite(&compiler->chunk.constants, value);
+	if (constant > UINT8_MAX) {
+		error(compiler, "Too many constants in one chunk.");
+		return 0;
+	}
+
+	return (uint8_t)constant;
+}
+
+static uint8_t emitConstant(bluCompiler* compiler, bluValue value) {
+	uint8_t constant = makeConstant(compiler, value);
+
+	emitBytes(compiler, OP_CONSTANT, constant);
+
+	return constant;
+}
+
+static void number(bluCompiler* compiler, bool canAssign) {
+	double value = strtod(compiler->previous.start, NULL);
+	emitConstant(compiler, NUMBER_VAL(value));
+}
+
+ParseRule rules[] = {
+	{NULL, NULL, PREC_CALL}, // TOKEN_LEFT_PAREN
+	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_PAREN
+	{NULL, NULL, PREC_CALL}, // TOKEN_LEFT_BACKET
+	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_BRACKET
+	{NULL, NULL, PREC_NONE}, // TOKEN_LEFT_BRACE
+	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_BRACE
+	{NULL, NULL, PREC_NONE}, // TOKEN_COLON
+	{NULL, NULL, PREC_NONE}, // TOKEN_COMMA
+	{NULL, NULL, PREC_CALL}, // TOKEN_DOT
+	{NULL, NULL, PREC_NONE}, // TOKEN_SEMICOLON
+	{NULL, NULL, PREC_NONE}, // TOKEN_AT
+
+	{NULL, NULL, PREC_NONE},	   // TOKEN_BANG
+	{NULL, NULL, PREC_EQUALITY},   // TOKEN_BANG_EQUAL
+	{NULL, NULL, PREC_NONE},	   // TOKEN_EQUAL
+	{NULL, NULL, PREC_EQUALITY},   // TOKEN_EQUAL_EQUAL
+	{NULL, NULL, PREC_COMPARISON}, // TOKEN_GREATER
+	{NULL, NULL, PREC_COMPARISON}, // TOKEN_GREATER_EQUAL
+	{NULL, NULL, PREC_COMPARISON}, // TOKEN_LESS
+	{NULL, NULL, PREC_COMPARISON}, // TOKEN_LESS_EQUAL
+	{NULL, NULL, PREC_TERM},	   // TOKEN_MINUS
+	{NULL, NULL, PREC_FACTOR},	 // TOKEN_PERCENT
+	{NULL, NULL, PREC_TERM},	   // TOKEN_PLUS
+	{NULL, NULL, PREC_FACTOR},	 // TOKEN_SLASH
+	{NULL, NULL, PREC_FACTOR},	 // TOKEN_STAR
+
+	{NULL, NULL, PREC_NONE},   // TOKEN_IDENTIFIER
+	{NULL, NULL, PREC_NONE},   // TOKEN_STRING
+	{number, NULL, PREC_NONE}, // TOKEN_NUMBER
+
+	{NULL, NULL, PREC_AND},  // TOKEN_AND
+	{NULL, NULL, PREC_NONE}, // TOKEN_BREAK
+	{NULL, NULL, PREC_NONE}, // TOKEN_CLASS
+	{NULL, NULL, PREC_NONE}, // TOKEN_ELSE
+	{NULL, NULL, PREC_NONE}, // TOKEN_FALSE
+	{NULL, NULL, PREC_NONE}, // TOKEN_FOR
+	{NULL, NULL, PREC_NONE}, // TOKEN_FN
+	{NULL, NULL, PREC_NONE}, // TOKEN_IF
+	{NULL, NULL, PREC_NONE}, // TOKEN_NIL
+	{NULL, NULL, PREC_OR},   // TOKEN_OR
+	{NULL, NULL, PREC_NONE}, // TOKEN_ASSERT
+	{NULL, NULL, PREC_NONE}, // TOKEN_RETURN
+	{NULL, NULL, PREC_NONE}, // TOKEN_SUPER
+	{NULL, NULL, PREC_NONE}, // TOKEN_TRUE
+	{NULL, NULL, PREC_NONE}, // TOKEN_VAR
+	{NULL, NULL, PREC_NONE}, // TOKEN_WHILE
+
+	{NULL, NULL, PREC_NONE}, // TOKEN_ERROR
+	{NULL, NULL, PREC_NONE}, // TOKEN_NEWLINE
+	{NULL, NULL, PREC_NONE}, // TOKEN_EOF
+};
+
+static ParseRule* getRule(bluTokenType type) {
+	return &rules[type];
+}
+
+static void parsePrecedence(bluCompiler* compiler, Precedence precedence) {
+	advance(compiler);
+
+	ParseFn prefixRule = getRule(compiler->previous.type)->prefix;
+	if (prefixRule == NULL) {
+		error(compiler, "Expect expression.");
+		return;
+	}
+
+	bool canAssign = precedence <= PREC_ASSIGNMENT;
+	prefixRule(compiler, canAssign);
+
+	while (precedence <= getRule(compiler->current.type)->precedence) {
+		advance(compiler);
+
+		ParseFn infixRule = getRule(compiler->previous.type)->infix;
+		infixRule(compiler, canAssign);
+	}
+
+	if (canAssign) {
+		if (match(compiler, TOKEN_EQUAL)) {
+			error(compiler, "Invalid assignment target.");
+
+			// TODO
+			// expression(compiler);
+		}
+	}
+}
+
+static void expression(bluCompiler* compiler) {
+	parsePrecedence(compiler, PREC_ASSIGNMENT);
+}
+
+static void expressionStatement(bluCompiler* compiler) {
+	expression(compiler);
+
+	emitByte(compiler, OP_POP);
+
+	if (!match(compiler, TOKEN_SEMICOLON)) {
+		consume(compiler, TOKEN_NEWLINE, "Expect newline or ';' after expression statement.");
+	}
+}
+
+static void statement(bluCompiler* compiler) {
+	expressionStatement(compiler);
+}
+
+static void declaration(bluCompiler* compiler) {
+	statement(compiler);
+
+	if (compiler->panicMode) synchronize(compiler);
+}
+
+void bluCompilerInit(bluCompiler* compiler, const char* source) {
+	bluParserInit(&compiler->parser, source);
+	bluOpCodeBufferInit(&compiler->opCodeBuffer);
+
+	bluChunkInit(&compiler->chunk);
+
+	compiler->hadError = false;
+	compiler->panicMode = false;
+}
+
+void bluCompilerFree(bluCompiler* compiler) {
+	bluOpCodeBufferFree(&compiler->opCodeBuffer);
+
+	bluChunkFree(&compiler->chunk);
+}
+
+void bluCompilerCompile(bluCompiler* compiler) {
+
+	do {
+		advance(compiler);
+	} while (check(compiler, TOKEN_NEWLINE));
+
+	while (!match(compiler, TOKEN_EOF)) {
+		declaration(compiler);
+	}
+}

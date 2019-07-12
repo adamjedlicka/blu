@@ -16,12 +16,12 @@ void bluREPL() {
 		}
 
 		bluParser parser;
-		bluInitParser(&parser, line);
+		bluParserInit(&parser, line);
 
 		bluToken token;
 
 		do {
-			token = bluNextToken(&parser);
+			token = bluParserNextToken(&parser);
 
 			printf("%.*s -- %d\n", token.length, token.start, token.type);
 

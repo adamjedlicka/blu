@@ -212,7 +212,7 @@ static bluToken eof(bluParser* parser) {
 	return makeToken(parser, TOKEN_NEWLINE);
 }
 
-void bluInitParser(bluParser* parser, const char* source) {
+void bluParserInit(bluParser* parser, const char* source) {
 	parser->source = source;
 	parser->from = 0;
 	parser->at = 0;
@@ -224,7 +224,7 @@ void bluInitParser(bluParser* parser, const char* source) {
 	parser->emitEOF = false;
 }
 
-bluToken bluNextToken(bluParser* parser) {
+bluToken bluParserNextToken(bluParser* parser) {
 	skipWhitespace(parser);
 
 	parser->from = parser->at;
