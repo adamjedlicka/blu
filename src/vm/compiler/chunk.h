@@ -10,6 +10,8 @@ DECLARE_BUFFER(bluValue, bluValue);
 
 typedef struct {
 	ByteBuffer code;
+	IntBuffer lines;
+
 	bluValueBuffer constants;
 } bluChunk;
 

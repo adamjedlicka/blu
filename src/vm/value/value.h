@@ -29,4 +29,6 @@ typedef struct {
 #define NIL_VAL ((bluValue){VAL_NIL, {.number = 0}})
 #define NUMBER_VAL(value) ((bluValue){VAL_NUMBER, {.number = value}})
 
+void bluPrintValue(bluValue value);
+
 #endif

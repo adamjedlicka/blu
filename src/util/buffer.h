@@ -26,7 +26,7 @@
 	}                                                                                                                  \
                                                                                                                        \
 	void name##BufferFree(name##Buffer* buffer) {                                                                      \
-		free(buffer->data);                                                                                            \
+		if (buffer->data != NULL) free(buffer->data);                                                                  \
 		name##BufferInit(buffer);                                                                                      \
 	}                                                                                                                  \
                                                                                                                        \

@@ -3,8 +3,6 @@
 #include "compiler.h"
 #include "vm/value/value.h"
 
-DEFINE_BUFFER(bluOpCode, bluOpCode);
-
 typedef enum {
 	PREC_NONE,
 	PREC_ASSIGNMENT, // =
@@ -139,7 +137,8 @@ static void synchronize(bluCompiler* compiler) {
 }
 
 static void emitByte(bluCompiler* compiler, uint8_t byte) {
-	bluOpCodeBufferWrite(&compiler->opCodeBuffer, byte);
+	ByteBufferWrite(&compiler->chunk.code, byte);
+	IntBufferWrite(&compiler->chunk.lines, compiler->previous.line);
 }
 
 static void emitBytes(bluCompiler* compiler, uint8_t byte1, uint8_t byte2) {
@@ -165,62 +164,82 @@ static uint8_t emitConstant(bluCompiler* compiler, bluValue value) {
 	return constant;
 }
 
+static ParseRule* getRule(bluTokenType type);
+static void parsePrecedence(bluCompiler* compiler, Precedence precedence);
+
+static void binary(bluCompiler* compiler, bool canAssign) {
+	bluTokenType operatorType = compiler->previous.type;
+
+	ParseRule* rule = getRule(operatorType);
+	parsePrecedence(compiler, (Precedence)(rule->precedence + 1));
+
+	switch (operatorType) {
+	case TOKEN_MINUS: emitByte(compiler, OP_SUBTRACT); break;
+	case TOKEN_PERCENT: emitByte(compiler, OP_REMINDER); break;
+	case TOKEN_PLUS: emitByte(compiler, OP_ADD); break;
+	case TOKEN_SLASH: emitByte(compiler, OP_DIVIDE); break;
+	case TOKEN_STAR: emitByte(compiler, OP_MULTIPLY); break;
+	default: return;
+	}
+}
+
 static void number(bluCompiler* compiler, bool canAssign) {
 	double value = strtod(compiler->previous.start, NULL);
 	emitConstant(compiler, NUMBER_VAL(value));
 }
 
 ParseRule rules[] = {
-	{NULL, NULL, PREC_CALL}, // TOKEN_LEFT_PAREN
-	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_PAREN
-	{NULL, NULL, PREC_CALL}, // TOKEN_LEFT_BACKET
-	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_BRACKET
-	{NULL, NULL, PREC_NONE}, // TOKEN_LEFT_BRACE
-	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_BRACE
+	{NULL, NULL, PREC_NONE}, // TOKEN_AT
 	{NULL, NULL, PREC_NONE}, // TOKEN_COLON
 	{NULL, NULL, PREC_NONE}, // TOKEN_COMMA
 	{NULL, NULL, PREC_CALL}, // TOKEN_DOT
+	{NULL, NULL, PREC_NONE}, // TOKEN_LEFT_BRACE
+	{NULL, NULL, PREC_CALL}, // TOKEN_LEFT_BACKET
+	{NULL, NULL, PREC_CALL}, // TOKEN_LEFT_PAREN
+	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_BRACE
+	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_BRACKET
+	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_PAREN
 	{NULL, NULL, PREC_NONE}, // TOKEN_SEMICOLON
-	{NULL, NULL, PREC_NONE}, // TOKEN_AT
 
-	{NULL, NULL, PREC_NONE},	   // TOKEN_BANG
 	{NULL, NULL, PREC_EQUALITY},   // TOKEN_BANG_EQUAL
-	{NULL, NULL, PREC_NONE},	   // TOKEN_EQUAL
+	{NULL, NULL, PREC_NONE},	   // TOKEN_BANG
 	{NULL, NULL, PREC_EQUALITY},   // TOKEN_EQUAL_EQUAL
-	{NULL, NULL, PREC_COMPARISON}, // TOKEN_GREATER
+	{NULL, NULL, PREC_NONE},	   // TOKEN_EQUAL
 	{NULL, NULL, PREC_COMPARISON}, // TOKEN_GREATER_EQUAL
-	{NULL, NULL, PREC_COMPARISON}, // TOKEN_LESS
+	{NULL, NULL, PREC_COMPARISON}, // TOKEN_GREATER
 	{NULL, NULL, PREC_COMPARISON}, // TOKEN_LESS_EQUAL
-	{NULL, NULL, PREC_TERM},	   // TOKEN_MINUS
-	{NULL, NULL, PREC_FACTOR},	 // TOKEN_PERCENT
-	{NULL, NULL, PREC_TERM},	   // TOKEN_PLUS
-	{NULL, NULL, PREC_FACTOR},	 // TOKEN_SLASH
-	{NULL, NULL, PREC_FACTOR},	 // TOKEN_STAR
+	{NULL, NULL, PREC_COMPARISON}, // TOKEN_LESS
+	{NULL, binary, PREC_TERM},	 // TOKEN_MINUS
+	{NULL, binary, PREC_FACTOR},   // TOKEN_PERCENT
+	{NULL, binary, PREC_TERM},	 // TOKEN_PLUS
+	{NULL, binary, PREC_FACTOR},   // TOKEN_SLASH
+	{NULL, binary, PREC_FACTOR},   // TOKEN_STAR
 
 	{NULL, NULL, PREC_NONE},   // TOKEN_IDENTIFIER
-	{NULL, NULL, PREC_NONE},   // TOKEN_STRING
 	{number, NULL, PREC_NONE}, // TOKEN_NUMBER
+	{NULL, NULL, PREC_NONE},   // TOKEN_STRING
 
 	{NULL, NULL, PREC_AND},  // TOKEN_AND
+	{NULL, NULL, PREC_NONE}, // TOKEN_ASSERT
 	{NULL, NULL, PREC_NONE}, // TOKEN_BREAK
 	{NULL, NULL, PREC_NONE}, // TOKEN_CLASS
 	{NULL, NULL, PREC_NONE}, // TOKEN_ELSE
 	{NULL, NULL, PREC_NONE}, // TOKEN_FALSE
-	{NULL, NULL, PREC_NONE}, // TOKEN_FOR
 	{NULL, NULL, PREC_NONE}, // TOKEN_FN
+	{NULL, NULL, PREC_NONE}, // TOKEN_FOR
 	{NULL, NULL, PREC_NONE}, // TOKEN_IF
 	{NULL, NULL, PREC_NONE}, // TOKEN_NIL
 	{NULL, NULL, PREC_OR},   // TOKEN_OR
-	{NULL, NULL, PREC_NONE}, // TOKEN_ASSERT
 	{NULL, NULL, PREC_NONE}, // TOKEN_RETURN
 	{NULL, NULL, PREC_NONE}, // TOKEN_SUPER
 	{NULL, NULL, PREC_NONE}, // TOKEN_TRUE
 	{NULL, NULL, PREC_NONE}, // TOKEN_VAR
 	{NULL, NULL, PREC_NONE}, // TOKEN_WHILE
 
-	{NULL, NULL, PREC_NONE}, // TOKEN_ERROR
-	{NULL, NULL, PREC_NONE}, // TOKEN_NEWLINE
 	{NULL, NULL, PREC_NONE}, // TOKEN_EOF
+	{NULL, NULL, PREC_NONE}, // TOKEN_NEWLINE
+
+	{NULL, NULL, PREC_NONE}, // TOKEN_ERROR
 };
 
 static ParseRule* getRule(bluTokenType type) {
@@ -282,7 +301,6 @@ static void declaration(bluCompiler* compiler) {
 
 void bluCompilerInit(bluCompiler* compiler, const char* source) {
 	bluParserInit(&compiler->parser, source);
-	bluOpCodeBufferInit(&compiler->opCodeBuffer);
 
 	bluChunkInit(&compiler->chunk);
 
@@ -291,13 +309,10 @@ void bluCompilerInit(bluCompiler* compiler, const char* source) {
 }
 
 void bluCompilerFree(bluCompiler* compiler) {
-	bluOpCodeBufferFree(&compiler->opCodeBuffer);
-
 	bluChunkFree(&compiler->chunk);
 }
 
 void bluCompilerCompile(bluCompiler* compiler) {
-
 	do {
 		advance(compiler);
 	} while (check(compiler, TOKEN_NEWLINE));

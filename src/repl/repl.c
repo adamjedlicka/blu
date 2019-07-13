@@ -2,7 +2,8 @@
 
 #include "common.h"
 #include "repl.h"
-#include "vm/parser/parser.h"
+#include "vm/compiler/compiler.h"
+#include "vm/debug/debug.h"
 
 void bluREPL() {
 	char line[1024];
@@ -15,16 +16,12 @@ void bluREPL() {
 			break;
 		}
 
-		bluParser parser;
-		bluParserInit(&parser, line);
+		bluCompiler compiler;
+		bluCompilerInit(&compiler, line);
+		bluCompilerCompile(&compiler);
 
-		bluToken token;
+		bluDisassembleChunk(&compiler.chunk, "<top>");
 
-		do {
-			token = bluParserNextToken(&parser);
-
-			printf("%.*s -- %d\n", token.length, token.start, token.type);
-
-		} while (token.type != TOKEN_EOF);
+		bluCompilerFree(&compiler);
 	}
 }
