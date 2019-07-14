@@ -137,8 +137,7 @@ static void synchronize(bluCompiler* compiler) {
 }
 
 static void emitByte(bluCompiler* compiler, uint8_t byte) {
-	ByteBufferWrite(&compiler->chunk.code, byte);
-	IntBufferWrite(&compiler->chunk.lines, compiler->previous.line);
+	bluChunkWrite(&compiler->chunk, byte, compiler->current.line, compiler->current.column);
 }
 
 static void emitBytes(bluCompiler* compiler, uint8_t byte1, uint8_t byte2) {

@@ -48,6 +48,6 @@
 	}
 
 DECLARE_BUFFER(Byte, uint8_t);
-DECLARE_BUFFER(Int, int);
+DECLARE_BUFFER(Int, uint32_t);
 
 #endif
