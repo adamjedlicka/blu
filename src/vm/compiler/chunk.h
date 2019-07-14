@@ -3,7 +3,7 @@
 
 #include "util/buffer.h"
 #include "vm/compiler/opcode.h"
-#include "vm/value/value.h"
+#include "vm/value.h"
 
 DECLARE_BUFFER(bluValue, bluValue);
 

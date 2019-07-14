@@ -1,8 +1,6 @@
 #ifndef blu_value_h
 #define blu_value_h
 
-#include <stdbool.h>
-
 #include "blu.h"
 
 typedef enum {

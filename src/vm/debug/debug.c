@@ -1,6 +1,5 @@
-#include <stdio.h>
-
 #include "debug.h"
+#include "blu.h"
 
 static uint32_t constantInstruction(const char* name, bluChunk* chunk, uint32_t offset) {
 	uint8_t constant = chunk->code.data[offset + 1];

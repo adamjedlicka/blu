@@ -1,6 +1,3 @@
-#include <stdbool.h>
-#include <stdio.h>
-
 #include "blu.h"
 #include "repl.h"
 

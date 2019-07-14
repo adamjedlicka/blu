@@ -1,9 +1,6 @@
-#include <stdarg.h>
-#include <stdio.h>
-
+#include "vm.h"
 #include "blu.h"
 #include "compiler/compiler.h"
-#include "vm.h"
 #include "vm/debug/debug.h"
 
 static void resetStack(bluVM* vm) {
@@ -133,10 +130,14 @@ bluVM* bluNew() {
 
 	resetStack(vm);
 
+	bluTableInit(vm, &vm->strings);
+
 	return vm;
 }
 
 void bluFree(bluVM* vm) {
+	bluTableFree(vm, &vm->strings);
+
 	free(vm);
 }
 
@@ -160,13 +161,15 @@ bluInterpretResult bluInterpret(bluVM* vm, const char* source, const char* name)
 	bluCompiler compiler;
 	bluChunk chunk;
 
-	bluCompilerInit(&compiler, source);
+	bluCompilerInit(vm, &compiler, source);
 	bluChunkInit(&chunk, name);
 
 	bool ok = bluCompilerCompile(&compiler, &chunk);
 	if (ok == false) {
 		result = INTERPRET_COMPILE_ERROR;
 	} else {
+		bluDisassembleChunk(&chunk, name);
+
 		bluCallFrame frame;
 		frame.chunk = &chunk;
 		frame.ip = frame.chunk->code.data;

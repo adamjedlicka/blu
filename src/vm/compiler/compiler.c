@@ -1,7 +1,7 @@
-#include <stdio.h>
-
 #include "compiler.h"
-#include "vm/value/value.h"
+#include "blu.h"
+#include "vm/object.h"
+#include "vm/value.h"
 
 typedef enum {
 	PREC_NONE,
@@ -187,6 +187,11 @@ static void number(bluCompiler* compiler, bool canAssign) {
 	emitConstant(compiler, NUMBER_VAL(value));
 }
 
+static void string(bluCompiler* compiler, bool canAssign) {
+	bluObjString* string = bluCopyString(compiler->vm, compiler->previous.start + 1, compiler->previous.length - 2);
+	emitConstant(compiler, OBJ_VAL(string));
+}
+
 ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE}, // TOKEN_AT
 	{NULL, NULL, PREC_NONE}, // TOKEN_COLON
@@ -216,7 +221,7 @@ ParseRule rules[] = {
 
 	{NULL, NULL, PREC_NONE},   // TOKEN_IDENTIFIER
 	{number, NULL, PREC_NONE}, // TOKEN_NUMBER
-	{NULL, NULL, PREC_NONE},   // TOKEN_STRING
+	{string, NULL, PREC_NONE}, // TOKEN_STRING
 
 	{NULL, NULL, PREC_AND},  // TOKEN_AND
 	{NULL, NULL, PREC_NONE}, // TOKEN_ASSERT
@@ -298,7 +303,8 @@ static void declaration(bluCompiler* compiler) {
 	if (compiler->panicMode) synchronize(compiler);
 }
 
-void bluCompilerInit(bluCompiler* compiler, const char* source) {
+void bluCompilerInit(bluVM* vm, bluCompiler* compiler, const char* source) {
+	compiler->vm = vm;
 	bluParserInit(&compiler->parser, source);
 
 	compiler->hadError = false;

@@ -1,8 +1,7 @@
 #ifndef blu_parser_h
 #define blu_parser_h
 
-#include <stdbool.h>
-
+#include "blu.h"
 #include "token.h"
 
 typedef struct {

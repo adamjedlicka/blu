@@ -1,6 +1,6 @@
-#include <stdio.h>
-
 #include "value.h"
+#include "blu.h"
+#include "object.h"
 
 void bluPrintValue(bluValue value) {
 	switch (value.type) {
@@ -14,6 +14,6 @@ void bluPrintValue(bluValue value) {
 		}
 		break;
 	}
-	case VAL_OBJ: printf("object"); break;
+	case VAL_OBJ: bluPrintObject(value); break;
 	}
 }

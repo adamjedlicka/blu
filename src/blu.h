@@ -1,6 +1,14 @@
 #ifndef blu_h
 #define blu_h
 
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #define STRINGIFY(x) #x
 #define STR(x) STRINGIFY(x)
 
