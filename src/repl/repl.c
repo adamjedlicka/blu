@@ -2,8 +2,8 @@
 
 #include "common.h"
 #include "repl.h"
-#include "vm/compiler/compiler.h"
 #include "vm/debug/debug.h"
+#include "vm/vm.h"
 
 void bluREPL() {
 	char line[1024];
@@ -16,12 +16,11 @@ void bluREPL() {
 			break;
 		}
 
-		bluCompiler compiler;
-		bluCompilerInit(&compiler, line);
-		bluCompilerCompile(&compiler);
+		bluVM vm;
+		bluVMInit(&vm);
 
-		bluDisassembleChunk(&compiler.chunk, "<top>");
+		bluVMInterpret(&vm, line, "REPL");
 
-		bluCompilerFree(&compiler);
+		bluVMFree(&vm);
 	}
 }

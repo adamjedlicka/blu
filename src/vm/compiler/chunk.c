@@ -2,7 +2,9 @@
 
 DEFINE_BUFFER(bluValue, bluValue);
 
-void bluChunkInit(bluChunk* chunk) {
+void bluChunkInit(bluChunk* chunk, const char* name) {
+	chunk->name = name;
+
 	ByteBufferInit(&chunk->code);
 	IntBufferInit(&chunk->lines);
 	IntBufferInit(&chunk->columns);

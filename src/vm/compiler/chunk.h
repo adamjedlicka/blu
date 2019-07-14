@@ -9,6 +9,8 @@
 DECLARE_BUFFER(bluValue, bluValue);
 
 typedef struct {
+	const char* name;
+
 	ByteBuffer code;
 	IntBuffer lines;
 	IntBuffer columns;
@@ -16,7 +18,7 @@ typedef struct {
 	bluValueBuffer constants;
 } bluChunk;
 
-void bluChunkInit(bluChunk* chunk);
+void bluChunkInit(bluChunk* chunk, const char* name);
 void bluChunkFree(bluChunk* chunk);
 
 void bluChunkWrite(bluChunk* chunk, uint8_t byte, uint32_t line, uint32_t column);

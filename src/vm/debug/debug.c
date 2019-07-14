@@ -15,7 +15,7 @@ static uint32_t simpleInstruction(const char* name, uint32_t offset) {
 	return offset + 1;
 }
 
-uint32_t disassembleInstruction(bluChunk* chunk, size_t offset) {
+uint32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
 	printf("%04lu ", offset);
 	if (offset > 0 && chunk->lines.data[offset] == chunk->lines.data[offset - 1]) {
 		printf("   | ");
@@ -36,6 +36,8 @@ uint32_t disassembleInstruction(bluChunk* chunk, size_t offset) {
 	case OP_SUBTRACT: return simpleInstruction("OP_SUBTRACT", offset);
 	case OP_MULTIPLY: return simpleInstruction("OP_MULTIPLY", offset);
 
+	case OP_RETURN: return simpleInstruction("OP_RETURN", offset);
+
 	default: printf("Unknown opcode %d\n", instruction); return offset + 1;
 	}
 }
@@ -45,6 +47,6 @@ void bluDisassembleChunk(bluChunk* chunk, const char* name) {
 
 	uint32_t offset = 0;
 	while (offset < chunk->code.count) {
-		offset = disassembleInstruction(chunk, offset);
+		offset = bluDisassembleInstruction(chunk, offset);
 	}
 }

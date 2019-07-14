@@ -10,7 +10,7 @@ typedef struct {
 	bluToken previous;
 	bluToken current;
 
-	bluChunk chunk;
+	bluChunk* chunk;
 
 	bool hadError;
 	bool panicMode;
@@ -19,6 +19,6 @@ typedef struct {
 void bluCompilerInit(bluCompiler* compiler, const char* source);
 void bluCompilerFree(bluCompiler* compiler);
 
-void bluCompilerCompile(bluCompiler* compiler);
+bool bluCompilerCompile(bluCompiler* compiler, bluChunk* chunk);
 
 #endif

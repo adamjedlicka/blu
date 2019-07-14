@@ -10,6 +10,8 @@ typedef enum {
 	OP_REMINDER,
 	OP_SUBTRACT,
 	OP_MULTIPLY,
+
+	OP_RETURN,
 } bluOpCode;
 
 #endif

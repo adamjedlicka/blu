@@ -137,7 +137,7 @@ static void synchronize(bluCompiler* compiler) {
 }
 
 static void emitByte(bluCompiler* compiler, uint8_t byte) {
-	bluChunkWrite(&compiler->chunk, byte, compiler->current.line, compiler->current.column);
+	bluChunkWrite(compiler->chunk, byte, compiler->current.line, compiler->current.column);
 }
 
 static void emitBytes(bluCompiler* compiler, uint8_t byte1, uint8_t byte2) {
@@ -146,7 +146,7 @@ static void emitBytes(bluCompiler* compiler, uint8_t byte1, uint8_t byte2) {
 }
 
 static uint8_t makeConstant(bluCompiler* compiler, bluValue value) {
-	uint32_t constant = bluValueBufferWrite(&compiler->chunk.constants, value);
+	uint32_t constant = bluValueBufferWrite(&compiler->chunk->constants, value);
 	if (constant > UINT8_MAX) {
 		error(compiler, "Too many constants in one chunk.");
 		return 0;
@@ -301,17 +301,17 @@ static void declaration(bluCompiler* compiler) {
 void bluCompilerInit(bluCompiler* compiler, const char* source) {
 	bluParserInit(&compiler->parser, source);
 
-	bluChunkInit(&compiler->chunk);
-
 	compiler->hadError = false;
 	compiler->panicMode = false;
 }
 
 void bluCompilerFree(bluCompiler* compiler) {
-	bluChunkFree(&compiler->chunk);
+	//
 }
 
-void bluCompilerCompile(bluCompiler* compiler) {
+bool bluCompilerCompile(bluCompiler* compiler, bluChunk* chunk) {
+	compiler->chunk = chunk;
+
 	do {
 		advance(compiler);
 	} while (check(compiler, TOKEN_NEWLINE));
@@ -319,4 +319,8 @@ void bluCompilerCompile(bluCompiler* compiler) {
 	while (!match(compiler, TOKEN_EOF)) {
 		declaration(compiler);
 	}
+
+	emitByte(compiler, OP_RETURN);
+
+	return !compiler->hadError;
 }
