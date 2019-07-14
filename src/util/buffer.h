@@ -1,7 +1,9 @@
 #ifndef blu_buffer_h
 #define blu_buffer_h
 
-#include "common.h"
+#include <stdint.h>
+#include <stdlib.h>
+
 #include "utils.h"
 
 // We need buffers of a few different types. To avoid lots of casting between void* and back, we'll use the preprocessor

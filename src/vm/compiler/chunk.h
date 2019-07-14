@@ -1,7 +1,6 @@
 #ifndef blu_chunk_h
 #define blu_chunk_h
 
-#include "common.h"
 #include "util/buffer.h"
 #include "vm/compiler/opcode.h"
 #include "vm/value/value.h"

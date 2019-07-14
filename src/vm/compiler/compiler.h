@@ -1,6 +1,8 @@
 #ifndef blu_compiler_h
 #define blu_compiler_h
 
+#include <stdbool.h>
+
 #include "chunk.h"
 #include "vm/parser/parser.h"
 

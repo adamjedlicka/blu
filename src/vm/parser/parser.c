@@ -1,6 +1,5 @@
 #include <string.h>
 
-#include "common.h"
 #include "parser.h"
 
 static bool isAlpha(char c) {

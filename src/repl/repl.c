@@ -1,11 +1,10 @@
+#include <stdbool.h>
 #include <stdio.h>
 
-#include "common.h"
+#include "blu.h"
 #include "repl.h"
-#include "vm/debug/debug.h"
-#include "vm/vm.h"
 
-void bluREPL() {
+int main() {
 	char line[1024];
 
 	while (true) {
@@ -16,11 +15,10 @@ void bluREPL() {
 			break;
 		}
 
-		bluVM vm;
-		bluVMInit(&vm);
+		bluVM* vm = bluNew();
 
-		bluVMInterpret(&vm, line, "REPL");
+		bluInterpret(vm, line, "REPL");
 
-		bluVMFree(&vm);
+		bluFree(vm);
 	}
 }

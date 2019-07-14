@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "blu.h"
 #include "compiler/compiler.h"
 #include "vm.h"
 #include "vm/debug/debug.h"
@@ -127,12 +128,16 @@ static bluInterpretResult run(bluVM* vm) {
 	}
 }
 
-void bluVMInit(bluVM* vm) {
+bluVM* bluNew() {
+	bluVM* vm = malloc(sizeof(bluVM));
+
 	resetStack(vm);
+
+	return vm;
 }
 
-void bluVMFree(bluVM* vm) {
-	//
+void bluFree(bluVM* vm) {
+	free(vm);
 }
 
 void bluPush(bluVM* vm, bluValue value) {
@@ -149,7 +154,7 @@ bluValue bluPeek(bluVM* vm, uint32_t distance) {
 
 bool bluIsFalsey(bluValue value);
 
-bluInterpretResult bluVMInterpret(bluVM* vm, const char* source, const char* name) {
+bluInterpretResult bluInterpret(bluVM* vm, const char* source, const char* name) {
 	bluInterpretResult result;
 
 	bluCompiler compiler;

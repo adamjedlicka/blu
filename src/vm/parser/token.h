@@ -1,7 +1,7 @@
 #ifndef blu_token_h
 #define blu_token_h
 
-#include "common.h"
+#include <stdint.h>
 
 #include "token_type.h"
 
