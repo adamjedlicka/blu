@@ -30,6 +30,21 @@ static void runtimeError(bluVM* vm, const char* format, ...) {
 	resetStack(vm);
 }
 
+static void concatenate(bluVM* vm) {
+	bluObjString* right = AS_STRING(bluPop(vm));
+	bluObjString* left = AS_STRING(bluPop(vm));
+
+	uint32_t length = left->length + right->length;
+	char* chars = malloc(sizeof(char) * length + 1);
+	memcpy(chars, left->chars, left->length);
+	memcpy(chars + left->length, right->chars, right->length);
+	chars[length] = '\0';
+
+	bluObjString* result = bluTakeString(vm, chars, length);
+
+	bluPush(vm, OBJ_VAL(result));
+}
+
 static bluInterpretResult run(bluVM* vm) {
 
 	bluCallFrame* frame = &vm->frames[vm->frameCount - 1];
@@ -63,12 +78,17 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_ADD: {
-			bluValue right = bluPop(vm);
-			bluValue left = bluPop(vm);
+			if (IS_STRING(bluPeek(vm, 0)) && IS_STRING(bluPeek(vm, 1))) {
+				concatenate(vm);
+			} else if (IS_NUMBER(bluPeek(vm, 0)) && IS_NUMBER(bluPeek(vm, 1))) {
+				double left = AS_NUMBER(bluPop(vm));
+				double right = AS_NUMBER(bluPop(vm));
 
-			double result = AS_NUMBER(left) + AS_NUMBER(right);
+				bluPush(vm, NUMBER_VAL(left + right));
+			} else {
+				runtimeError(vm, "Operands must be both numbers or strings.");
+			}
 
-			bluPush(vm, NUMBER_VAL(result));
 			break;
 		}
 
@@ -149,7 +169,7 @@ bluValue bluPop(bluVM* vm) {
 	return *(--(vm->stackTop));
 }
 
-bluValue bluPeek(bluVM* vm, uint32_t distance) {
+bluValue bluPeek(bluVM* vm, int32_t distance) {
 	return vm->stackTop[-1 - distance];
 }
 

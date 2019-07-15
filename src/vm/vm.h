@@ -27,7 +27,7 @@ struct bluVM {
 
 void bluPush(bluVM* vm, bluValue value);
 bluValue bluPop(bluVM* vm);
-bluValue bluPeek(bluVM* vm, uint32_t distance);
+bluValue bluPeek(bluVM* vm, int32_t distance);
 
 bool bluIsFalsey(bluValue value);
 

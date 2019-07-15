@@ -6,7 +6,7 @@
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
-#define IS_STRING(value) isObjType(value, OBJ_STRING)
+#define IS_STRING(value) bluIsObjType(value, OBJ_STRING)
 
 #define AS_CSTRING(value) (((bluObjString*)AS_OBJ(value))->chars)
 #define AS_STRING(value) ((bluObjString*)AS_OBJ(value))
