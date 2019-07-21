@@ -51,6 +51,8 @@ bluObjString* bluCopyString(bluVM* vm, const char* chars, int32_t length) {
 
 bluObjFunction* bluNewFunction(bluVM* vm) {
 	bluObjFunction* function = (bluObjFunction*)allocateObject(vm, sizeof(bluObjFunction), OBJ_FUNCTION);
+	function->arity = 0;
+	function->name = NULL;
 
 	bluChunkInit(&function->chunk, NULL);
 
@@ -73,7 +75,7 @@ void bluPrintObject(bluValue value) {
 
 	switch (OBJ_TYPE(value)) {
 	case OBJ_FUNCTION: {
-		printf("<fn %s>", AS_FUNCTION(value)->name.chars);
+		printf("<fn %s>", AS_FUNCTION(value)->name->chars);
 		break;
 	}
 	case OBJ_STRING: {

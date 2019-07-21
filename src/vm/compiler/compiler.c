@@ -56,7 +56,7 @@ static void errorAtCurrent(bluCompiler* compiler, const char* message) {
 
 static void consumeNewlines(bluCompiler* compiler) {
 	while (compiler->current.type == TOKEN_NEWLINE) {
-		compiler->current = bluParserNextToken(&compiler->parser);
+		compiler->current = bluParserNextToken(compiler->parser);
 	}
 }
 
@@ -78,7 +78,7 @@ static void advance(bluCompiler* compiler) {
 	compiler->previous = compiler->current;
 
 	while (true) {
-		compiler->current = bluParserNextToken(&compiler->parser);
+		compiler->current = bluParserNextToken(compiler->parser);
 		if (compiler->current.type != TOKEN_ERROR) break;
 
 		errorAtCurrent(compiler, compiler->current.start);
@@ -137,7 +137,7 @@ static void synchronize(bluCompiler* compiler) {
 }
 
 static void emitByte(bluCompiler* compiler, uint8_t byte) {
-	bluChunkWrite(compiler->chunk, byte, compiler->current.line, compiler->current.column);
+	bluChunkWrite(&compiler->function->chunk, byte, compiler->current.line, compiler->current.column);
 }
 
 static void emitBytes(bluCompiler* compiler, uint8_t byte1, uint8_t byte2) {
@@ -146,7 +146,7 @@ static void emitBytes(bluCompiler* compiler, uint8_t byte1, uint8_t byte2) {
 }
 
 static uint8_t makeConstant(bluCompiler* compiler, bluValue value) {
-	int32_t constant = bluValueBufferWrite(&compiler->chunk->constants, value);
+	int32_t constant = bluValueBufferWrite(&compiler->function->chunk.constants, value);
 	if (constant > UINT8_MAX) {
 		error(compiler, "Too many constants in one chunk.");
 		return 0;
@@ -303,20 +303,33 @@ static void declaration(bluCompiler* compiler) {
 	if (compiler->panicMode) synchronize(compiler);
 }
 
-void bluCompilerInit(bluVM* vm, bluCompiler* compiler, const char* source) {
+void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t scopeDepth, bluFunctionType type) {
+	compiler->enclosing = enclosing;
+	compiler->scopeDepth = scopeDepth;
+	compiler->type = type;
+	compiler->localCount = 0;
+	compiler->function = bluNewFunction(compiler->vm);
+
+	switch (type) {
+	case TYPE_TOP_LEVEL: compiler->function->name = bluCopyString(compiler->vm, "<top fn>", 8); break;
+	}
+}
+
+bluObjFunction* endCompiler(bluCompiler* compiler) {
+	emitByte(compiler, OP_RETURN);
+
+	return compiler->function;
+}
+
+bluObjFunction* bluCompilerCompile(bluVM* vm, bluCompiler* compiler, const char* source) {
 	compiler->vm = vm;
-	bluParserInit(&compiler->parser, source);
+	compiler->parser = malloc(sizeof(bluParser));
+	bluParserInit(compiler->parser, source);
+
+	initCompiler(compiler, NULL, 0, TYPE_TOP_LEVEL);
 
 	compiler->hadError = false;
 	compiler->panicMode = false;
-}
-
-void bluCompilerFree(bluCompiler* compiler) {
-	//
-}
-
-bool bluCompilerCompile(bluCompiler* compiler, bluChunk* chunk) {
-	compiler->chunk = chunk;
 
 	do {
 		advance(compiler);
@@ -326,7 +339,9 @@ bool bluCompilerCompile(bluCompiler* compiler, bluChunk* chunk) {
 		declaration(compiler);
 	}
 
-	emitByte(compiler, OP_RETURN);
+	bluObjFunction* function = endCompiler(compiler);
 
-	return !compiler->hadError;
+	free(compiler->parser);
+
+	return compiler->hadError ? NULL : function;
 }

@@ -11,8 +11,9 @@
 #define STACK_MAX (FRAMES_MAX * (UINT8_MAX + 1))
 
 typedef struct {
-	bluChunk* chunk;
+	bluObjFunction* function;
 	uint8_t* ip;
+	bluValue* slots;
 } bluCallFrame;
 
 struct bluVM {

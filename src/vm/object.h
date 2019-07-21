@@ -2,8 +2,8 @@
 #define blu_object_h
 
 #include "blu.h"
-#include "value.h"
 #include "compiler/chunk.h"
+#include "value.h"
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
@@ -35,8 +35,9 @@ struct bluObjString {
 
 typedef struct {
 	bluObj obj;
+	int8_t arity;
 	bluChunk chunk;
-	bluObjString name;
+	bluObjString* name;
 } bluObjFunction;
 
 bluObjFunction* bluNewFunction(bluVM* vm);

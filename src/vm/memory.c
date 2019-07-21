@@ -98,7 +98,7 @@ void bluCollectGarbage(bluVM* vm) {
 	}
 
 	for (int32_t i = 0; i < vm->frameCount; i++) {
-		bluGrayValueBuffer(vm, &vm->frames[i].chunk->constants);
+		bluGrayValueBuffer(vm, &vm->frames[i].function->chunk.constants);
 	}
 
 	tableDeleteWhite(vm, &vm->strings);

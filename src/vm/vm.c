@@ -2,6 +2,7 @@
 #include "blu.h"
 #include "compiler/compiler.h"
 #include "memory.h"
+#include "object.h"
 #include "vm/debug/debug.h"
 
 static void resetStack(bluVM* vm) {
@@ -18,14 +19,13 @@ static void runtimeError(bluVM* vm, const char* format, ...) {
 
 	for (int i = vm->frameCount - 1; i >= 0; i--) {
 		bluCallFrame* frame = &vm->frames[i];
-		// TODO : Functions
-		// ObjFunction* function = frame->closure->function;
+		bluObjFunction* function = frame->function;
 
 		// -1 because the IP is sitting on the next instruction to be executed.
-		size_t instruction = frame->ip - frame->chunk->code.data - 1;
+		size_t instruction = frame->ip - function->chunk.code.data - 1;
 
-		fprintf(stderr, "[line %d] in ", frame->chunk->lines.data[instruction]);
-		fprintf(stderr, "%s\n", frame->chunk->name);
+		fprintf(stderr, "[line %d] in ", function->chunk.lines.data[instruction]);
+		fprintf(stderr, "%s\n", function->chunk.name);
 	}
 
 	resetStack(vm);
@@ -46,12 +46,52 @@ static void concatenate(bluVM* vm) {
 	bluPush(vm, OBJ_VAL(result));
 }
 
+static bool call(bluVM* vm, bluObjFunction* function, int8_t argCount) {
+	if (argCount != function->arity) {
+		runtimeError(vm, "Expected %d arguments but got %d.", function->arity, argCount);
+		return false;
+	}
+
+	if (vm->frameCount == FRAMES_MAX) {
+		runtimeError(vm, "Stack overflow.");
+		return false;
+	}
+
+	bluCallFrame* frame = &vm->frames[vm->frameCount++];
+	frame->function = function;
+	frame->ip = function->chunk.code.data;
+
+	// +1 to include either the called function or the receiver.
+	frame->slots = vm->stackTop - (argCount + 1);
+
+	return true;
+}
+
+static bool callValue(bluVM* vm, bluValue callee, int8_t argCount) {
+	if (!IS_OBJ(callee)) {
+		runtimeError(vm, "Can only call functions and classes.");
+		return false;
+	}
+
+	switch (OBJ_TYPE(callee)) {
+
+	case OBJ_FUNCTION: {
+		return call(vm, AS_FUNCTION(callee), argCount);
+	}
+
+	default: {
+		runtimeError(vm, "Can only call functions and classes.");
+		return false;
+	}
+	}
+}
+
 static bluInterpretResult run(bluVM* vm) {
 
 	bluCallFrame* frame = &vm->frames[vm->frameCount - 1];
 
 #define READ_BYTE() (*frame->ip++)
-#define READ_CONSTANT() (frame->chunk->constants.data[READ_BYTE()])
+#define READ_CONSTANT() (frame->function->chunk.constants.data[READ_BYTE()])
 
 	while (true) {
 
@@ -62,7 +102,7 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 		printf("\n");
 
-		bluDisassembleInstruction(frame->chunk, frame->ip - frame->chunk->code.data);
+		bluDisassembleInstruction(&frame->function->chunk, frame->ip - frame->function->chunk.code.data);
 
 		uint8_t instruction = READ_BYTE();
 
@@ -184,23 +224,14 @@ bluInterpretResult bluInterpret(bluVM* vm, const char* source, const char* name)
 	bluInterpretResult result;
 
 	bluCompiler compiler;
-	bluChunk chunk;
 
-	bluCompilerInit(vm, &compiler, source);
-	bluChunkInit(&chunk, name);
-
-	bool ok = bluCompilerCompile(&compiler, &chunk);
-	if (ok == false) {
+	bluObjFunction* function = bluCompilerCompile(vm, &compiler, source);
+	if (function == NULL) {
 		result = INTERPRET_COMPILE_ERROR;
 	} else {
-		bluDisassembleChunk(&chunk, name);
+		bluDisassembleChunk(&function->chunk, name);
 
-		bluCallFrame frame;
-		frame.chunk = &chunk;
-		frame.ip = frame.chunk->code.data;
-
-		vm->frames[0] = frame;
-		vm->frameCount++;
+		callValue(vm, OBJ_VAL(function), 0);
 
 		result = run(vm);
 	}
