@@ -113,13 +113,6 @@ static bluInterpretResult run(bluVM* vm) {
 		if (vm->shouldGC) bluCollectGarbage(vm);
 
 		if (VM_DEBUG_TRACE) {
-			for (bluValue* value = vm->stack; value < vm->stackTop; value++) {
-				printf("[ ");
-				bluPrintValue(*value);
-				printf(" ]");
-			}
-			printf("\n");
-
 			bluDisassembleInstruction(&frame->function->chunk, frame->ip - frame->function->chunk.code.data);
 		}
 
@@ -152,9 +145,44 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
+		case OP_GET_LOCAL: {
+			uint8_t slot = READ_BYTE();
+			bluPush(vm, frame->slots[slot]);
+			break;
+		}
+
+		case OP_SET_LOCAL: {
+			uint8_t slot = READ_BYTE();
+			frame->slots[slot] = bluPeek(vm, 0);
+			break;
+		}
+
 		case OP_DEFINE_GLOBAL: {
 			bluObjString* name = READ_STRING();
 			bluTableSet(vm, &vm->globals, name, bluPop(vm));
+			break;
+		}
+
+		case OP_GET_GLOBAL: {
+			bluObjString* name = READ_STRING();
+			bluValue value;
+
+			if (!bluTableGet(vm, &vm->globals, name, &value)) {
+				runtimeError(vm, "Undefined variable '%s'.", name->chars);
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			bluPush(vm, value);
+			break;
+		}
+
+		case OP_SET_GLOBAL: {
+			bluObjString* name = READ_STRING();
+
+			if (!bluTableSet(vm, &vm->globals, name, bluPeek(vm, 0))) {
+				runtimeError(vm, "Undefined variable '%s'.", name->chars);
+				return INTERPRET_RUNTIME_ERROR;
+			}
 			break;
 		}
 
@@ -272,6 +300,16 @@ static bluInterpretResult run(bluVM* vm) {
 			return INTERPRET_RUNTIME_ERROR;
 			break;
 		}
+		}
+
+		if (VM_DEBUG_TRACE) {
+			printf("          ");
+			for (bluValue* value = vm->stack; value < vm->stackTop; value++) {
+				printf("[ ");
+				bluPrintValue(*value);
+				printf(" ]");
+			}
+			printf("\n");
 		}
 	}
 }

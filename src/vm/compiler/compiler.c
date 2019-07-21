@@ -168,10 +168,21 @@ static uint8_t emitConstant(bluCompiler* compiler, bluValue value) {
 	return constant;
 }
 
+static bool identifiersEqual(bluToken* a, bluToken* b) {
+	if (a->length != b->length) return false;
+
+	return memcmp(a->start, b->start, a->length) == 0;
+}
+
+static uint8_t identifierConstant(bluCompiler* compiler, bluToken* name) {
+	return makeConstant(compiler, OBJ_VAL(bluCopyString(compiler->vm, name->start, name->length)));
+}
+
 static ParseRule* getRule(bluTokenType type);
 static void parsePrecedence(bluCompiler* compiler, Precedence precedence);
 
 static void declaration(bluCompiler* compiler);
+static void expression(bluCompiler* compiler);
 
 static void binary(bluCompiler* compiler, bool canAssign) {
 	bluTokenType operatorType = compiler->previous.type;
@@ -205,6 +216,51 @@ static void unary(bluCompiler* compiler, bool canAssing) {
 	case TOKEN_MINUS: emitByte(compiler, OP_NEGATE); break;
 	default: __builtin_unreachable();
 	}
+}
+
+static int32_t resolveLocal(bluCompiler* compiler, bluToken* name) {
+	for (int32_t i = compiler->localCount - 1; i >= 0; i--) {
+		bluLocal* local = &compiler->locals[i];
+		if (identifiersEqual(name, &local->name)) {
+			if (local->depth == -1) {
+				error(compiler, "Cannot read local variable in its own initializer.");
+			}
+
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+static void namedVariable(bluCompiler* compiler, bluToken name, bool canAssign) {
+	uint8_t getOp, setOp;
+
+	int32_t arg = resolveLocal(compiler, &name);
+
+	if (arg != -1) {
+		getOp = OP_GET_LOCAL;
+		setOp = OP_SET_LOCAL;
+		// TODO : Upvalues
+		// } else if ((arg = resolveUpvalue(compiler, &name)) != -1) {
+		// 	getOp = OP_GET_UPVALUE;
+		// 	setOp = OP_SET_UPVALUE;
+	} else {
+		arg = identifierConstant(compiler, &name);
+		getOp = OP_GET_GLOBAL;
+		setOp = OP_SET_GLOBAL;
+	}
+
+	if (canAssign && match(compiler, TOKEN_EQUAL)) {
+		expression(compiler);
+		emitBytes(compiler, setOp, (uint8_t)arg);
+	} else {
+		emitBytes(compiler, getOp, (uint8_t)arg);
+	}
+}
+
+static void variable(bluCompiler* compiler, bool canAssign) {
+	namedVariable(compiler, compiler->previous, canAssign);
 }
 
 static void number(bluCompiler* compiler, bool canAssign) {
@@ -253,9 +309,9 @@ ParseRule rules[] = {
 	{NULL, binary, PREC_FACTOR},	 // TOKEN_SLASH
 	{NULL, binary, PREC_FACTOR},	 // TOKEN_STAR
 
-	{NULL, NULL, PREC_NONE},   // TOKEN_IDENTIFIER
-	{number, NULL, PREC_NONE}, // TOKEN_NUMBER
-	{string, NULL, PREC_NONE}, // TOKEN_STRING
+	{variable, NULL, PREC_NONE}, // TOKEN_IDENTIFIER
+	{number, NULL, PREC_NONE},   // TOKEN_NUMBER
+	{string, NULL, PREC_NONE},   // TOKEN_STRING
 
 	{NULL, NULL, PREC_AND},		// TOKEN_AND
 	{NULL, NULL, PREC_NONE},	// TOKEN_ASSERT
@@ -364,18 +420,8 @@ static void statement(bluCompiler* compiler) {
 	}
 }
 
-static uint8_t identifierConstant(bluCompiler* compiler, bluToken* name) {
-	return makeConstant(compiler, OBJ_VAL(bluCopyString(compiler->vm, name->start, name->length)));
-}
-
-static bool identifiersEqual(bluToken* a, bluToken* b) {
-	if (a->length != b->length) return false;
-
-	return memcmp(a->start, b->start, a->length) == 0;
-}
-
 static void addLocal(bluCompiler* compiler, bluToken name) {
-	if (compiler->localCount == UINT16_MAX) {
+	if (compiler->localCount == UINT8_MAX + 1) {
 		error(compiler, "Too many local variables in function.");
 		return;
 	}
@@ -391,7 +437,7 @@ static void declareVariable(bluCompiler* compiler) {
 	if (compiler->scopeDepth == 0) return;
 
 	bluToken* name = &compiler->previous;
-	for (int16_t i = compiler->localCount - 1; i >= 0; i++) {
+	for (int32_t i = compiler->localCount - 1; i >= 0; i--) {
 		bluLocal* local = &compiler->locals[i];
 		if (local->depth != -1 && local->depth < compiler->scopeDepth) break;
 		if (identifiersEqual(name, &local->name)) {
@@ -464,6 +510,15 @@ void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t scopeDep
 	switch (type) {
 	case TYPE_TOP_LEVEL: compiler->function->name = NULL; break;
 	}
+
+	bluLocal* local = &compiler->locals[compiler->localCount++];
+	local->depth = compiler->scopeDepth;
+	local->isUpvalue = false;
+
+	// TODO : Other function types
+	// In a function, it holds the function, but cannot be references, so has no name.
+	local->name.start = "";
+	local->name.length = 0;
 }
 
 bluObjFunction* endCompiler(bluCompiler* compiler) {

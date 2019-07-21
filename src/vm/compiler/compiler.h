@@ -39,7 +39,7 @@ typedef struct bluCompiler {
 
 	bluLocal locals[UINT8_MAX + 1];
 	bluUpvalue upvalues[UINT8_MAX + 1];
-	uint16_t localCount;
+	int32_t localCount;
 
 	int8_t scopeDepth;
 
