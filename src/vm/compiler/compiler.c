@@ -2,6 +2,7 @@
 #include "blu.h"
 #include "vm/object.h"
 #include "vm/value.h"
+#include "vm/vm.h"
 
 typedef enum {
 	PREC_NONE,
@@ -311,7 +312,7 @@ void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t scopeDep
 	compiler->function = bluNewFunction(compiler->vm);
 
 	switch (type) {
-	case TYPE_TOP_LEVEL: compiler->function->name = bluCopyString(compiler->vm, "<top fn>", 8); break;
+	case TYPE_TOP_LEVEL: compiler->function->name = NULL; break;
 	}
 }
 

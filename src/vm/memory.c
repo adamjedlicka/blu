@@ -1,7 +1,21 @@
+#include <time.h>
+
 #include "memory.h"
 #include "vm.h"
 
+#define GC_HEAP_GROW_FACTOR 0.5
+#define GC_HEAP_MINIMUM 1024 * 1024
+
+#define GC_DEBUG_STRESS true
+#define GC_DEBUG_TRACE true
+
 static void freeObject(bluVM* vm, bluObj* object) {
+	if (GC_DEBUG_TRACE) {
+		printf("%p free ", object);
+		bluPrintValue(OBJ_VAL(object));
+		printf("\n");
+	}
+
 	switch (object->type) {
 
 	case OBJ_FUNCTION: {
@@ -40,13 +54,19 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 
 	if (object->isDark) return;
 
+	if (GC_DEBUG_TRACE) {
+		printf("%p gray ", object);
+		bluPrintValue(OBJ_VAL(object));
+		printf("\n");
+	}
+
 	object->isDark = true;
 
 	switch (object->type) {
 
 	case OBJ_FUNCTION: {
 		bluObjFunction* function = (bluObjFunction*)object;
-		bluGrayObject(vm, (bluObj*)&function->name);
+		bluGrayObject(vm, (bluObj*)function->name);
 		bluGrayValueBuffer(vm, &function->chunk.constants);
 		break;
 	}
@@ -76,7 +96,11 @@ void* bluAllocate(bluVM* vm, size_t size) {
 }
 
 void* bluReallocate(bluVM* vm, void* previous, size_t oldSize, size_t newSize) {
-	bluCollectGarbage(vm);
+	vm->bytesAllocated += newSize - oldSize;
+
+	if (GC_DEBUG_STRESS || vm->bytesAllocated > vm->nextGC) {
+		vm->shouldGC = true;
+	}
 
 	if (newSize == 0) {
 		free(previous);
@@ -91,14 +115,17 @@ void bluDeallocate(bluVM* vm, void* pointer, size_t size) {
 }
 
 void bluCollectGarbage(bluVM* vm) {
-	bluGrayTable(vm, &vm->strings);
+	if (GC_DEBUG_TRACE) printf("-- gc begin\n");
+
+	size_t before = vm->bytesAllocated;
+	double start = (double)clock() / CLOCKS_PER_SEC;
 
 	for (bluValue* slot = vm->stack; slot < vm->stackTop; slot++) {
 		bluGrayValue(vm, *slot);
 	}
 
 	for (int32_t i = 0; i < vm->frameCount; i++) {
-		bluGrayValueBuffer(vm, &vm->frames[i].function->chunk.constants);
+		bluGrayObject(vm, (bluObj*)vm->frames[i].function);
 	}
 
 	tableDeleteWhite(vm, &vm->strings);
@@ -116,5 +143,22 @@ void bluCollectGarbage(bluVM* vm) {
 			(*object)->isDark = false;
 			object = &(*object)->next;
 		}
+	}
+
+	vm->nextGC = vm->bytesAllocated < GC_HEAP_MINIMUM ? GC_HEAP_MINIMUM : vm->bytesAllocated * GC_HEAP_GROW_FACTOR;
+	vm->shouldGC = false;
+	vm->timeGC += ((double)clock() / CLOCKS_PER_SEC) - start;
+
+	if (GC_DEBUG_TRACE)
+		printf("-- gc collected %ld bytes (from %ld to %ld) next at %ld\n", before - vm->bytesAllocated, before,
+			   vm->bytesAllocated, vm->nextGC);
+}
+
+void bluCollectMemory(bluVM* vm) {
+	bluObj* object = vm->objects;
+	while (object != NULL) {
+		bluObj* next = object->next;
+		freeObject(vm, object);
+		object = next;
 	}
 }

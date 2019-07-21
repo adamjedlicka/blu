@@ -15,5 +15,6 @@ void bluGrayValueBuffer(bluVM* vm, bluValueBuffer* buffer);
 void bluGrayTable(bluVM* vm, bluTable* table);
 
 void bluCollectGarbage(bluVM* vm);
+void bluCollectMemory(bluVM* vm);
 
 #endif

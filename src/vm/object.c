@@ -10,6 +10,8 @@ static bluObj* allocateObject(bluVM* vm, size_t size, bluObjType type) {
 	object->isDark = false;
 	object->next = vm->objects;
 
+	vm->objects = object;
+
 	return object;
 }
 
@@ -26,7 +28,6 @@ static int32_t hashString(const char* key, int32_t length) {
 
 static bluObjString* allocateString(bluVM* vm, char* chars, int32_t length, int32_t hash) {
 	bluObjString* string = (bluObjString*)allocateObject(vm, sizeof(bluObjString), OBJ_STRING);
-	string->obj.type = OBJ_STRING;
 	string->chars = chars;
 	string->length = length;
 	string->hash = hash;
@@ -75,7 +76,11 @@ void bluPrintObject(bluValue value) {
 
 	switch (OBJ_TYPE(value)) {
 	case OBJ_FUNCTION: {
-		printf("<fn %s>", AS_FUNCTION(value)->name->chars);
+		if (AS_FUNCTION(value)->name == NULL) {
+			printf("<anonymous fn>");
+		} else {
+			printf("<fn %s>", AS_FUNCTION(value)->name->chars);
+		}
 		break;
 	}
 	case OBJ_STRING: {

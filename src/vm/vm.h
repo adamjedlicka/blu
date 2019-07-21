@@ -26,6 +26,11 @@ struct bluVM {
 	bluTable strings;
 
 	bluObj* objects;
+
+	size_t bytesAllocated;
+	size_t nextGC;
+	bool shouldGC;
+	double timeGC;
 };
 
 void bluPush(bluVM* vm, bluValue value);

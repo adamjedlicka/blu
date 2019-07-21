@@ -95,6 +95,8 @@ static bluInterpretResult run(bluVM* vm) {
 
 	while (true) {
 
+		if (vm->shouldGC) bluCollectGarbage(vm);
+
 		for (bluValue* value = vm->stack; value < vm->stackTop; value++) {
 			printf("[ ");
 			bluPrintValue(*value);
@@ -191,15 +193,22 @@ bluVM* bluNew() {
 
 	resetStack(vm);
 
+	vm->frameCount = 0;
+
 	bluTableInit(vm, &vm->strings);
 
 	vm->objects = NULL;
+
+	vm->bytesAllocated = 0;
+	vm->nextGC = 1024 * 1024;
+	vm->shouldGC = false;
+	vm->timeGC = 0;
 
 	return vm;
 }
 
 void bluFree(bluVM* vm) {
-	bluCollectGarbage(vm);
+	bluCollectMemory(vm);
 
 	bluTableFree(vm, &vm->strings);
 
