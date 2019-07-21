@@ -179,6 +179,7 @@ static void binary(bluCompiler* compiler, bool canAssign) {
 
 	switch (operatorType) {
 	case TOKEN_EQUAL_EQUAL: emitByte(compiler, OP_EQUAL); break;
+	case TOKEN_BANG_EQUAL: emitByte(compiler, OP_NOT_EQUAL); break;
 	case TOKEN_MINUS: emitByte(compiler, OP_SUBTRACT); break;
 	case TOKEN_PERCENT: emitByte(compiler, OP_REMINDER); break;
 	case TOKEN_PLUS: emitByte(compiler, OP_ADD); break;
@@ -220,7 +221,7 @@ ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_PAREN
 	{NULL, NULL, PREC_NONE}, // TOKEN_SEMICOLON
 
-	{NULL, NULL, PREC_EQUALITY},   // TOKEN_BANG_EQUAL
+	{NULL, binary, PREC_EQUALITY}, // TOKEN_BANG_EQUAL
 	{NULL, NULL, PREC_NONE},	   // TOKEN_BANG
 	{NULL, binary, PREC_EQUALITY}, // TOKEN_EQUAL_EQUAL
 	{NULL, NULL, PREC_NONE},	   // TOKEN_EQUAL

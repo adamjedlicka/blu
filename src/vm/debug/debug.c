@@ -34,6 +34,7 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
 	case OP_POP: return simpleInstruction("OP_POP", offset);
 
 	case OP_EQUAL: return simpleInstruction("OP_EQUAL", offset);
+	case OP_NOT_EQUAL: return simpleInstruction("OP_NOT_EQUAL", offset);
 	case OP_ADD: return simpleInstruction("OP_ADD", offset);
 	case OP_DIVIDE: return simpleInstruction("OP_DIVIDE", offset);
 	case OP_REMINDER: return simpleInstruction("OP_REMINDER", offset);
