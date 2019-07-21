@@ -171,6 +171,8 @@ static uint8_t emitConstant(bluCompiler* compiler, bluValue value) {
 static ParseRule* getRule(bluTokenType type);
 static void parsePrecedence(bluCompiler* compiler, Precedence precedence);
 
+static void declaration(bluCompiler* compiler);
+
 static void binary(bluCompiler* compiler, bool canAssign) {
 	bluTokenType operatorType = compiler->previous.type;
 
@@ -325,8 +327,41 @@ static void expressionStatement(bluCompiler* compiler) {
 	}
 }
 
+static void beginScope(bluCompiler* compiler) {
+	compiler->scopeDepth++;
+}
+
+static void endScope(bluCompiler* compiler) {
+	compiler->scopeDepth--;
+
+	while (compiler->localCount > 0 && compiler->locals[compiler->localCount - 1].depth > compiler->scopeDepth) {
+		if (compiler->locals[compiler->localCount - 1].isUpvalue) {
+			// TODO : Upvalues
+			// emitByte(compiler, OP_CLOSE_OPVALUE);
+		} else {
+			emitByte(compiler, OP_POP);
+		}
+
+		compiler->localCount--;
+	}
+}
+
+static void block(bluCompiler* compiler) {
+	while (!check(compiler, TOKEN_RIGHT_BRACE) && !check(compiler, TOKEN_EOF)) {
+		declaration(compiler);
+	}
+
+	consume(compiler, TOKEN_RIGHT_BRACE, "Expect '}' after block.");
+}
+
 static void statement(bluCompiler* compiler) {
-	expressionStatement(compiler);
+	if (match(compiler, TOKEN_LEFT_BRACE)) {
+		beginScope(compiler);
+		block(compiler);
+		endScope(compiler);
+	} else {
+		expressionStatement(compiler);
+	}
 }
 
 static uint8_t identifierConstant(bluCompiler* compiler, bluToken* name) {
