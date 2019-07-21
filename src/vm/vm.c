@@ -7,6 +7,18 @@
 
 #define VM_DEBUG_TRACE true
 
+#define BINARY_OP(valueType, op)                                                                                       \
+	do {                                                                                                               \
+		if (!IS_NUMBER(bluPeek(vm, 0)) || !IS_NUMBER(bluPeek(vm, 1))) {                                                \
+			runtimeError(vm, "Operands must be numbers.");                                                             \
+			return INTERPRET_RUNTIME_ERROR;                                                                            \
+		}                                                                                                              \
+                                                                                                                       \
+		double right = AS_NUMBER(bluPop(vm));                                                                          \
+		double left = AS_NUMBER(bluPop(vm));                                                                           \
+		bluPush(vm, valueType(left op right));                                                                         \
+	} while (false)
+
 static void resetStack(bluVM* vm) {
 	vm->stackTop = vm->stack;
 	vm->frameCount = 0;
@@ -159,6 +171,26 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
+		case OP_GREATER: {
+			BINARY_OP(BOOL_VAL, >);
+			break;
+		}
+
+		case OP_GREATER_EQUAL: {
+			BINARY_OP(BOOL_VAL, >=);
+			break;
+		}
+
+		case OP_LESS: {
+			BINARY_OP(BOOL_VAL, <);
+			break;
+		}
+
+		case OP_LESS_EQUAL: {
+			BINARY_OP(BOOL_VAL, <=);
+			break;
+		}
+
 		case OP_ADD: {
 			if (IS_STRING(bluPeek(vm, 0)) && IS_STRING(bluPeek(vm, 1))) {
 				concatenate(vm);
@@ -175,16 +207,16 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_DIVIDE: {
-			bluValue right = bluPop(vm);
-			bluValue left = bluPop(vm);
-
-			double result = AS_NUMBER(left) / AS_NUMBER(right);
-
-			bluPush(vm, NUMBER_VAL(result));
+			BINARY_OP(NUMBER_VAL, /);
 			break;
 		}
 
 		case OP_REMINDER: {
+			if (!IS_NUMBER(bluPeek(vm, 0)) || !IS_NUMBER(bluPeek(vm, 1))) {
+				runtimeError(vm, "Operands must be numbers.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
 			bluValue right = bluPop(vm);
 			bluValue left = bluPop(vm);
 
@@ -195,22 +227,32 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_SUBTRACT: {
-			bluValue right = bluPop(vm);
-			bluValue left = bluPop(vm);
-
-			double result = AS_NUMBER(left) - AS_NUMBER(right);
-
-			bluPush(vm, NUMBER_VAL(result));
+			BINARY_OP(NUMBER_VAL, -);
 			break;
 		}
 
 		case OP_MULTIPLY: {
-			bluValue right = bluPop(vm);
-			bluValue left = bluPop(vm);
+			BINARY_OP(NUMBER_VAL, *);
+			break;
+		}
 
-			double result = AS_NUMBER(left) * AS_NUMBER(right);
+		case OP_NOT: {
+			bluValue value = bluPop(vm);
 
-			bluPush(vm, NUMBER_VAL(result));
+			bluPush(vm, BOOL_VAL(bluIsFalsey(value)));
+			break;
+		}
+
+		case OP_NEGATE: {
+			if (!IS_NUMBER(bluPeek(vm, 0))) {
+				runtimeError(vm, "Operand must be a number.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			double number = AS_NUMBER(bluPop(vm));
+
+			bluPush(vm, NUMBER_VAL(-number));
+
 			break;
 		}
 

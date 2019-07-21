@@ -180,12 +180,28 @@ static void binary(bluCompiler* compiler, bool canAssign) {
 	switch (operatorType) {
 	case TOKEN_EQUAL_EQUAL: emitByte(compiler, OP_EQUAL); break;
 	case TOKEN_BANG_EQUAL: emitByte(compiler, OP_NOT_EQUAL); break;
+	case TOKEN_GREATER: emitByte(compiler, OP_GREATER); break;
+	case TOKEN_GREATER_EQUAL: emitByte(compiler, OP_GREATER_EQUAL); break;
+	case TOKEN_LESS: emitByte(compiler, OP_LESS); break;
+	case TOKEN_LESS_EQUAL: emitByte(compiler, OP_LESS_EQUAL); break;
 	case TOKEN_MINUS: emitByte(compiler, OP_SUBTRACT); break;
 	case TOKEN_PERCENT: emitByte(compiler, OP_REMINDER); break;
 	case TOKEN_PLUS: emitByte(compiler, OP_ADD); break;
 	case TOKEN_SLASH: emitByte(compiler, OP_DIVIDE); break;
 	case TOKEN_STAR: emitByte(compiler, OP_MULTIPLY); break;
 	default: return;
+	}
+}
+
+static void unary(bluCompiler* compiler, bool canAssing) {
+	bluTokenType operatorType = compiler->previous.type;
+
+	parsePrecedence(compiler, PREC_UNARY);
+
+	switch (operatorType) {
+	case TOKEN_BANG: emitByte(compiler, OP_NOT); break;
+	case TOKEN_MINUS: emitByte(compiler, OP_NEGATE); break;
+	default: __builtin_unreachable();
 	}
 }
 
@@ -221,19 +237,19 @@ ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_PAREN
 	{NULL, NULL, PREC_NONE}, // TOKEN_SEMICOLON
 
-	{NULL, binary, PREC_EQUALITY}, // TOKEN_BANG_EQUAL
-	{NULL, NULL, PREC_NONE},	   // TOKEN_BANG
-	{NULL, binary, PREC_EQUALITY}, // TOKEN_EQUAL_EQUAL
-	{NULL, NULL, PREC_NONE},	   // TOKEN_EQUAL
-	{NULL, NULL, PREC_COMPARISON}, // TOKEN_GREATER_EQUAL
-	{NULL, NULL, PREC_COMPARISON}, // TOKEN_GREATER
-	{NULL, NULL, PREC_COMPARISON}, // TOKEN_LESS_EQUAL
-	{NULL, NULL, PREC_COMPARISON}, // TOKEN_LESS
-	{NULL, binary, PREC_TERM},	 // TOKEN_MINUS
-	{NULL, binary, PREC_FACTOR},   // TOKEN_PERCENT
-	{NULL, binary, PREC_TERM},	 // TOKEN_PLUS
-	{NULL, binary, PREC_FACTOR},   // TOKEN_SLASH
-	{NULL, binary, PREC_FACTOR},   // TOKEN_STAR
+	{NULL, binary, PREC_EQUALITY},   // TOKEN_BANG_EQUAL
+	{unary, NULL, PREC_NONE},		 // TOKEN_BANG
+	{NULL, binary, PREC_EQUALITY},   // TOKEN_EQUAL_EQUAL
+	{NULL, binary, PREC_NONE},		 // TOKEN_EQUAL
+	{NULL, binary, PREC_COMPARISON}, // TOKEN_GREATER_EQUAL
+	{NULL, binary, PREC_COMPARISON}, // TOKEN_GREATER
+	{NULL, binary, PREC_COMPARISON}, // TOKEN_LESS_EQUAL
+	{NULL, binary, PREC_COMPARISON}, // TOKEN_LESS
+	{unary, binary, PREC_TERM},		 // TOKEN_MINUS
+	{NULL, binary, PREC_FACTOR},	 // TOKEN_PERCENT
+	{NULL, binary, PREC_TERM},		 // TOKEN_PLUS
+	{NULL, binary, PREC_FACTOR},	 // TOKEN_SLASH
+	{NULL, binary, PREC_FACTOR},	 // TOKEN_STAR
 
 	{NULL, NULL, PREC_NONE},   // TOKEN_IDENTIFIER
 	{number, NULL, PREC_NONE}, // TOKEN_NUMBER

@@ -17,6 +17,10 @@ bool bluValuesEqual(bluValue a, bluValue b) {
 	__builtin_unreachable();
 }
 
+bool bluIsFalsey(bluValue value) {
+	return (IS_BOOL(value) && AS_BOOL(value) == false) || IS_NIL(value);
+}
+
 void bluPrintValue(bluValue value) {
 	switch (value.type) {
 	case VAL_BOOL: printf(AS_BOOL(value) ? "true" : "false"); break;
