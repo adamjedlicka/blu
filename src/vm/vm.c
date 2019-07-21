@@ -5,7 +5,7 @@
 #include "object.h"
 #include "vm/debug/debug.h"
 
-#define VM_DEBUG_TRACE false
+#define VM_DEBUG_TRACE true
 
 static void resetStack(bluVM* vm) {
 	vm->stackTop = vm->stack;
@@ -116,6 +116,21 @@ static bluInterpretResult run(bluVM* vm) {
 
 		case OP_CONSTANT: {
 			bluPush(vm, READ_CONSTANT());
+			break;
+		}
+
+		case OP_FALSE: {
+			bluPush(vm, BOOL_VAL(false));
+			break;
+		}
+
+		case OP_NIL: {
+			bluPush(vm, NIL_VAL);
+			break;
+		}
+
+		case OP_TRUE: {
+			bluPush(vm, BOOL_VAL(true));
 			break;
 		}
 

@@ -3,6 +3,10 @@
 
 typedef enum {
 	OP_CONSTANT,
+	OP_FALSE,
+	OP_NIL,
+	OP_TRUE,
+
 	OP_POP,
 
 	OP_ADD,

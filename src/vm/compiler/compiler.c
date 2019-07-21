@@ -197,6 +197,15 @@ static void string(bluCompiler* compiler, bool canAssign) {
 	emitConstant(compiler, OBJ_VAL(string));
 }
 
+static void literal(bluCompiler* compiler, bool canAssign) {
+	switch (compiler->previous.type) {
+	case TOKEN_FALSE: emitByte(compiler, OP_FALSE); break;
+	case TOKEN_NIL: emitByte(compiler, OP_NIL); break;
+	case TOKEN_TRUE: emitByte(compiler, OP_TRUE); break;
+	default: __builtin_unreachable();
+	}
+}
+
 ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE}, // TOKEN_AT
 	{NULL, NULL, PREC_NONE}, // TOKEN_COLON
@@ -228,22 +237,22 @@ ParseRule rules[] = {
 	{number, NULL, PREC_NONE}, // TOKEN_NUMBER
 	{string, NULL, PREC_NONE}, // TOKEN_STRING
 
-	{NULL, NULL, PREC_AND},  // TOKEN_AND
-	{NULL, NULL, PREC_NONE}, // TOKEN_ASSERT
-	{NULL, NULL, PREC_NONE}, // TOKEN_BREAK
-	{NULL, NULL, PREC_NONE}, // TOKEN_CLASS
-	{NULL, NULL, PREC_NONE}, // TOKEN_ELSE
-	{NULL, NULL, PREC_NONE}, // TOKEN_FALSE
-	{NULL, NULL, PREC_NONE}, // TOKEN_FN
-	{NULL, NULL, PREC_NONE}, // TOKEN_FOR
-	{NULL, NULL, PREC_NONE}, // TOKEN_IF
-	{NULL, NULL, PREC_NONE}, // TOKEN_NIL
-	{NULL, NULL, PREC_OR},   // TOKEN_OR
-	{NULL, NULL, PREC_NONE}, // TOKEN_RETURN
-	{NULL, NULL, PREC_NONE}, // TOKEN_SUPER
-	{NULL, NULL, PREC_NONE}, // TOKEN_TRUE
-	{NULL, NULL, PREC_NONE}, // TOKEN_VAR
-	{NULL, NULL, PREC_NONE}, // TOKEN_WHILE
+	{NULL, NULL, PREC_AND},		// TOKEN_AND
+	{NULL, NULL, PREC_NONE},	// TOKEN_ASSERT
+	{NULL, NULL, PREC_NONE},	// TOKEN_BREAK
+	{NULL, NULL, PREC_NONE},	// TOKEN_CLASS
+	{NULL, NULL, PREC_NONE},	// TOKEN_ELSE
+	{literal, NULL, PREC_NONE}, // TOKEN_FALSE
+	{NULL, NULL, PREC_NONE},	// TOKEN_FN
+	{NULL, NULL, PREC_NONE},	// TOKEN_FOR
+	{NULL, NULL, PREC_NONE},	// TOKEN_IF
+	{literal, NULL, PREC_NONE}, // TOKEN_NIL
+	{NULL, NULL, PREC_OR},		// TOKEN_OR
+	{NULL, NULL, PREC_NONE},	// TOKEN_RETURN
+	{NULL, NULL, PREC_NONE},	// TOKEN_SUPER
+	{literal, NULL, PREC_NONE}, // TOKEN_TRUE
+	{NULL, NULL, PREC_NONE},	// TOKEN_VAR
+	{NULL, NULL, PREC_NONE},	// TOKEN_WHILE
 
 	{NULL, NULL, PREC_NONE}, // TOKEN_EOF
 	{NULL, NULL, PREC_NONE}, // TOKEN_NEWLINE
