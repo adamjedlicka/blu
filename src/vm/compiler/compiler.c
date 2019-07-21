@@ -6,7 +6,7 @@
 #include "vm/value.h"
 #include "vm/vm.h"
 
-#define COMPILER_DEBUG_DISASSEMBLE false
+#define COMPILER_DEBUG_DISASSEMBLE true
 
 typedef enum {
 	PREC_NONE,
@@ -329,8 +329,92 @@ static void statement(bluCompiler* compiler) {
 	expressionStatement(compiler);
 }
 
+static uint8_t identifierConstant(bluCompiler* compiler, bluToken* name) {
+	return makeConstant(compiler, OBJ_VAL(bluCopyString(compiler->vm, name->start, name->length)));
+}
+
+static bool identifiersEqual(bluToken* a, bluToken* b) {
+	if (a->length != b->length) return false;
+
+	return memcmp(a->start, b->start, a->length) == 0;
+}
+
+static void addLocal(bluCompiler* compiler, bluToken name) {
+	if (compiler->localCount == UINT16_MAX) {
+		error(compiler, "Too many local variables in function.");
+		return;
+	}
+
+	bluLocal* local = &compiler->locals[compiler->localCount++];
+	local->name = name;
+	local->depth = -1;
+	local->isUpvalue = false;
+}
+
+static void declareVariable(bluCompiler* compiler) {
+	// Global variables are implicitly declared.
+	if (compiler->scopeDepth == 0) return;
+
+	bluToken* name = &compiler->previous;
+	for (int16_t i = compiler->localCount - 1; i >= 0; i++) {
+		bluLocal* local = &compiler->locals[i];
+		if (local->depth != -1 && local->depth < compiler->scopeDepth) break;
+		if (identifiersEqual(name, &local->name)) {
+			error(compiler, "Variable with this name already declared in this scope.");
+		}
+	}
+
+	addLocal(compiler, *name);
+}
+
+static void markInitialized(bluCompiler* compiler) {
+	if (compiler->scopeDepth == 0) return;
+
+	compiler->locals[compiler->localCount - 1].depth = compiler->scopeDepth;
+}
+
+static void defineVariable(bluCompiler* compiler, uint8_t index) {
+	if (compiler->scopeDepth > 0) {
+		markInitialized(compiler);
+		return;
+	}
+
+	emitBytes(compiler, OP_DEFINE_GLOBAL, index);
+}
+
+static uint8_t parseVariable(bluCompiler* compiler, const char* errorMessage) {
+	consume(compiler, TOKEN_IDENTIFIER, errorMessage);
+
+	declareVariable(compiler);
+	if (compiler->scopeDepth > 0) {
+		return 0;
+	}
+
+	return identifierConstant(compiler, &compiler->previous);
+}
+
+static void varDeclaration(bluCompiler* compiler) {
+	uint8_t name = parseVariable(compiler, "Expect variable name.");
+
+	if (match(compiler, TOKEN_EQUAL)) {
+		expression(compiler);
+	} else {
+		emitByte(compiler, OP_NIL);
+	}
+
+	if (!match(compiler, TOKEN_SEMICOLON)) {
+		consume(compiler, TOKEN_NEWLINE, "Expect newline or ';' after variable declaration.");
+	}
+
+	defineVariable(compiler, name);
+}
+
 static void declaration(bluCompiler* compiler) {
-	statement(compiler);
+	if (match(compiler, TOKEN_VAR)) {
+		varDeclaration(compiler);
+	} else {
+		statement(compiler);
+	}
 
 	if (compiler->panicMode) synchronize(compiler);
 }

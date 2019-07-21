@@ -23,6 +23,7 @@ struct bluVM {
 	bluCallFrame frames[FRAMES_MAX];
 	int32_t frameCount;
 
+	bluTable globals;
 	bluTable strings;
 
 	bluObj* objects;

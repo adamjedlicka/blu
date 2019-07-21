@@ -8,6 +8,7 @@ typedef enum {
 	OP_TRUE,
 
 	OP_POP,
+	OP_DEFINE_GLOBAL,
 
 	OP_EQUAL,
 	OP_NOT_EQUAL,

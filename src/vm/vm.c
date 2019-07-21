@@ -106,6 +106,7 @@ static bluInterpretResult run(bluVM* vm) {
 
 #define READ_BYTE() (*frame->ip++)
 #define READ_CONSTANT() (frame->function->chunk.constants.data[READ_BYTE()])
+#define READ_STRING() AS_STRING(READ_CONSTANT())
 
 	while (true) {
 
@@ -148,6 +149,12 @@ static bluInterpretResult run(bluVM* vm) {
 
 		case OP_POP: {
 			bluPop(vm);
+			break;
+		}
+
+		case OP_DEFINE_GLOBAL: {
+			bluObjString* name = READ_STRING();
+			bluTableSet(vm, &vm->globals, name, bluPop(vm));
 			break;
 		}
 
@@ -276,6 +283,7 @@ bluVM* bluNew() {
 
 	vm->frameCount = 0;
 
+	bluTableInit(vm, &vm->globals);
 	bluTableInit(vm, &vm->strings);
 
 	vm->objects = NULL;
@@ -291,6 +299,7 @@ bluVM* bluNew() {
 void bluFree(bluVM* vm) {
 	bluCollectMemory(vm);
 
+	bluTableFree(vm, &vm->globals);
 	bluTableFree(vm, &vm->strings);
 
 	free(vm);

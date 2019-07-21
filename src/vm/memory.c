@@ -6,8 +6,8 @@
 #define GC_HEAP_GROW_FACTOR 0.5
 #define GC_HEAP_MINIMUM 1024 * 1024
 
-#define GC_DEBUG_STRESS false
-#define GC_DEBUG_TRACE false
+#define GC_DEBUG_STRESS true
+#define GC_DEBUG_TRACE true
 
 static void freeObject(bluVM* vm, bluObj* object) {
 	if (GC_DEBUG_TRACE) {
@@ -127,6 +127,8 @@ void bluCollectGarbage(bluVM* vm) {
 	for (int32_t i = 0; i < vm->frameCount; i++) {
 		bluGrayObject(vm, (bluObj*)vm->frames[i].function);
 	}
+
+	bluGrayTable(vm, &vm->globals);
 
 	tableDeleteWhite(vm, &vm->strings);
 
