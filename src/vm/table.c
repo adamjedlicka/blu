@@ -3,7 +3,7 @@
 #define TABLE_MAX_LOAD 0.75
 
 static bluEntry* findEntry(bluEntry* entries, int32_t capacityMask, bluObjString* key) {
-	uint32_t index = key->hash & capacityMask;
+	int32_t index = key->hash & capacityMask;
 	bluEntry* tombstone = NULL;
 
 	while (true) {
@@ -115,11 +115,11 @@ void bluTableAddAll(bluVM* vm, bluTable* from, bluTable* to) {
 
 // Function tableGet uses findEntry which compares keys with double equals, so if they are in the same place in memory.
 // For string interning we want to compare keys fully with memcmp.
-bluObjString* bluTableFindString(bluVM* vm, bluTable* table, const char* chars, uint32_t length, uint32_t hash) {
+bluObjString* bluTableFindString(bluVM* vm, bluTable* table, const char* chars, int32_t length, int32_t hash) {
 	// If the table is empty, we definitely won't find it.
 	if (table->entries == NULL) return NULL;
 
-	uint32_t index = hash & table->capacityMask;
+	int32_t index = hash & table->capacityMask;
 
 	while (true) {
 		bluEntry* entry = &table->entries[index];

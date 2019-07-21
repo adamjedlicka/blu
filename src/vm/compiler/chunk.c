@@ -20,7 +20,7 @@ void bluChunkFree(bluChunk* chunk) {
 	bluValueBufferFree(&chunk->constants);
 }
 
-void bluChunkWrite(bluChunk* chunk, uint8_t byte, uint32_t line, uint32_t column) {
+void bluChunkWrite(bluChunk* chunk, uint8_t byte, int32_t line, int32_t column) {
 	ByteBufferWrite(&chunk->code, byte);
 	IntBufferWrite(&chunk->lines, line);
 	IntBufferWrite(&chunk->columns, column);

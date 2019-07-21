@@ -20,9 +20,11 @@ struct bluVM {
 	bluValue* stackTop;
 
 	bluCallFrame frames[FRAMES_MAX];
-	uint32_t frameCount;
+	int32_t frameCount;
 
 	bluTable strings;
+
+	bluObj* objects;
 };
 
 void bluPush(bluVM* vm, bluValue value);

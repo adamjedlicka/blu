@@ -146,7 +146,7 @@ static void emitBytes(bluCompiler* compiler, uint8_t byte1, uint8_t byte2) {
 }
 
 static uint8_t makeConstant(bluCompiler* compiler, bluValue value) {
-	uint32_t constant = bluValueBufferWrite(&compiler->chunk->constants, value);
+	int32_t constant = bluValueBufferWrite(&compiler->chunk->constants, value);
 	if (constant > UINT8_MAX) {
 		error(compiler, "Too many constants in one chunk.");
 		return 0;

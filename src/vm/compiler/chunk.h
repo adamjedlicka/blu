@@ -20,6 +20,6 @@ typedef struct {
 void bluChunkInit(bluChunk* chunk, const char* name);
 void bluChunkFree(bluChunk* chunk);
 
-void bluChunkWrite(bluChunk* chunk, uint8_t byte, uint32_t line, uint32_t column);
+void bluChunkWrite(bluChunk* chunk, uint8_t byte, int32_t line, int32_t column);
 
 #endif

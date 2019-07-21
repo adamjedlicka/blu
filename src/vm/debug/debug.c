@@ -1,7 +1,7 @@
 #include "debug.h"
 #include "blu.h"
 
-static uint32_t constantInstruction(const char* name, bluChunk* chunk, uint32_t offset) {
+static int32_t constantInstruction(const char* name, bluChunk* chunk, int32_t offset) {
 	uint8_t constant = chunk->code.data[offset + 1];
 	printf("%-16s %6d '", name, constant);
 	bluPrintValue(chunk->constants.data[constant]);
@@ -9,12 +9,12 @@ static uint32_t constantInstruction(const char* name, bluChunk* chunk, uint32_t 
 	return offset + 2;
 }
 
-static uint32_t simpleInstruction(const char* name, uint32_t offset) {
+static int32_t simpleInstruction(const char* name, int32_t offset) {
 	printf("%s\n", name);
 	return offset + 1;
 }
 
-uint32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
+int32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
 	printf("%04lu ", offset);
 	if (offset > 0 && chunk->lines.data[offset] == chunk->lines.data[offset - 1]) {
 		printf("   | ");
@@ -44,7 +44,7 @@ uint32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
 void bluDisassembleChunk(bluChunk* chunk, const char* name) {
 	printf("== %s ==\n", name);
 
-	uint32_t offset = 0;
+	int32_t offset = 0;
 	while (offset < chunk->code.count) {
 		offset = bluDisassembleInstruction(chunk, offset);
 	}

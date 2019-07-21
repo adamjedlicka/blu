@@ -1,4 +1,4 @@
 #include "buffer.h"
 
 DEFINE_BUFFER(Byte, uint8_t);
-DEFINE_BUFFER(Int, uint32_t);
+DEFINE_BUFFER(Int, int32_t);

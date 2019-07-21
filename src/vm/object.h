@@ -3,31 +3,45 @@
 
 #include "blu.h"
 #include "value.h"
+#include "compiler/chunk.h"
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
+#define IS_FUNCTION(value) bluIsObjType(value, OBJ_FUNCTION)
 #define IS_STRING(value) bluIsObjType(value, OBJ_STRING)
 
 #define AS_CSTRING(value) (((bluObjString*)AS_OBJ(value))->chars)
+#define AS_FUNCTION(value) ((bluObjFunction*)AS_OBJ(value))
 #define AS_STRING(value) ((bluObjString*)AS_OBJ(value))
 
 typedef enum {
+	OBJ_FUNCTION,
 	OBJ_STRING,
 } bluObjType;
 
 struct bluObj {
 	bluObjType type;
+
+	bool isDark;
+	bluObj* next;
 };
 
 struct bluObjString {
 	bluObj obj;
-	uint32_t length;
+	int32_t length;
 	char* chars;
-	uint32_t hash;
+	int32_t hash;
 };
 
-bluObjString* bluTakeString(bluVM* vm, char* chars, uint32_t length);
-bluObjString* bluCopyString(bluVM* vm, const char* chars, uint32_t length);
+typedef struct {
+	bluObj obj;
+	bluChunk chunk;
+	bluObjString name;
+} bluObjFunction;
+
+bluObjFunction* bluNewFunction(bluVM* vm);
+bluObjString* bluCopyString(bluVM* vm, const char* chars, int32_t length);
+bluObjString* bluTakeString(bluVM* vm, char* chars, int32_t length);
 
 void bluPrintObject(bluValue value);
 

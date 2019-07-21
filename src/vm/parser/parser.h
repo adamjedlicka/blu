@@ -6,12 +6,12 @@
 
 typedef struct {
 	const char* source;
-	uint32_t from;
-	uint32_t at;
-	uint32_t lineFrom;
-	uint32_t lineTo;
-	uint32_t columnFrom;
-	uint32_t columnTo;
+	int32_t from;
+	int32_t at;
+	int32_t lineFrom;
+	int32_t lineTo;
+	int32_t columnFrom;
+	int32_t columnTo;
 
 	bool emitEOF;
 } bluParser;

@@ -84,7 +84,7 @@ static void blackenObject(Obj* object) {
 
 	case OBJ_ARRAY: {
 		ObjArray* array = (ObjArray*)object;
-		for (uint32_t i = 0; i < array->cap; i++) {
+		for (int32_t i = 0; i < array->cap; i++) {
 			grayValue(array->data[i]);
 		}
 		break;

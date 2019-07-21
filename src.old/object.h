@@ -57,8 +57,8 @@ struct sObj {
 
 struct sObjArray {
 	Obj obj;
-	uint32_t len;
-	uint32_t cap;
+	int32_t len;
+	int32_t cap;
 	Value* data;
 };
 
@@ -107,7 +107,7 @@ struct sObjString {
 	Obj obj;
 	int length;
 	char* chars;
-	uint32_t hash;
+	int32_t hash;
 };
 
 struct sObjUpvalue {
@@ -124,7 +124,7 @@ struct sObjUpvalue {
 	ObjUpvalue* next;
 };
 
-ObjArray* newArray(uint32_t len);
+ObjArray* newArray(int32_t len);
 ObjBoundMethod* newBoundMethod(Value receiver, ObjClosure* method);
 ObjClass* newClass(ObjString* name);
 ObjClosure* newClosure(ObjFunction* function);

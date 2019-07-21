@@ -25,9 +25,9 @@ static Obj* allocateObject(size_t size, ObjType type) {
 	return object;
 }
 
-ObjArray* newArray(uint32_t len) {
+ObjArray* newArray(int32_t len) {
 	// Set cap to the closest higher power of two.
-	uint32_t cap = len;
+	int32_t cap = len;
 	cap |= cap >> 1;
 	cap |= cap >> 2;
 	cap |= cap >> 4;
@@ -132,7 +132,7 @@ void arrayPush(ObjArray* array, Value value) {
 	array->data[array->len++] = value;
 }
 
-static ObjString* allocateString(char* chars, int length, uint32_t hash) {
+static ObjString* allocateString(char* chars, int length, int32_t hash) {
 	ObjString* string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
 	string->obj.klass = vm.stringClass;
 	string->length = length;
@@ -148,8 +148,8 @@ static ObjString* allocateString(char* chars, int length, uint32_t hash) {
 	return string;
 }
 
-static uint32_t hashString(const char* key, int length) {
-	uint32_t hash = 2166136261u;
+static int32_t hashString(const char* key, int length) {
+	int32_t hash = 2166136261u;
 
 	for (int i = 0; i < length; i++) {
 		hash ^= key[i];
@@ -163,7 +163,7 @@ static uint32_t hashString(const char* key, int length) {
  * Takes string dynamically allocated on the heap.
  */
 ObjString* takeString(char* chars, int length) {
-	uint32_t hash = hashString(chars, length);
+	int32_t hash = hashString(chars, length);
 
 	ObjString* interned = tableFindString(&vm.strings, chars, length, hash);
 	if (interned != NULL) {
@@ -178,7 +178,7 @@ ObjString* takeString(char* chars, int length) {
  * Copies static C string.
  */
 ObjString* copyString(const char* chars, int length) {
-	uint32_t hash = hashString(chars, length);
+	int32_t hash = hashString(chars, length);
 
 	ObjString* interned = tableFindString(&vm.strings, chars, length, hash);
 	if (interned != NULL) return interned;
@@ -196,7 +196,7 @@ void printObject(Value value) {
 
 	case OBJ_ARRAY: {
 		printf("[");
-		for (uint32_t i = 0; i < AS_ARRAY(value)->len; i++) {
+		for (int32_t i = 0; i < AS_ARRAY(value)->len; i++) {
 			if (i > 0) printf(", ");
 
 			ObjArray* array = AS_ARRAY(value);

@@ -19,7 +19,7 @@ void freeTable(Table* table) {
 }
 
 static Entry* findEntry(Entry* entries, int capacityMask, ObjString* key) {
-	uint32_t index = key->hash & capacityMask;
+	int32_t index = key->hash & capacityMask;
 	Entry* tombstone = NULL;
 
 	for (;;) {
@@ -121,11 +121,11 @@ void tableAddAll(Table* from, Table* to) {
 
 // Function tableGet uses findEntry which compares keys with double equals, so if they are in the same place in memory.
 // For string interning we want to compare keys fully with memcmp.
-ObjString* tableFindString(Table* table, const char* chars, int length, uint32_t hash) {
+ObjString* tableFindString(Table* table, const char* chars, int length, int32_t hash) {
 	// If the table is empty, we definitely won't find it.
 	if (table->entries == NULL) return NULL;
 
-	uint32_t index = hash & table->capacityMask;
+	int32_t index = hash & table->capacityMask;
 
 	for (;;) {
 		Entry* entry = &table->entries[index];

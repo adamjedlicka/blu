@@ -105,7 +105,7 @@ static bluToken newline(bluParser* parser) {
 	return makeToken(parser, TOKEN_NEWLINE);
 }
 
-static bluTokenType checkKeyword(bluParser* parser, uint32_t start, uint32_t length, const char* rest,
+static bluTokenType checkKeyword(bluParser* parser, int32_t start, int32_t length, const char* rest,
 								 bluTokenType type) {
 	if (parser->at - parser->from == start + length &&
 		memcmp(parser->source + parser->from + start, rest, length) == 0) {

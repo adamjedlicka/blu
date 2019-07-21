@@ -1,6 +1,7 @@
 #include "vm.h"
 #include "blu.h"
 #include "compiler/compiler.h"
+#include "memory.h"
 #include "vm/debug/debug.h"
 
 static void resetStack(bluVM* vm) {
@@ -34,7 +35,7 @@ static void concatenate(bluVM* vm) {
 	bluObjString* right = AS_STRING(bluPop(vm));
 	bluObjString* left = AS_STRING(bluPop(vm));
 
-	uint32_t length = left->length + right->length;
+	int32_t length = left->length + right->length;
 	char* chars = malloc(sizeof(char) * length + 1);
 	memcpy(chars, left->chars, left->length);
 	memcpy(chars + left->length, right->chars, right->length);
@@ -152,10 +153,14 @@ bluVM* bluNew() {
 
 	bluTableInit(vm, &vm->strings);
 
+	vm->objects = NULL;
+
 	return vm;
 }
 
 void bluFree(bluVM* vm) {
+	bluCollectGarbage(vm);
+
 	bluTableFree(vm, &vm->strings);
 
 	free(vm);
@@ -199,9 +204,6 @@ bluInterpretResult bluInterpret(bluVM* vm, const char* source, const char* name)
 
 		result = run(vm);
 	}
-
-	bluChunkFree(&chunk);
-	bluCompilerFree(&compiler);
 
 	return result;
 }

@@ -518,11 +518,11 @@ static InterpretResult run() {
 
 				ObjArray* arr = newArray(arrLeft->len + arrRight->len);
 
-				for (uint32_t i = 0; i < arrLeft->len; i++) {
+				for (int32_t i = 0; i < arrLeft->len; i++) {
 					arr->data[i] = arrLeft->data[i];
 				}
 
-				for (uint32_t i = 0; i < arrRight->len; i++) {
+				for (int32_t i = 0; i < arrRight->len; i++) {
 					arr->data[arrLeft->len + i] = arrRight->data[i];
 				}
 
@@ -532,7 +532,7 @@ static InterpretResult run() {
 				ObjArray* arr = AS_ARRAY(pop());
 
 				ObjArray* array = newArray(arr->len);
-				for (uint32_t i = 0; i < arr->len; i++) {
+				for (int32_t i = 0; i < arr->len; i++) {
 					array->data[i] = arr->data[i];
 				}
 
