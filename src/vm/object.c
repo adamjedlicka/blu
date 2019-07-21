@@ -43,7 +43,7 @@ bluObjString* bluCopyString(bluVM* vm, const char* chars, int32_t length) {
 	bluObjString* interned = bluTableFindString(vm, &vm->strings, chars, length, hash);
 	if (interned != NULL) return interned;
 
-	char* heapChars = malloc(sizeof(char) * (length + 1));
+	char* heapChars = bluAllocate(vm, sizeof(char) * (length + 1));
 	memcpy(heapChars, chars, length);
 	heapChars[length] = '\0';
 
@@ -65,7 +65,7 @@ bluObjString* bluTakeString(bluVM* vm, char* chars, int32_t length) {
 
 	bluObjString* interned = bluTableFindString(vm, &vm->strings, chars, length, hash);
 	if (interned != NULL) {
-		free(chars);
+		bluDeallocate(vm, chars, sizeof(char) * 1);
 		return interned;
 	}
 

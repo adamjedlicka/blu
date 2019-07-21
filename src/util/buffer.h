@@ -9,12 +9,12 @@
 #define DECLARE_BUFFER(name, type)                                                                                     \
 	typedef struct {                                                                                                   \
 		type* data;                                                                                                    \
-		int32_t count;                                                                                                \
-		int32_t capacity;                                                                                             \
+		int32_t count;                                                                                                 \
+		int32_t capacity;                                                                                              \
 	} name##Buffer;                                                                                                    \
 	void name##BufferInit(name##Buffer* buffer);                                                                       \
 	void name##BufferFree(name##Buffer* buffer);                                                                       \
-	void name##BufferFill(name##Buffer* buffer, type data, int32_t count);                                            \
+	void name##BufferFill(name##Buffer* buffer, type data, int32_t count);                                             \
 	int32_t name##BufferWrite(name##Buffer* buffer, type data)
 
 // This should be used once for each type instantiation, somewhere in a .c file.
@@ -30,19 +30,19 @@
 		name##BufferInit(buffer);                                                                                      \
 	}                                                                                                                  \
                                                                                                                        \
-	void name##BufferFill(name##Buffer* buffer, type data, int32_t count) {                                           \
+	void name##BufferFill(name##Buffer* buffer, type data, int32_t count) {                                            \
 		if (buffer->capacity < buffer->count + count) {                                                                \
-			int32_t capacity = bluPowerOf2Ceil(buffer->count + count);                                                \
+			int32_t capacity = bluPowerOf2Ceil(buffer->count + count);                                                 \
 			buffer->data = (type*)realloc(buffer->data, capacity * sizeof(type));                                      \
 			buffer->capacity = capacity;                                                                               \
 		}                                                                                                              \
                                                                                                                        \
-		for (int32_t i = 0; i < count; i++) {                                                                         \
+		for (int32_t i = 0; i < count; i++) {                                                                          \
 			buffer->data[buffer->count++] = data;                                                                      \
 		}                                                                                                              \
 	}                                                                                                                  \
                                                                                                                        \
-	int32_t name##BufferWrite(name##Buffer* buffer, type data) {                                                      \
+	int32_t name##BufferWrite(name##Buffer* buffer, type data) {                                                       \
 		name##BufferFill(buffer, data, 1);                                                                             \
 		return buffer->count - 1;                                                                                      \
 	}

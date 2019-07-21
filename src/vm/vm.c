@@ -5,6 +5,8 @@
 #include "object.h"
 #include "vm/debug/debug.h"
 
+#define VM_DEBUG_TRACE false
+
 static void resetStack(bluVM* vm) {
 	vm->stackTop = vm->stack;
 	vm->frameCount = 0;
@@ -36,7 +38,7 @@ static void concatenate(bluVM* vm) {
 	bluObjString* left = AS_STRING(bluPop(vm));
 
 	int32_t length = left->length + right->length;
-	char* chars = malloc(sizeof(char) * length + 1);
+	char* chars = bluAllocate(vm, sizeof(char) * length + 1);
 	memcpy(chars, left->chars, left->length);
 	memcpy(chars + left->length, right->chars, right->length);
 	chars[length] = '\0';
@@ -97,14 +99,16 @@ static bluInterpretResult run(bluVM* vm) {
 
 		if (vm->shouldGC) bluCollectGarbage(vm);
 
-		for (bluValue* value = vm->stack; value < vm->stackTop; value++) {
-			printf("[ ");
-			bluPrintValue(*value);
-			printf(" ]");
-		}
-		printf("\n");
+		if (VM_DEBUG_TRACE) {
+			for (bluValue* value = vm->stack; value < vm->stackTop; value++) {
+				printf("[ ");
+				bluPrintValue(*value);
+				printf(" ]");
+			}
+			printf("\n");
 
-		bluDisassembleInstruction(&frame->function->chunk, frame->ip - frame->function->chunk.code.data);
+			bluDisassembleInstruction(&frame->function->chunk, frame->ip - frame->function->chunk.code.data);
+		}
 
 		uint8_t instruction = READ_BYTE();
 
@@ -238,8 +242,6 @@ bluInterpretResult bluInterpret(bluVM* vm, const char* source, const char* name)
 	if (function == NULL) {
 		result = INTERPRET_COMPILE_ERROR;
 	} else {
-		bluDisassembleChunk(&function->chunk, name);
-
 		callValue(vm, OBJ_VAL(function), 0);
 
 		result = run(vm);

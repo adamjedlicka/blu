@@ -1,8 +1,12 @@
 #include "compiler.h"
 #include "blu.h"
+#include "vm/debug/debug.h"
+#include "vm/memory.h"
 #include "vm/object.h"
 #include "vm/value.h"
 #include "vm/vm.h"
+
+#define COMPILER_DEBUG_DISASSEMBLE false
 
 typedef enum {
 	PREC_NONE,
@@ -324,7 +328,7 @@ bluObjFunction* endCompiler(bluCompiler* compiler) {
 
 bluObjFunction* bluCompilerCompile(bluVM* vm, bluCompiler* compiler, const char* source) {
 	compiler->vm = vm;
-	compiler->parser = malloc(sizeof(bluParser));
+	compiler->parser = bluAllocate(vm, sizeof(bluParser));
 	bluParserInit(compiler->parser, source);
 
 	initCompiler(compiler, NULL, 0, TYPE_TOP_LEVEL);
@@ -342,7 +346,9 @@ bluObjFunction* bluCompilerCompile(bluVM* vm, bluCompiler* compiler, const char*
 
 	bluObjFunction* function = endCompiler(compiler);
 
-	free(compiler->parser);
+	if (COMPILER_DEBUG_DISASSEMBLE) bluDisassembleChunk(&function->chunk, "__TOP__");
+
+	bluDeallocate(vm, compiler->parser, sizeof(bluParser));
 
 	return compiler->hadError ? NULL : function;
 }

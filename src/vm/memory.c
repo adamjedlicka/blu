@@ -6,8 +6,8 @@
 #define GC_HEAP_GROW_FACTOR 0.5
 #define GC_HEAP_MINIMUM 1024 * 1024
 
-#define GC_DEBUG_STRESS true
-#define GC_DEBUG_TRACE true
+#define GC_DEBUG_STRESS false
+#define GC_DEBUG_TRACE false
 
 static void freeObject(bluVM* vm, bluObj* object) {
 	if (GC_DEBUG_TRACE) {

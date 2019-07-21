@@ -1,4 +1,5 @@
 #include "table.h"
+#include "vm/memory.h"
 
 #define TABLE_MAX_LOAD 0.75
 
@@ -28,8 +29,8 @@ static bluEntry* findEntry(bluEntry* entries, int32_t capacityMask, bluObjString
 	}
 }
 
-static void adjustCapacity(bluTable* table, int32_t capacityMask) {
-	bluEntry* entries = malloc(sizeof(bluEntry) * (capacityMask + 1));
+static void adjustCapacity(bluVM* vm, bluTable* table, int32_t capacityMask) {
+	bluEntry* entries = bluAllocate(vm, sizeof(bluEntry) * (capacityMask + 1));
 
 	for (int32_t i = 0; i <= capacityMask; i++) {
 		entries[i].key = NULL;
@@ -49,7 +50,7 @@ static void adjustCapacity(bluTable* table, int32_t capacityMask) {
 		table->count++;
 	}
 
-	free(table->entries);
+	bluDeallocate(vm, table->entries, sizeof(bluEntry) * (table->capacityMask + 1));
 
 	table->entries = entries;
 	table->capacityMask = capacityMask;
@@ -74,7 +75,7 @@ bool bluTableSet(bluVM* vm, bluTable* table, bluObjString* key, bluValue value) 
 			capacityMask = 7;
 		}
 
-		adjustCapacity(table, capacityMask);
+		adjustCapacity(vm, table, capacityMask);
 	}
 
 	bluEntry* entry = findEntry(table->entries, table->capacityMask, key);
@@ -145,5 +146,5 @@ void bluTableInit(bluVM* vm, bluTable* table) {
 }
 
 void bluTableFree(bluVM* vm, bluTable* table) {
-	if (table->entries != NULL) free(table->entries);
+	if (table->entries != NULL) bluDeallocate(vm, table->entries, sizeof(bluEntry) * (table->capacityMask + 1));
 }
