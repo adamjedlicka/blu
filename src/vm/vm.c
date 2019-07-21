@@ -139,6 +139,16 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
+		case OP_EQUAL: {
+			bluValue right = bluPop(vm);
+			bluValue left = bluPop(vm);
+
+			bool equal = bluValuesEqual(left, right);
+
+			bluPush(vm, BOOL_VAL(equal));
+			break;
+		}
+
 		case OP_ADD: {
 			if (IS_STRING(bluPeek(vm, 0)) && IS_STRING(bluPeek(vm, 1))) {
 				concatenate(vm);

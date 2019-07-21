@@ -33,6 +33,7 @@ typedef struct {
 #define NUMBER_VAL(value) ((bluValue){VAL_NUMBER, {.number = value}})
 #define OBJ_VAL(value) ((bluValue){VAL_OBJ, {.obj = (bluObj*)value}})
 
+bool bluValuesEqual(bluValue a, bluValue b);
 void bluPrintValue(bluValue value);
 
 #endif

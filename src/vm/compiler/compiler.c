@@ -178,6 +178,7 @@ static void binary(bluCompiler* compiler, bool canAssign) {
 	parsePrecedence(compiler, (Precedence)(rule->precedence + 1));
 
 	switch (operatorType) {
+	case TOKEN_EQUAL_EQUAL: emitByte(compiler, OP_EQUAL); break;
 	case TOKEN_MINUS: emitByte(compiler, OP_SUBTRACT); break;
 	case TOKEN_PERCENT: emitByte(compiler, OP_REMINDER); break;
 	case TOKEN_PLUS: emitByte(compiler, OP_ADD); break;
@@ -221,7 +222,7 @@ ParseRule rules[] = {
 
 	{NULL, NULL, PREC_EQUALITY},   // TOKEN_BANG_EQUAL
 	{NULL, NULL, PREC_NONE},	   // TOKEN_BANG
-	{NULL, NULL, PREC_EQUALITY},   // TOKEN_EQUAL_EQUAL
+	{NULL, binary, PREC_EQUALITY}, // TOKEN_EQUAL_EQUAL
 	{NULL, NULL, PREC_NONE},	   // TOKEN_EQUAL
 	{NULL, NULL, PREC_COMPARISON}, // TOKEN_GREATER_EQUAL
 	{NULL, NULL, PREC_COMPARISON}, // TOKEN_GREATER
