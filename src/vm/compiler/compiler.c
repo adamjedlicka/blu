@@ -151,10 +151,10 @@ static void emitShort(bluCompiler* compiler, uint16_t _short) {
 	emitByte(compiler, _short & 0xff);
 }
 
-static void emitBytes(bluCompiler* compiler, uint8_t byte1, uint8_t byte2) {
-	emitByte(compiler, byte1);
-	emitByte(compiler, byte2);
-}
+// static void emitBytes(bluCompiler* compiler, uint8_t byte1, uint8_t byte2) {
+// 	emitByte(compiler, byte1);
+// 	emitByte(compiler, byte2);
+// }
 
 static uint16_t makeConstant(bluCompiler* compiler, bluValue value) {
 	int32_t constant = bluValueBufferWrite(&compiler->function->chunk.constants, value);
@@ -175,6 +175,22 @@ static uint16_t emitConstant(bluCompiler* compiler, bluValue value) {
 	return constant;
 }
 
+static int32_t emitJump(bluCompiler* compiler, bluOpCode code) {
+	emitByte(compiler, code);
+	emitShort(compiler, 0);
+
+	return compiler->function->chunk.code.count - 2;
+}
+
+static void patchJump(bluCompiler* compiler, int32_t jump) {
+	bluChunk* currentChunk = &compiler->function->chunk;
+
+	int32_t length = currentChunk->code.count - jump - 2;
+
+	currentChunk->code.data[jump] = (length >> 8) & 0xff;
+	currentChunk->code.data[jump + 1] = length & 0xff;
+}
+
 static bool identifiersEqual(bluToken* a, bluToken* b) {
 	if (a->length != b->length) return false;
 
@@ -188,6 +204,7 @@ static uint16_t identifierConstant(bluCompiler* compiler, bluToken* name) {
 static ParseRule* getRule(bluTokenType type);
 static void parsePrecedence(bluCompiler* compiler, Precedence precedence);
 
+static void statement(bluCompiler* compiler);
 static void declaration(bluCompiler* compiler);
 static void expression(bluCompiler* compiler);
 
@@ -420,11 +437,58 @@ static void block(bluCompiler* compiler) {
 	consume(compiler, TOKEN_RIGHT_BRACE, "Expect '}' after block.");
 }
 
+static void ifStatement(bluCompiler* compiler) {
+	beginScope(compiler);
+
+	expression(compiler);
+	int32_t ifJump = emitJump(compiler, OP_JUMP_IF_FALSE);
+	emitByte(compiler, OP_POP); // Condition
+
+	// One-line if notation
+	if (match(compiler, TOKEN_COLON)) {
+		statement(compiler);
+
+		int32_t elseJump = emitJump(compiler, OP_JUMP);
+		patchJump(compiler, ifJump);
+		emitByte(compiler, OP_POP); // Condition
+		patchJump(compiler, elseJump);
+		endScope(compiler);
+		return;
+	}
+
+	consume(compiler, TOKEN_LEFT_BRACE, "Expect '{' after if condition.");
+	beginScope(compiler);
+	block(compiler);
+	endScope(compiler);
+
+	int32_t elseJump = emitJump(compiler, OP_JUMP);
+	patchJump(compiler, ifJump);
+	emitByte(compiler, OP_POP); // Condition
+
+	if (match(compiler, TOKEN_ELSE)) {
+		if (match(compiler, TOKEN_LEFT_BRACE)) {
+			beginScope(compiler);
+			block(compiler);
+			endScope(compiler);
+		} else if (match(compiler, TOKEN_IF)) {
+			ifStatement(compiler);
+		} else {
+			error(compiler, "Expect 'if' or '{' after 'else.'");
+		}
+	}
+
+	patchJump(compiler, elseJump);
+
+	endScope(compiler);
+}
+
 static void statement(bluCompiler* compiler) {
 	if (match(compiler, TOKEN_LEFT_BRACE)) {
 		beginScope(compiler);
 		block(compiler);
 		endScope(compiler);
+	} else if (match(compiler, TOKEN_IF)) {
+		ifStatement(compiler);
 	} else {
 		expressionStatement(compiler);
 	}
@@ -466,13 +530,14 @@ static void markInitialized(bluCompiler* compiler) {
 	compiler->locals.data[compiler->locals.count - 1].depth = compiler->scopeDepth;
 }
 
-static void defineVariable(bluCompiler* compiler, uint8_t index) {
+static void defineVariable(bluCompiler* compiler, uint16_t index) {
 	if (compiler->scopeDepth > 0) {
 		markInitialized(compiler);
 		return;
 	}
 
-	emitBytes(compiler, OP_DEFINE_GLOBAL, index);
+	emitByte(compiler, OP_DEFINE_GLOBAL);
+	emitShort(compiler, index);
 }
 
 static uint16_t parseVariable(bluCompiler* compiler, const char* errorMessage) {

@@ -185,6 +185,24 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
+		case OP_JUMP: {
+			uint16_t offset = READ_SHORT();
+			frame->ip += offset;
+			break;
+		}
+
+		case OP_JUMP_IF_FALSE: {
+			uint16_t offset = READ_SHORT();
+			if (bluIsFalsey(bluPeek(vm, 0))) frame->ip += offset;
+			break;
+		}
+
+		case OP_LOOP: {
+			uint16_t offset = READ_SHORT();
+			frame->ip -= offset;
+			break;
+		}
+
 		case OP_EQUAL: {
 			bluValue right = bluPop(vm);
 			bluValue left = bluPop(vm);
