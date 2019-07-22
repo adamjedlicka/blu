@@ -6,15 +6,13 @@
 #define GC_HEAP_GROW_FACTOR 0.5
 #define GC_HEAP_MINIMUM 1024 * 1024
 
-#define GC_DEBUG_STRESS true
-#define GC_DEBUG_TRACE true
-
 static void freeObject(bluVM* vm, bluObj* object) {
-	if (GC_DEBUG_TRACE) {
-		printf("%p free ", object);
-		bluPrintValue(OBJ_VAL(object));
-		printf("\n");
-	}
+
+#ifdef DEBUG_GC_TRACE
+	printf("%p free ", object);
+	bluPrintValue(OBJ_VAL(object));
+	printf("\n");
+#endif
 
 	switch (object->type) {
 
@@ -54,11 +52,11 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 
 	if (object->isDark) return;
 
-	if (GC_DEBUG_TRACE) {
-		printf("%p gray ", object);
-		bluPrintValue(OBJ_VAL(object));
-		printf("\n");
-	}
+#ifdef DEBUG_GC_TRACE
+	printf("%p gray ", object);
+	bluPrintValue(OBJ_VAL(object));
+	printf("\n");
+#endif
 
 	object->isDark = true;
 
@@ -98,7 +96,11 @@ void* bluAllocate(bluVM* vm, size_t size) {
 void* bluReallocate(bluVM* vm, void* previous, size_t oldSize, size_t newSize) {
 	vm->bytesAllocated += newSize - oldSize;
 
-	if (GC_DEBUG_STRESS || vm->bytesAllocated > vm->nextGC) {
+#ifdef DEBUG_GC_STRESS
+	vm->shouldGC = true;
+#endif
+
+	if (vm->bytesAllocated > vm->nextGC) {
 		vm->shouldGC = true;
 	}
 
@@ -115,9 +117,12 @@ void bluDeallocate(bluVM* vm, void* pointer, size_t size) {
 }
 
 void bluCollectGarbage(bluVM* vm) {
-	if (GC_DEBUG_TRACE) printf("-- gc begin\n");
+#ifdef DEBUG_GC_TRACE
+	printf("-- gc begin\n");
 
 	size_t before = vm->bytesAllocated;
+#endif
+
 	double start = (double)clock() / CLOCKS_PER_SEC;
 
 	for (bluValue* slot = vm->stack; slot < vm->stackTop; slot++) {
@@ -151,9 +156,10 @@ void bluCollectGarbage(bluVM* vm) {
 	vm->shouldGC = false;
 	vm->timeGC += ((double)clock() / CLOCKS_PER_SEC) - start;
 
-	if (GC_DEBUG_TRACE)
-		printf("-- gc collected %ld bytes (from %ld to %ld) next at %ld\n", before - vm->bytesAllocated, before,
-			   vm->bytesAllocated, vm->nextGC);
+#ifdef DEBUG_GC_TRACE
+	printf("-- gc collected %ld bytes (from %ld to %ld) next at %ld\n", before - vm->bytesAllocated, before,
+		   vm->bytesAllocated, vm->nextGC);
+#endif
 }
 
 void bluCollectMemory(bluVM* vm) {

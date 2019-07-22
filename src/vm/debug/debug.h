@@ -4,6 +4,6 @@
 #include "vm/compiler/chunk.h"
 
 int32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset);
-void bluDisassembleChunk(bluChunk* chunk, const char* name);
+void bluDisassembleChunk(bluChunk* chunk);
 
 #endif

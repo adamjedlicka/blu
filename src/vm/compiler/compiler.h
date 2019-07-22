@@ -3,6 +3,7 @@
 
 #include "blu.h"
 #include "chunk.h"
+#include "vm/common.h"
 #include "vm/object.h"
 #include "vm/parser/parser.h"
 
@@ -14,6 +15,8 @@ typedef struct {
 	bool isUpvalue;
 } bluLocal;
 
+DECLARE_BUFFER(bluLocal, bluLocal);
+
 typedef struct {
 	// The index of the local variable or upvalue being captured from the enclosing function.
 	uint8_t index;
@@ -21,6 +24,8 @@ typedef struct {
 	// Whether the captured variable is a local or upvalue in the enclosing function.
 	bool isLocal;
 } bluUpvalue;
+
+DECLARE_BUFFER(bluUpvalue, bluUpvalue);
 
 typedef enum {
 	TYPE_TOP_LEVEL,
@@ -37,9 +42,8 @@ typedef struct bluCompiler {
 	bluObjFunction* function;
 	bluFunctionType type;
 
-	bluLocal locals[UINT8_MAX + 1];
-	bluUpvalue upvalues[UINT8_MAX + 1];
-	int32_t localCount;
+	bluLocalBuffer locals;
+	bluUpvalueBuffer upvalues;
 
 	int8_t scopeDepth;
 
@@ -47,6 +51,6 @@ typedef struct bluCompiler {
 	bool panicMode;
 } bluCompiler;
 
-bluObjFunction* bluCompilerCompile(bluVM* vm, bluCompiler* compiler, const char* source);
+bluObjFunction* bluCompilerCompile(bluVM* vm, bluCompiler* compiler, const char* source, const char* name);
 
 #endif

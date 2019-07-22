@@ -6,7 +6,8 @@
 #include "vm/value.h"
 #include "vm/vm.h"
 
-#define COMPILER_DEBUG_DISASSEMBLE true
+DEFINE_BUFFER(bluLocal, bluLocal);
+DEFINE_BUFFER(bluUpvalue, bluUpvalue);
 
 typedef enum {
 	PREC_NONE,
@@ -141,8 +142,13 @@ static void synchronize(bluCompiler* compiler) {
 	}
 }
 
-static void emitByte(bluCompiler* compiler, uint8_t byte) {
-	bluChunkWrite(&compiler->function->chunk, byte, compiler->current.line, compiler->current.column);
+static void emitByte(bluCompiler* compiler, uint8_t _byte) {
+	bluChunkWrite(&compiler->function->chunk, _byte, compiler->current.line, compiler->current.column);
+}
+
+static void emitShort(bluCompiler* compiler, uint16_t _short) {
+	emitByte(compiler, (_short >> 8) & 0xff);
+	emitByte(compiler, _short & 0xff);
 }
 
 static void emitBytes(bluCompiler* compiler, uint8_t byte1, uint8_t byte2) {
@@ -150,20 +156,21 @@ static void emitBytes(bluCompiler* compiler, uint8_t byte1, uint8_t byte2) {
 	emitByte(compiler, byte2);
 }
 
-static uint8_t makeConstant(bluCompiler* compiler, bluValue value) {
+static uint16_t makeConstant(bluCompiler* compiler, bluValue value) {
 	int32_t constant = bluValueBufferWrite(&compiler->function->chunk.constants, value);
-	if (constant > UINT8_MAX) {
+	if (constant > LOCALS_MAX) {
 		error(compiler, "Too many constants in one chunk.");
 		return 0;
 	}
 
-	return (uint8_t)constant;
+	return (uint16_t)constant;
 }
 
-static uint8_t emitConstant(bluCompiler* compiler, bluValue value) {
-	uint8_t constant = makeConstant(compiler, value);
+static uint16_t emitConstant(bluCompiler* compiler, bluValue value) {
+	uint16_t constant = makeConstant(compiler, value);
 
-	emitBytes(compiler, OP_CONSTANT, constant);
+	emitByte(compiler, OP_CONSTANT);
+	emitShort(compiler, constant);
 
 	return constant;
 }
@@ -174,7 +181,7 @@ static bool identifiersEqual(bluToken* a, bluToken* b) {
 	return memcmp(a->start, b->start, a->length) == 0;
 }
 
-static uint8_t identifierConstant(bluCompiler* compiler, bluToken* name) {
+static uint16_t identifierConstant(bluCompiler* compiler, bluToken* name) {
 	return makeConstant(compiler, OBJ_VAL(bluCopyString(compiler->vm, name->start, name->length)));
 }
 
@@ -219,8 +226,8 @@ static void unary(bluCompiler* compiler, bool canAssing) {
 }
 
 static int32_t resolveLocal(bluCompiler* compiler, bluToken* name) {
-	for (int32_t i = compiler->localCount - 1; i >= 0; i--) {
-		bluLocal* local = &compiler->locals[i];
+	for (int32_t i = compiler->locals.count - 1; i >= 0; i--) {
+		bluLocal* local = &compiler->locals.data[i];
 		if (identifiersEqual(name, &local->name)) {
 			if (local->depth == -1) {
 				error(compiler, "Cannot read local variable in its own initializer.");
@@ -253,9 +260,11 @@ static void namedVariable(bluCompiler* compiler, bluToken name, bool canAssign) 
 
 	if (canAssign && match(compiler, TOKEN_EQUAL)) {
 		expression(compiler);
-		emitBytes(compiler, setOp, (uint8_t)arg);
+		emitByte(compiler, setOp);
+		emitShort(compiler, (uint16_t)arg);
 	} else {
-		emitBytes(compiler, getOp, (uint8_t)arg);
+		emitByte(compiler, getOp);
+		emitShort(compiler, (uint16_t)arg);
 	}
 }
 
@@ -390,15 +399,16 @@ static void beginScope(bluCompiler* compiler) {
 static void endScope(bluCompiler* compiler) {
 	compiler->scopeDepth--;
 
-	while (compiler->localCount > 0 && compiler->locals[compiler->localCount - 1].depth > compiler->scopeDepth) {
-		if (compiler->locals[compiler->localCount - 1].isUpvalue) {
+	while (compiler->locals.count > 0 &&
+		   compiler->locals.data[compiler->locals.count - 1].depth > compiler->scopeDepth) {
+		if (compiler->locals.data[compiler->locals.count - 1].isUpvalue) {
 			// TODO : Upvalues
 			// emitByte(compiler, OP_CLOSE_OPVALUE);
 		} else {
 			emitByte(compiler, OP_POP);
 		}
 
-		compiler->localCount--;
+		compiler->locals.count--;
 	}
 }
 
@@ -421,15 +431,17 @@ static void statement(bluCompiler* compiler) {
 }
 
 static void addLocal(bluCompiler* compiler, bluToken name) {
-	if (compiler->localCount == UINT8_MAX + 1) {
+	if (compiler->locals.count == LOCALS_MAX) {
 		error(compiler, "Too many local variables in function.");
 		return;
 	}
 
-	bluLocal* local = &compiler->locals[compiler->localCount++];
-	local->name = name;
-	local->depth = -1;
-	local->isUpvalue = false;
+	bluLocal local;
+	local.name = name;
+	local.depth = -1;
+	local.isUpvalue = false;
+
+	bluLocalBufferWrite(&compiler->locals, local);
 }
 
 static void declareVariable(bluCompiler* compiler) {
@@ -437,8 +449,8 @@ static void declareVariable(bluCompiler* compiler) {
 	if (compiler->scopeDepth == 0) return;
 
 	bluToken* name = &compiler->previous;
-	for (int32_t i = compiler->localCount - 1; i >= 0; i--) {
-		bluLocal* local = &compiler->locals[i];
+	for (int32_t i = compiler->locals.count - 1; i >= 0; i--) {
+		bluLocal* local = &compiler->locals.data[i];
 		if (local->depth != -1 && local->depth < compiler->scopeDepth) break;
 		if (identifiersEqual(name, &local->name)) {
 			error(compiler, "Variable with this name already declared in this scope.");
@@ -451,7 +463,7 @@ static void declareVariable(bluCompiler* compiler) {
 static void markInitialized(bluCompiler* compiler) {
 	if (compiler->scopeDepth == 0) return;
 
-	compiler->locals[compiler->localCount - 1].depth = compiler->scopeDepth;
+	compiler->locals.data[compiler->locals.count - 1].depth = compiler->scopeDepth;
 }
 
 static void defineVariable(bluCompiler* compiler, uint8_t index) {
@@ -463,7 +475,7 @@ static void defineVariable(bluCompiler* compiler, uint8_t index) {
 	emitBytes(compiler, OP_DEFINE_GLOBAL, index);
 }
 
-static uint8_t parseVariable(bluCompiler* compiler, const char* errorMessage) {
+static uint16_t parseVariable(bluCompiler* compiler, const char* errorMessage) {
 	consume(compiler, TOKEN_IDENTIFIER, errorMessage);
 
 	declareVariable(compiler);
@@ -504,30 +516,37 @@ void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t scopeDep
 	compiler->enclosing = enclosing;
 	compiler->scopeDepth = scopeDepth;
 	compiler->type = type;
-	compiler->localCount = 0;
 	compiler->function = bluNewFunction(compiler->vm);
+
+	bluLocalBufferInit(&compiler->locals);
+	bluUpvalueBufferInit(&compiler->upvalues);
 
 	switch (type) {
 	case TYPE_TOP_LEVEL: compiler->function->name = NULL; break;
 	}
 
-	bluLocal* local = &compiler->locals[compiler->localCount++];
-	local->depth = compiler->scopeDepth;
-	local->isUpvalue = false;
+	bluLocal local;
+	local.depth = compiler->scopeDepth;
+	local.isUpvalue = false;
 
 	// TODO : Other function types
 	// In a function, it holds the function, but cannot be references, so has no name.
-	local->name.start = "";
-	local->name.length = 0;
+	local.name.start = "";
+	local.name.length = 0;
+
+	bluLocalBufferWrite(&compiler->locals, local);
 }
 
 bluObjFunction* endCompiler(bluCompiler* compiler) {
 	emitByte(compiler, OP_RETURN);
 
+	bluLocalBufferFree(&compiler->locals);
+	bluUpvalueBufferFree(&compiler->upvalues);
+
 	return compiler->function;
 }
 
-bluObjFunction* bluCompilerCompile(bluVM* vm, bluCompiler* compiler, const char* source) {
+bluObjFunction* bluCompilerCompile(bluVM* vm, bluCompiler* compiler, const char* source, const char* name) {
 	compiler->vm = vm;
 	compiler->parser = bluAllocate(vm, sizeof(bluParser));
 	bluParserInit(compiler->parser, source);
@@ -546,8 +565,11 @@ bluObjFunction* bluCompilerCompile(bluVM* vm, bluCompiler* compiler, const char*
 	}
 
 	bluObjFunction* function = endCompiler(compiler);
+	function->chunk.name = name;
 
-	if (COMPILER_DEBUG_DISASSEMBLE) bluDisassembleChunk(&function->chunk, "__TOP__");
+#ifdef DEBUG_COMPILER_DISASSEMBLE
+	bluDisassembleChunk(&function->chunk);
+#endif
 
 	bluDeallocate(vm, compiler->parser, sizeof(bluParser));
 

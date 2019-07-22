@@ -2,9 +2,9 @@
 #include "blu.h"
 
 static int32_t constantInstruction(const char* name, bluChunk* chunk, int32_t offset) {
-	uint8_t constant = chunk->code.data[offset + 1];
-	printf("%-16s %6d '", name, constant);
-	bluPrintValue(chunk->constants.data[constant]);
+	uint16_t slot = ((chunk->code.data[offset + 1] << 8) & 0xff) | (chunk->code.data[offset + 2] & 0xff);
+	printf("%-16s %6d '", name, slot);
+	bluPrintValue(chunk->constants.data[slot]);
 	printf("'\n");
 	return offset + 2;
 }
@@ -14,10 +14,16 @@ static int32_t simpleInstruction(const char* name, int32_t offset) {
 	return offset + 1;
 }
 
-static int byteInstruction(const char* name, bluChunk* chunk, int offset) {
-	uint8_t slot = chunk->code.data[offset + 1];
-	printf("%-16s %6d\n", name, slot);
-	return offset + 2;
+// static int32_t byteInstruction(const char* name, bluChunk* chunk, int32_t offset) {
+// 	uint8_t slot = chunk->code.data[offset + 1];
+// 	printf("%-16s %6d\n", name, slot);
+// 	return offset + 2;
+// }
+
+static int32_t shortInstruction(const char* name, bluChunk* chunk, int32_t offset) {
+	uint16_t slot = ((chunk->code.data[offset + 1] << 8) & 0xff) | (chunk->code.data[offset + 2] & 0xff);
+	printf("%-16s %6d (%d)\n", name, slot, slot + offset + 3);
+	return offset + 3;
 }
 
 int32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
@@ -38,8 +44,8 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
 	case OP_TRUE: return simpleInstruction("OP_TRUE", offset);
 
 	case OP_POP: return simpleInstruction("OP_POP", offset);
-	case OP_GET_LOCAL: return byteInstruction("OP_GET_LOCAL", chunk, offset);
-	case OP_SET_LOCAL: return byteInstruction("OP_SET_LOCAL", chunk, offset);
+	case OP_GET_LOCAL: return shortInstruction("OP_GET_LOCAL", chunk, offset);
+	case OP_SET_LOCAL: return shortInstruction("OP_SET_LOCAL", chunk, offset);
 	case OP_DEFINE_GLOBAL: return constantInstruction("OP_DEFINE_GLOBAL", chunk, offset);
 	case OP_GET_GLOBAL: return constantInstruction("OP_GET_GLOBAL", chunk, offset);
 	case OP_SET_GLOBAL: return constantInstruction("OP_DEFINE_GLOBAL", chunk, offset);
@@ -64,11 +70,13 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
 	}
 }
 
-void bluDisassembleChunk(bluChunk* chunk, const char* name) {
-	printf("== %s ==\n", name);
+void bluDisassembleChunk(bluChunk* chunk) {
+	printf("========= %s\n", chunk->name);
 
 	int32_t offset = 0;
 	while (offset < chunk->code.count) {
 		offset = bluDisassembleInstruction(chunk, offset);
 	}
+
+	printf("=========\n");
 }

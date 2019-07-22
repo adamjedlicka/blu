@@ -5,8 +5,6 @@
 #include "object.h"
 #include "vm/debug/debug.h"
 
-#define VM_DEBUG_TRACE true
-
 #define BINARY_OP(valueType, op)                                                                                       \
 	do {                                                                                                               \
 		if (!IS_NUMBER(bluPeek(vm, 0)) || !IS_NUMBER(bluPeek(vm, 1))) {                                                \
@@ -105,16 +103,17 @@ static bluInterpretResult run(bluVM* vm) {
 	bluCallFrame* frame = &vm->frames[vm->frameCount - 1];
 
 #define READ_BYTE() (*frame->ip++)
-#define READ_CONSTANT() (frame->function->chunk.constants.data[READ_BYTE()])
+#define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
+#define READ_CONSTANT() (frame->function->chunk.constants.data[READ_SHORT()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 
 	while (true) {
 
 		if (vm->shouldGC) bluCollectGarbage(vm);
 
-		if (VM_DEBUG_TRACE) {
-			bluDisassembleInstruction(&frame->function->chunk, frame->ip - frame->function->chunk.code.data);
-		}
+#ifdef DEBUG_VM_TRACE
+		bluDisassembleInstruction(&frame->function->chunk, frame->ip - frame->function->chunk.code.data);
+#endif
 
 		uint8_t instruction = READ_BYTE();
 
@@ -146,13 +145,13 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_GET_LOCAL: {
-			uint8_t slot = READ_BYTE();
+			uint16_t slot = READ_SHORT();
 			bluPush(vm, frame->slots[slot]);
 			break;
 		}
 
 		case OP_SET_LOCAL: {
-			uint8_t slot = READ_BYTE();
+			uint16_t slot = READ_SHORT();
 			frame->slots[slot] = bluPeek(vm, 0);
 			break;
 		}
@@ -302,15 +301,15 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 		}
 
-		if (VM_DEBUG_TRACE) {
-			printf("          ");
-			for (bluValue* value = vm->stack; value < vm->stackTop; value++) {
-				printf("[ ");
-				bluPrintValue(*value);
-				printf(" ]");
-			}
-			printf("\n");
+#ifdef DEBUG_VM_TRACE
+		printf("          ");
+		for (bluValue* value = vm->stack; value < vm->stackTop; value++) {
+			printf("[ ");
+			bluPrintValue(*value);
+			printf(" ]");
 		}
+		printf("\n");
+#endif
 	}
 }
 
@@ -362,7 +361,7 @@ bluInterpretResult bluInterpret(bluVM* vm, const char* source, const char* name)
 
 	bluCompiler compiler;
 
-	bluObjFunction* function = bluCompilerCompile(vm, &compiler, source);
+	bluObjFunction* function = bluCompilerCompile(vm, &compiler, source, name);
 	if (function == NULL) {
 		result = INTERPRET_COMPILE_ERROR;
 	} else {
