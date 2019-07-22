@@ -121,6 +121,12 @@ static bool match(bluCompiler* compiler, bluTokenType type) {
 	return true;
 }
 
+static void expectNewlineOrSemicolon(bluCompiler* compiler) {
+	if (!match(compiler, TOKEN_SEMICOLON)) {
+		consume(compiler, TOKEN_NEWLINE, "Expect newline or ';' after variable declaration.");
+	}
+}
+
 static void synchronize(bluCompiler* compiler) {
 	compiler->panicMode = false;
 
@@ -560,9 +566,7 @@ static void varDeclaration(bluCompiler* compiler) {
 		emitByte(compiler, OP_NIL);
 	}
 
-	if (!match(compiler, TOKEN_SEMICOLON)) {
-		consume(compiler, TOKEN_NEWLINE, "Expect newline or ';' after variable declaration.");
-	}
+	expectNewlineOrSemicolon(compiler);
 
 	defineVariable(compiler, name);
 }

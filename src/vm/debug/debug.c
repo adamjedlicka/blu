@@ -22,7 +22,7 @@ static int32_t simpleInstruction(const char* name, int32_t offset) {
 
 static int32_t shortInstruction(const char* name, bluChunk* chunk, int32_t offset) {
 	uint16_t slot = ((chunk->code.data[offset + 1] << 8) & 0xff) | (chunk->code.data[offset + 2] & 0xff);
-	printf("%-16s %6d (%d)\n", name, slot, slot + offset + 3);
+	printf("%-16s %6d\n", name, slot);
 	return offset + 3;
 }
 
