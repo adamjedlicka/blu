@@ -324,6 +324,24 @@ static void literal(bluCompiler* compiler, bool canAssign) {
 	}
 }
 
+static void and (bluCompiler * compiler, bool canAssign) {
+	int32_t endJump = emitJump(compiler, OP_JUMP_IF_FALSE);
+	emitByte(compiler, OP_POP);
+
+	parsePrecedence(compiler, PREC_AND);
+
+	patchJump(compiler, endJump);
+}
+
+static void or (bluCompiler * compiler, bool canAssign) {
+	int32_t endJump = emitJump(compiler, OP_JUMP_IF_TRUE);
+	emitByte(compiler, OP_POP);
+
+	parsePrecedence(compiler, PREC_OR);
+
+	patchJump(compiler, endJump);
+}
+
 ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE}, // TOKEN_AT
 	{NULL, NULL, PREC_NONE}, // TOKEN_COLON
@@ -355,7 +373,7 @@ ParseRule rules[] = {
 	{number, NULL, PREC_NONE},   // TOKEN_NUMBER
 	{string, NULL, PREC_NONE},   // TOKEN_STRING
 
-	{NULL, NULL, PREC_AND},		// TOKEN_AND
+	{NULL, and, PREC_AND},		// TOKEN_AND
 	{NULL, NULL, PREC_NONE},	// TOKEN_ASSERT
 	{NULL, NULL, PREC_NONE},	// TOKEN_BREAK
 	{NULL, NULL, PREC_NONE},	// TOKEN_CLASS
@@ -365,7 +383,7 @@ ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE},	// TOKEN_FOR
 	{NULL, NULL, PREC_NONE},	// TOKEN_IF
 	{literal, NULL, PREC_NONE}, // TOKEN_NIL
-	{NULL, NULL, PREC_OR},		// TOKEN_OR
+	{NULL, or, PREC_OR},		// TOKEN_OR
 	{NULL, NULL, PREC_NONE},	// TOKEN_RETURN
 	{NULL, NULL, PREC_NONE},	// TOKEN_SUPER
 	{literal, NULL, PREC_NONE}, // TOKEN_TRUE

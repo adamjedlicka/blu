@@ -60,10 +60,11 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
 	case OP_SET_LOCAL: return shortInstruction("OP_SET_LOCAL", chunk, offset);
 	case OP_DEFINE_GLOBAL: return constantInstruction("OP_DEFINE_GLOBAL", chunk, offset);
 	case OP_GET_GLOBAL: return constantInstruction("OP_GET_GLOBAL", chunk, offset);
-	case OP_SET_GLOBAL: return constantInstruction("OP_DEFINE_GLOBAL", chunk, offset);
+	case OP_SET_GLOBAL: return constantInstruction("OP_SET_GLOBAL", chunk, offset);
 
 	case OP_JUMP: return jumpInstruction("OP_JUMP", chunk, offset);
 	case OP_JUMP_IF_FALSE: return jumpInstruction("OP_JUMP_IF_FALSE", chunk, offset);
+	case OP_JUMP_IF_TRUE: return jumpInstruction("OP_JUMP_IF_TRUE", chunk, offset);
 	case OP_LOOP: return loopInstruction("OP_LOOP", chunk, offset);
 
 	case OP_EQUAL: return simpleInstruction("OP_EQUAL", offset);

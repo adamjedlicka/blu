@@ -158,6 +158,7 @@ static bluInterpretResult run(bluVM* vm) {
 
 		case OP_DEFINE_GLOBAL: {
 			bluObjString* name = READ_STRING();
+
 			bluTableSet(vm, &vm->globals, name, bluPop(vm));
 			break;
 		}
@@ -167,7 +168,7 @@ static bluInterpretResult run(bluVM* vm) {
 			bluValue value;
 
 			if (!bluTableGet(vm, &vm->globals, name, &value)) {
-				runtimeError(vm, "Undefined variable '%s'.", name->chars);
+				runtimeError(vm, "Undefined global variable '%s'.", name->chars);
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
@@ -178,8 +179,9 @@ static bluInterpretResult run(bluVM* vm) {
 		case OP_SET_GLOBAL: {
 			bluObjString* name = READ_STRING();
 
-			if (!bluTableSet(vm, &vm->globals, name, bluPeek(vm, 0))) {
-				runtimeError(vm, "Undefined variable '%s'.", name->chars);
+			if (bluTableSet(vm, &vm->globals, name, bluPeek(vm, 0))) {
+				bluTableDelete(vm, &vm->globals, name);
+				runtimeError(vm, "Undefined global variable '%s'.", name->chars);
 				return INTERPRET_RUNTIME_ERROR;
 			}
 			break;
@@ -194,6 +196,12 @@ static bluInterpretResult run(bluVM* vm) {
 		case OP_JUMP_IF_FALSE: {
 			uint16_t offset = READ_SHORT();
 			if (bluIsFalsey(bluPeek(vm, 0))) frame->ip += offset;
+			break;
+		}
+
+		case OP_JUMP_IF_TRUE: {
+			uint16_t offset = READ_SHORT();
+			if (!bluIsFalsey(bluPeek(vm, 0))) frame->ip += offset;
 			break;
 		}
 
