@@ -32,6 +32,12 @@ static int32_t jumpInstruction(const char* name, bluChunk* chunk, int32_t offset
 	return offset + 3;
 }
 
+static int32_t loopInstruction(const char* name, bluChunk* chunk, int32_t offset) {
+	uint16_t slot = ((chunk->code.data[offset + 1] << 8) & 0xff) | (chunk->code.data[offset + 2] & 0xff);
+	printf("%-16s %6d (%d)\n", name, slot, offset - slot + 2);
+	return offset + 3;
+}
+
 int32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
 	printf("%04lu ", offset);
 	if (offset > 0 && chunk->lines.data[offset] == chunk->lines.data[offset - 1]) {
@@ -58,7 +64,7 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
 
 	case OP_JUMP: return jumpInstruction("OP_JUMP", chunk, offset);
 	case OP_JUMP_IF_FALSE: return jumpInstruction("OP_JUMP_IF_FALSE", chunk, offset);
-	case OP_LOOP: return jumpInstruction("OP_LOOP", chunk, offset);
+	case OP_LOOP: return loopInstruction("OP_LOOP", chunk, offset);
 
 	case OP_EQUAL: return simpleInstruction("OP_EQUAL", offset);
 	case OP_NOT_EQUAL: return simpleInstruction("OP_NOT_EQUAL", offset);

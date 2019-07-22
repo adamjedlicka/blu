@@ -197,6 +197,16 @@ static void patchJump(bluCompiler* compiler, int32_t jump) {
 	currentChunk->code.data[jump + 1] = length & 0xff;
 }
 
+static void emitLoop(bluCompiler* compiler, int32_t loopStart) {
+	emitByte(compiler, OP_LOOP);
+
+	int32_t offset = compiler->function->chunk.code.count - loopStart + 2;
+
+	if (offset > UINT16_MAX) error(compiler, "Loop body too large.");
+
+	emitShort(compiler, offset);
+}
+
 static bool identifiersEqual(bluToken* a, bluToken* b) {
 	if (a->length != b->length) return false;
 
@@ -488,6 +498,34 @@ static void ifStatement(bluCompiler* compiler) {
 	endScope(compiler);
 }
 
+static void whileStatement(bluCompiler* compiler) {
+	beginScope(compiler);
+
+	int32_t loopStart = compiler->function->chunk.code.count;
+
+	expression(compiler);
+
+	int32_t exitJump = emitJump(compiler, OP_JUMP_IF_FALSE);
+	emitByte(compiler, OP_POP); // Condition
+
+	if (match(compiler, TOKEN_COLON)) {
+		statement(compiler);
+	} else {
+		consume(compiler, TOKEN_LEFT_BRACE, "Expect '{' after while condition.");
+
+		beginScope(compiler);
+		block(compiler);
+		endScope(compiler);
+	}
+
+	emitLoop(compiler, loopStart);
+
+	patchJump(compiler, exitJump);
+	emitByte(compiler, OP_POP);
+
+	endScope(compiler);
+}
+
 static void statement(bluCompiler* compiler) {
 	if (match(compiler, TOKEN_LEFT_BRACE)) {
 		beginScope(compiler);
@@ -495,6 +533,8 @@ static void statement(bluCompiler* compiler) {
 		endScope(compiler);
 	} else if (match(compiler, TOKEN_IF)) {
 		ifStatement(compiler);
+	} else if (match(compiler, TOKEN_WHILE)) {
+		whileStatement(compiler);
 	} else {
 		expressionStatement(compiler);
 	}
