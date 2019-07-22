@@ -312,6 +312,21 @@ static bluInterpretResult run(bluVM* vm) {
 			return INTERPRET_OK;
 		}
 
+		case OP_ASSERT: {
+#ifdef DEBUG
+			bluValue value = bluPop(vm);
+
+			if (bluIsFalsey(value)) {
+				runtimeError(vm, "Assertion failed.");
+				return INTERPRET_ASSERTION_ERROR;
+			}
+#else
+			bluPop(vm);
+#endif
+
+			break;
+		}
+
 		default: {
 			runtimeError(vm, "Unknown opcode.");
 			return INTERPRET_RUNTIME_ERROR;

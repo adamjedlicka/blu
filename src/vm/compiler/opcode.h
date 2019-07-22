@@ -33,6 +33,8 @@ typedef enum {
 	OP_NEGATE,
 
 	OP_RETURN,
+
+	OP_ASSERT,
 } bluOpCode;
 
 #endif

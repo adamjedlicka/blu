@@ -82,6 +82,8 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
 
 	case OP_RETURN: return simpleInstruction("OP_RETURN", offset);
 
+	case OP_ASSERT: return simpleInstruction("OP_ASSERT", offset);
+
 	default: printf("Unknown opcode %d\n", instruction); return offset + 1;
 	}
 }

@@ -526,6 +526,13 @@ static void whileStatement(bluCompiler* compiler) {
 	endScope(compiler);
 }
 
+static void assertStatement(bluCompiler* compiler) {
+	expression(compiler);
+	emitByte(compiler, OP_ASSERT);
+
+	expectNewlineOrSemicolon(compiler);
+}
+
 static void statement(bluCompiler* compiler) {
 	if (match(compiler, TOKEN_LEFT_BRACE)) {
 		beginScope(compiler);
@@ -535,6 +542,8 @@ static void statement(bluCompiler* compiler) {
 		ifStatement(compiler);
 	} else if (match(compiler, TOKEN_WHILE)) {
 		whileStatement(compiler);
+	} else if (match(compiler, TOKEN_ASSERT)) {
+		assertStatement(compiler);
 	} else {
 		expressionStatement(compiler);
 	}
