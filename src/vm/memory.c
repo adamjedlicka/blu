@@ -23,6 +23,12 @@ static void freeObject(bluVM* vm, bluObj* object) {
 		break;
 	}
 
+	case OBJ_UPVALUE: {
+		bluObjUpvalue* upvalue = (bluObjUpvalue*)object;
+		bluDeallocate(vm, upvalue, sizeof(bluObjUpvalue));
+		break;
+	}
+
 	case OBJ_STRING: {
 		bluObjString* string = (bluObjString*)object;
 		bluDeallocate(vm, string->chars, sizeof(char) * (string->length + 1));
@@ -66,6 +72,11 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 		bluObjFunction* function = (bluObjFunction*)object;
 		bluGrayObject(vm, (bluObj*)function->name);
 		bluGrayValueBuffer(vm, &function->chunk.constants);
+		break;
+	}
+
+	case OBJ_UPVALUE: {
+		bluGrayValue(vm, ((bluObjUpvalue*)object)->closed);
 		break;
 	}
 

@@ -53,21 +53,21 @@ static void errorAt(bluCompiler* compiler, bluToken* token, const char* message)
 }
 
 static void error(bluCompiler* compiler, const char* message) {
-	errorAt(compiler, &compiler->previous, message);
+	errorAt(compiler, &compiler->parser->previous, message);
 }
 
 static void errorAtCurrent(bluCompiler* compiler, const char* message) {
-	errorAt(compiler, &compiler->current, message);
+	errorAt(compiler, &compiler->parser->current, message);
 }
 
 static void consumeNewlines(bluCompiler* compiler) {
-	while (compiler->current.type == TOKEN_NEWLINE) {
-		compiler->current = bluParserNextToken(compiler->parser);
+	while (compiler->parser->current.type == TOKEN_NEWLINE) {
+		compiler->parser->current = bluParserNextToken(compiler->parser);
 	}
 }
 
 static void skipNewlines(bluCompiler* compiler) {
-	switch (compiler->previous.type) {
+	switch (compiler->parser->previous.type) {
 	case TOKEN_NEWLINE:
 	case TOKEN_LEFT_BRACE:
 	case TOKEN_RIGHT_BRACE:
@@ -81,13 +81,13 @@ static void skipNewlines(bluCompiler* compiler) {
 }
 
 static void advance(bluCompiler* compiler) {
-	compiler->previous = compiler->current;
+	compiler->parser->previous = compiler->parser->current;
 
 	while (true) {
-		compiler->current = bluParserNextToken(compiler->parser);
-		if (compiler->current.type != TOKEN_ERROR) break;
+		compiler->parser->current = bluParserNextToken(compiler->parser);
+		if (compiler->parser->current.type != TOKEN_ERROR) break;
 
-		errorAtCurrent(compiler, compiler->current.start);
+		errorAtCurrent(compiler, compiler->parser->current.start);
 	}
 
 	skipNewlines(compiler);
@@ -96,9 +96,9 @@ static void advance(bluCompiler* compiler) {
 // Checks whether next token is of the given type.
 // Returns true if so, otherwise returns false.
 static bool check(bluCompiler* compiler, bluTokenType type) {
-	if (type == TOKEN_NEWLINE && compiler->previous.type == TOKEN_RIGHT_BRACE) return true;
+	if (type == TOKEN_NEWLINE && compiler->parser->previous.type == TOKEN_RIGHT_BRACE) return true;
 
-	return compiler->current.type == type;
+	return compiler->parser->current.type == type;
 }
 
 // Consumes next token. If next token is not of the given type, throws an error with a message.
@@ -130,10 +130,10 @@ static void expectNewlineOrSemicolon(bluCompiler* compiler) {
 static void synchronize(bluCompiler* compiler) {
 	compiler->panicMode = false;
 
-	while (compiler->current.type != TOKEN_EOF) {
-		if (compiler->previous.type == TOKEN_SEMICOLON) return;
+	while (compiler->parser->current.type != TOKEN_EOF) {
+		if (compiler->parser->previous.type == TOKEN_SEMICOLON) return;
 
-		switch (compiler->current.type) {
+		switch (compiler->parser->current.type) {
 		case TOKEN_CLASS:
 		case TOKEN_FN:
 		case TOKEN_VAR:
@@ -149,7 +149,7 @@ static void synchronize(bluCompiler* compiler) {
 }
 
 static void emitByte(bluCompiler* compiler, uint8_t _byte) {
-	bluChunkWrite(&compiler->function->chunk, _byte, compiler->current.line, compiler->current.column);
+	bluChunkWrite(&compiler->function->chunk, _byte, compiler->parser->current.line, compiler->parser->current.column);
 }
 
 static void emitShort(bluCompiler* compiler, uint16_t _short) {
@@ -217,6 +217,9 @@ static uint16_t identifierConstant(bluCompiler* compiler, bluToken* name) {
 	return makeConstant(compiler, OBJ_VAL(bluCopyString(compiler->vm, name->start, name->length)));
 }
 
+void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t scopeDepth, bluFunctionType type);
+bluObjFunction* endCompiler(bluCompiler* compiler);
+
 static ParseRule* getRule(bluTokenType type);
 static void parsePrecedence(bluCompiler* compiler, Precedence precedence);
 
@@ -225,7 +228,7 @@ static void declaration(bluCompiler* compiler);
 static void expression(bluCompiler* compiler);
 
 static void binary(bluCompiler* compiler, bool canAssign) {
-	bluTokenType operatorType = compiler->previous.type;
+	bluTokenType operatorType = compiler->parser->previous.type;
 
 	ParseRule* rule = getRule(operatorType);
 	parsePrecedence(compiler, (Precedence)(rule->precedence + 1));
@@ -247,7 +250,7 @@ static void binary(bluCompiler* compiler, bool canAssign) {
 }
 
 static void unary(bluCompiler* compiler, bool canAssing) {
-	bluTokenType operatorType = compiler->previous.type;
+	bluTokenType operatorType = compiler->parser->previous.type;
 
 	parsePrecedence(compiler, PREC_UNARY);
 
@@ -273,6 +276,64 @@ static int32_t resolveLocal(bluCompiler* compiler, bluToken* name) {
 	return -1;
 }
 
+// Adds an upvalue to [compiler]'s function with the given properties. Does not add one if an upvalue for that variable
+// is already in the list. Returns the index of the upvalue.
+static int32_t addUpvalue(bluCompiler* compiler, uint16_t index, bool isLocal) {
+	// Look for an existing one.
+	int32_t upvalueCount = compiler->function->upvalues.count;
+	for (int32_t i = 0; i < upvalueCount; i++) {
+		bluUpvalue* upvalue = &compiler->upvalues.data[i];
+		if (upvalue->index == index && upvalue->isLocal == isLocal) {
+			return i;
+		}
+	}
+
+	// If we got here, it's a new upvalue.
+	if (upvalueCount == LOCALS_MAX) {
+		error(compiler, "Too many closure variables in function.");
+		return 0;
+	}
+
+	bluUpvalue upvalue;
+	upvalue.isLocal = isLocal;
+	upvalue.index = index;
+	bluUpvalueBufferWrite(&compiler->upvalues, upvalue);
+
+	return bluObjUpvalueBufferWrite(&compiler->function->upvalues, NULL);
+}
+
+// Attempts to look up [name] in the functions enclosing the one being compiled by [compiler]. If found, it adds an
+// upvalue for it to this compiler's list of upvalues (unless it's already in there) and returns its index. If not
+// found, returns -1.
+//
+// If the name is found outside of the immediately enclosing function, this will flatten the closure and add upvalues to
+// all of the intermediate functions so that it gets walked down to this one.
+static int32_t resolveUpvalue(bluCompiler* compiler, bluToken* name) {
+	// If we are at the top level, we didn't find it.
+	if (compiler->enclosing == NULL) return -1;
+
+	// See if it's a local variable in the immediately enclosing function.
+	int32_t local = resolveLocal(compiler->enclosing, name);
+	if (local != -1) {
+		// Mark the local as an upvalue so we know to close it when it goes out of scope.
+		compiler->enclosing->locals.data[local].isUpvalue = true;
+		return addUpvalue(compiler, (uint16_t)local, true);
+	}
+
+	// See if it's an upvalue in the immediately enclosing function. In other words, if it's a local variable in a
+	// non-immediately enclosing function. This "flattens" closures automatically: it adds upvalues to all of the
+	// intermediate functions to get from the function where a local is declared all the way into the possibly deeply
+	// nested function that is closing over it.
+	int32_t upvalue = resolveLocal(compiler->enclosing, name);
+	if (upvalue != -1) {
+		return addUpvalue(compiler, (uint16_t)upvalue, false);
+	}
+
+	// If we got here, we walked all the way up the parent chain and
+	// couldn't find it.
+	return -1;
+}
+
 static void namedVariable(bluCompiler* compiler, bluToken name, bool canAssign) {
 	uint8_t getOp, setOp;
 
@@ -281,10 +342,9 @@ static void namedVariable(bluCompiler* compiler, bluToken name, bool canAssign) 
 	if (arg != -1) {
 		getOp = OP_GET_LOCAL;
 		setOp = OP_SET_LOCAL;
-		// TODO : Upvalues
-		// } else if ((arg = resolveUpvalue(compiler, &name)) != -1) {
-		// 	getOp = OP_GET_UPVALUE;
-		// 	setOp = OP_SET_UPVALUE;
+	} else if ((arg = resolveUpvalue(compiler, &name)) != -1) {
+		getOp = OP_GET_UPVALUE;
+		setOp = OP_SET_UPVALUE;
 	} else {
 		arg = identifierConstant(compiler, &name);
 		getOp = OP_GET_GLOBAL;
@@ -302,21 +362,22 @@ static void namedVariable(bluCompiler* compiler, bluToken name, bool canAssign) 
 }
 
 static void variable(bluCompiler* compiler, bool canAssign) {
-	namedVariable(compiler, compiler->previous, canAssign);
+	namedVariable(compiler, compiler->parser->previous, canAssign);
 }
 
 static void number(bluCompiler* compiler, bool canAssign) {
-	double value = strtod(compiler->previous.start, NULL);
+	double value = strtod(compiler->parser->previous.start, NULL);
 	emitConstant(compiler, NUMBER_VAL(value));
 }
 
 static void string(bluCompiler* compiler, bool canAssign) {
-	bluObjString* string = bluCopyString(compiler->vm, compiler->previous.start + 1, compiler->previous.length - 2);
+	bluObjString* string =
+		bluCopyString(compiler->vm, compiler->parser->previous.start + 1, compiler->parser->previous.length - 2);
 	emitConstant(compiler, OBJ_VAL(string));
 }
 
 static void literal(bluCompiler* compiler, bool canAssign) {
-	switch (compiler->previous.type) {
+	switch (compiler->parser->previous.type) {
 	case TOKEN_FALSE: emitByte(compiler, OP_FALSE); break;
 	case TOKEN_NIL: emitByte(compiler, OP_NIL); break;
 	case TOKEN_TRUE: emitByte(compiler, OP_TRUE); break;
@@ -403,7 +464,7 @@ static ParseRule* getRule(bluTokenType type) {
 static void parsePrecedence(bluCompiler* compiler, Precedence precedence) {
 	advance(compiler);
 
-	ParseFn prefixRule = getRule(compiler->previous.type)->prefix;
+	ParseFn prefixRule = getRule(compiler->parser->previous.type)->prefix;
 	if (prefixRule == NULL) {
 		error(compiler, "Expect expression.");
 		return;
@@ -412,10 +473,10 @@ static void parsePrecedence(bluCompiler* compiler, Precedence precedence) {
 	bool canAssign = precedence <= PREC_ASSIGNMENT;
 	prefixRule(compiler, canAssign);
 
-	while (precedence <= getRule(compiler->current.type)->precedence) {
+	while (precedence <= getRule(compiler->parser->current.type)->precedence) {
 		advance(compiler);
 
-		ParseFn infixRule = getRule(compiler->previous.type)->infix;
+		ParseFn infixRule = getRule(compiler->parser->previous.type)->infix;
 		infixRule(compiler, canAssign);
 	}
 
@@ -585,7 +646,7 @@ static void declareVariable(bluCompiler* compiler) {
 	// Global variables are implicitly declared.
 	if (compiler->scopeDepth == 0) return;
 
-	bluToken* name = &compiler->previous;
+	bluToken* name = &compiler->parser->previous;
 	for (int32_t i = compiler->locals.count - 1; i >= 0; i--) {
 		bluLocal* local = &compiler->locals.data[i];
 		if (local->depth != -1 && local->depth < compiler->scopeDepth) break;
@@ -621,7 +682,7 @@ static uint16_t parseVariable(bluCompiler* compiler, const char* errorMessage) {
 		return 0;
 	}
 
-	return identifierConstant(compiler, &compiler->previous);
+	return identifierConstant(compiler, &compiler->parser->previous);
 }
 
 static void varDeclaration(bluCompiler* compiler) {
@@ -638,9 +699,66 @@ static void varDeclaration(bluCompiler* compiler) {
 	defineVariable(compiler, name);
 }
 
+static void function(bluCompiler* compiler, bluFunctionType type) {
+	bluCompiler fnCompiler;
+	initCompiler(&fnCompiler, compiler, compiler->scopeDepth + 1, type);
+
+	// Compile the parameter list.
+	consume(&fnCompiler, TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+
+	if (!check(&fnCompiler, TOKEN_RIGHT_PAREN)) {
+		do {
+			uint16_t parameter = parseVariable(&fnCompiler, "Expect parameter name.");
+			defineVariable(&fnCompiler, parameter);
+
+			fnCompiler.function->arity++;
+			if (fnCompiler.function->arity > 8) {
+				error(&fnCompiler, "Cannot have more than 8 parameters.");
+			}
+		} while (match(&fnCompiler, TOKEN_COMMA));
+	}
+
+	consume(&fnCompiler, TOKEN_RIGHT_PAREN, "Expect ')' after function parameters.");
+
+	// The body
+	consume(&fnCompiler, TOKEN_LEFT_BRACE, "Expect '{' before function body.");
+	beginScope(&fnCompiler);
+	block(&fnCompiler);
+	endScope(&fnCompiler);
+
+	// Create the function object.
+	bluObjFunction* function = endCompiler(&fnCompiler);
+	function->chunk.name = function->name->chars;
+
+#ifdef DEBUG_COMPILER_DISASSEMBLE
+	bluDisassembleChunk(&function->chunk);
+#endif
+
+	// Capture the upvalues in the new closure object.
+	emitByte(compiler, OP_CLOSURE);
+	emitShort(compiler, makeConstant(compiler, OBJ_VAL(function)));
+
+	// Emit arguments for each upvalue to know whether to capture a local or an upvalue.
+	for (int32_t i = 0; i < function->upvalues.count; i++) {
+		emitByte(compiler, compiler->upvalues.data[i].isLocal ? 1 : 0);
+		emitShort(compiler, compiler->upvalues.data[i].index);
+	}
+}
+
+static void fnDeclaration(bluCompiler* compiler) {
+	uint16_t name = parseVariable(compiler, "Expect function name.");
+	markInitialized(compiler);
+
+	function(compiler, TYPE_FUNCTION);
+
+	defineVariable(compiler, name);
+}
+
 static void declaration(bluCompiler* compiler) {
 	if (match(compiler, TOKEN_VAR)) {
 		varDeclaration(compiler);
+	} else if (match(compiler, TOKEN_FN)) {
+		fnDeclaration(compiler);
 	} else {
 		statement(compiler);
 	}
@@ -649,15 +767,27 @@ static void declaration(bluCompiler* compiler) {
 }
 
 void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t scopeDepth, bluFunctionType type) {
+	if (enclosing != NULL) {
+		compiler->vm = enclosing->vm;
+		compiler->parser = enclosing->parser;
+	}
+
 	compiler->enclosing = enclosing;
 	compiler->scopeDepth = scopeDepth;
 	compiler->type = type;
 	compiler->function = bluNewFunction(compiler->vm);
 
+	compiler->hadError = false;
+	compiler->panicMode = false;
+
 	bluLocalBufferInit(&compiler->locals);
 	bluUpvalueBufferInit(&compiler->upvalues);
 
 	switch (type) {
+	case TYPE_FUNCTION:
+		compiler->function->name =
+			bluCopyString(compiler->vm, compiler->parser->previous.start, compiler->parser->previous.length);
+		break;
 	case TYPE_TOP_LEVEL: compiler->function->name = NULL; break;
 	}
 
@@ -683,14 +813,12 @@ bluObjFunction* endCompiler(bluCompiler* compiler) {
 }
 
 bluObjFunction* bluCompilerCompile(bluVM* vm, bluCompiler* compiler, const char* source, const char* name) {
+	bluParser parser;
+	bluParserInit(&parser, source);
+
 	compiler->vm = vm;
-	compiler->parser = bluAllocate(vm, sizeof(bluParser));
-	bluParserInit(compiler->parser, source);
-
+	compiler->parser = &parser;
 	initCompiler(compiler, NULL, 0, TYPE_TOP_LEVEL);
-
-	compiler->hadError = false;
-	compiler->panicMode = false;
 
 	do {
 		advance(compiler);
@@ -706,8 +834,6 @@ bluObjFunction* bluCompilerCompile(bluVM* vm, bluCompiler* compiler, const char*
 #ifdef DEBUG_COMPILER_DISASSEMBLE
 	bluDisassembleChunk(&function->chunk);
 #endif
-
-	bluDeallocate(vm, compiler->parser, sizeof(bluParser));
 
 	return compiler->hadError ? NULL : function;
 }

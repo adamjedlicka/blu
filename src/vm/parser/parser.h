@@ -13,6 +13,9 @@ typedef struct {
 	int32_t columnFrom;
 	int32_t columnTo;
 
+	bluToken previous;
+	bluToken current;
+
 	bool emitEOF;
 } bluParser;
 

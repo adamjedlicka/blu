@@ -4,6 +4,8 @@
 #include "table.h"
 #include "vm.h"
 
+DEFINE_BUFFER(bluObjUpvalue, bluObjUpvalue*);
+
 static bluObj* allocateObject(bluVM* vm, size_t size, bluObjType type) {
 	bluObj* object = (bluObj*)bluAllocate(vm, size);
 	object->type = type;
@@ -56,8 +58,18 @@ bluObjFunction* bluNewFunction(bluVM* vm) {
 	function->name = NULL;
 
 	bluChunkInit(&function->chunk, NULL);
+	bluObjUpvalueBufferInit(&function->upvalues);
 
 	return function;
+}
+
+bluObjUpvalue* newUpvalue(bluVM* vm, bluValue* slot) {
+	bluObjUpvalue* upvalue = (bluObjUpvalue*)allocateObject(vm, sizeof(bluObjUpvalue), OBJ_UPVALUE);
+	upvalue->closed = NIL_VAL;
+	upvalue->value = slot;
+	upvalue->next = NULL;
+
+	return upvalue;
 }
 
 bluObjString* bluTakeString(bluVM* vm, char* chars, int32_t length) {
@@ -75,6 +87,7 @@ bluObjString* bluTakeString(bluVM* vm, char* chars, int32_t length) {
 void bluPrintObject(bluValue value) {
 
 	switch (OBJ_TYPE(value)) {
+
 	case OBJ_FUNCTION: {
 		if (AS_FUNCTION(value)->name == NULL) {
 			printf("<anonymous fn>");
@@ -83,6 +96,12 @@ void bluPrintObject(bluValue value) {
 		}
 		break;
 	}
+
+	case OBJ_UPVALUE: {
+		printf("upvalue");
+		break;
+	}
+
 	case OBJ_STRING: {
 		printf("%s", AS_CSTRING(value));
 		break;

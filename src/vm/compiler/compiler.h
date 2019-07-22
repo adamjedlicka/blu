@@ -19,7 +19,7 @@ DECLARE_BUFFER(bluLocal, bluLocal);
 
 typedef struct {
 	// The index of the local variable or upvalue being captured from the enclosing function.
-	uint8_t index;
+	uint16_t index;
 
 	// Whether the captured variable is a local or upvalue in the enclosing function.
 	bool isLocal;
@@ -29,15 +29,13 @@ DECLARE_BUFFER(bluUpvalue, bluUpvalue);
 
 typedef enum {
 	TYPE_TOP_LEVEL,
+	TYPE_FUNCTION,
 } bluFunctionType;
 
 typedef struct bluCompiler {
 	bluVM* vm;
 	bluParser* parser;
 	struct bluCompiler* enclosing;
-
-	bluToken previous;
-	bluToken current;
 
 	bluObjFunction* function;
 	bluFunctionType type;

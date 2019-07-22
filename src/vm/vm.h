@@ -26,6 +26,8 @@ struct bluVM {
 	bluTable globals;
 	bluTable strings;
 
+	bluObjUpvalue* openUpvalues;
+
 	bluObj* objects;
 
 	size_t bytesAllocated;

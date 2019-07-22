@@ -1,5 +1,7 @@
 #include "debug.h"
 #include "blu.h"
+#include "vm/object.h"
+#include "vm/value.h"
 
 static int32_t constantInstruction(const char* name, bluChunk* chunk, int32_t offset) {
 	uint16_t slot = ((chunk->code.data[offset + 1] << 8) & 0xff) | (chunk->code.data[offset + 2] & 0xff);
@@ -38,8 +40,8 @@ static int32_t loopInstruction(const char* name, bluChunk* chunk, int32_t offset
 	return offset + 3;
 }
 
-int32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
-	printf("%04lu ", offset);
+int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
+	printf("%04d ", offset);
 	if (offset > 0 && chunk->lines.data[offset] == chunk->lines.data[offset - 1]) {
 		printf("   | ");
 	} else {
@@ -61,6 +63,8 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
 	case OP_DEFINE_GLOBAL: return constantInstruction("OP_DEFINE_GLOBAL", chunk, offset);
 	case OP_GET_GLOBAL: return constantInstruction("OP_GET_GLOBAL", chunk, offset);
 	case OP_SET_GLOBAL: return constantInstruction("OP_SET_GLOBAL", chunk, offset);
+	case OP_GET_UPVALUE: return shortInstruction("OP_GET_UPVALUE", chunk, offset);
+	case OP_SET_UPVALUE: return shortInstruction("OP_SET_UPVALUE", chunk, offset);
 
 	case OP_JUMP: return jumpInstruction("OP_JUMP", chunk, offset);
 	case OP_JUMP_IF_FALSE: return jumpInstruction("OP_JUMP_IF_FALSE", chunk, offset);
@@ -80,6 +84,25 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, size_t offset) {
 	case OP_MULTIPLY: return simpleInstruction("OP_MULTIPLY", offset);
 	case OP_NOT: return simpleInstruction("OP_NOT", offset);
 	case OP_NEGATE: return simpleInstruction("OP_NEGATE", offset);
+
+	case OP_CLOSURE: {
+		uint16_t slot = ((chunk->code.data[offset + 1] << 8) & 0xff) | (chunk->code.data[offset + 2] & 0xff);
+		offset += 3;
+
+		printf("%-16s %4d ", "OP_CLOSURE", slot);
+		bluPrintValue(chunk->constants.data[slot]);
+		printf("\n");
+
+		bluObjFunction* function = AS_FUNCTION(chunk->constants.data[slot]);
+		for (int32_t i = 0; i < function->upvalues.count; i++) {
+			bool isLocal = chunk->code.data[offset];
+			uint16_t index = ((chunk->code.data[offset + 1] << 8) & 0xff) | (chunk->code.data[offset + 2] & 0xff);
+			offset += 3;
+			printf("%04d   |                     %s %d\n", offset - 2, isLocal ? "local" : "upvalue", index);
+		}
+
+		return offset;
+	}
 
 	case OP_RETURN: return simpleInstruction("OP_RETURN", offset);
 

@@ -98,6 +98,42 @@ static bool callValue(bluVM* vm, bluValue callee, int8_t argCount) {
 	}
 }
 
+// Captures the local variable [local] into an [Upvalue]. If that local is already in an upvalue, the existing one is
+// used. (This is important to ensure that multiple closures closing over the same variable actually see the same
+// variable.) Otherwise, it creates a new open upvalue and adds it to the VM's list of upvalues.
+static bluObjUpvalue* captureUpvalue(bluVM* vm, bluValue* local) {
+	// If there are no open upvalues at all, we must need a new one.
+	if (vm->openUpvalues == NULL) {
+		vm->openUpvalues = newUpvalue(vm, local);
+	}
+
+	bluObjUpvalue* prevUpvalue = NULL;
+	bluObjUpvalue* upvalue = vm->openUpvalues;
+
+	// Walk towards the bottom of the stack until we find a previously existing upvalue or reach where it should be.
+	while (upvalue != NULL && upvalue->value > local) {
+		prevUpvalue = upvalue;
+		upvalue = upvalue->next;
+	}
+
+	// If we found it, reuse it.
+	if (upvalue != NULL && upvalue->value == local) return upvalue;
+
+	// We walked past the local on the stack, so there must not be an upvalue for it already. Make a new one and link it
+	// in in the right place to keep the list sorted.
+	bluObjUpvalue* createdUpvalue = newUpvalue(vm, local);
+	createdUpvalue->next = upvalue;
+
+	if (prevUpvalue == NULL) {
+		// The new one is the first one in the list.
+		vm->openUpvalues = createdUpvalue;
+	} else {
+		prevUpvalue->next = createdUpvalue;
+	}
+
+	return createdUpvalue;
+}
+
 static bluInterpretResult run(bluVM* vm) {
 
 	bluCallFrame* frame = &vm->frames[vm->frameCount - 1];
@@ -316,6 +352,26 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
+		case OP_CLOSURE: {
+			bluObjFunction* function = AS_FUNCTION(READ_CONSTANT());
+			bluPush(vm, OBJ_VAL(function));
+
+			for (int32_t i = 0; i < function->upvalues.count; i++) {
+				bool isLocal = READ_BYTE();
+				uint16_t index = READ_SHORT();
+
+				if (isLocal) {
+					// Make an new upvalue to close over the parent's local variable.
+					function->upvalues.data[i] = captureUpvalue(vm, frame->slots + index);
+				} else {
+					// Use the same upvalue as the current call frame.
+					function->upvalues.data[i] = frame->function->upvalues.data[index];
+				}
+			}
+
+			break;
+		}
+
 		case OP_RETURN: {
 			return INTERPRET_OK;
 		}
@@ -363,6 +419,8 @@ bluVM* bluNew() {
 
 	bluTableInit(vm, &vm->globals);
 	bluTableInit(vm, &vm->strings);
+
+	vm->openUpvalues = NULL;
 
 	vm->objects = NULL;
 
