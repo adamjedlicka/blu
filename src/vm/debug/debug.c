@@ -113,7 +113,7 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
 }
 
 void bluDisassembleChunk(bluChunk* chunk) {
-	printf("========= %s\n", chunk->name);
+	printf("========= %s::%s\n", chunk->file, chunk->name);
 
 	int32_t offset = 0;
 	while (offset < chunk->code.count) {

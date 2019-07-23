@@ -37,6 +37,8 @@ typedef struct bluCompiler {
 	bluParser* parser;
 	struct bluCompiler* enclosing;
 
+	const char* file;
+
 	bluObjFunction* function;
 	bluFunctionType type;
 
@@ -49,6 +51,6 @@ typedef struct bluCompiler {
 	bool panicMode;
 } bluCompiler;
 
-bluObjFunction* bluCompile(bluVM* vm, const char* source, const char* name);
+bluObjFunction* bluCompile(bluVM* vm, const char* source, const char* file);
 
 #endif

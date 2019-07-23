@@ -729,6 +729,7 @@ static void function(bluCompiler* compiler, bluFunctionType type) {
 
 	// Create the function object.
 	bluObjFunction* function = endCompiler(&fnCompiler);
+	function->chunk.file = compiler->file;
 	function->chunk.name = function->name->chars;
 
 #ifdef DEBUG_COMPILER_DISASSEMBLE
@@ -773,6 +774,8 @@ static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t s
 	if (enclosing != NULL) {
 		compiler->vm = enclosing->vm;
 		compiler->parser = enclosing->parser;
+
+		compiler->file = enclosing->file;
 	}
 
 	compiler->enclosing = enclosing;
@@ -817,13 +820,14 @@ static void freeCompiler(bluCompiler* compiler) {
 	bluUpvalueBufferFree(&compiler->upvalues);
 }
 
-bluObjFunction* bluCompile(bluVM* vm, const char* source, const char* name) {
+bluObjFunction* bluCompile(bluVM* vm, const char* source, const char* file) {
 	bluParser parser;
 	bluParserInit(&parser, source);
 
 	bluCompiler compiler;
 	compiler.vm = vm;
 	compiler.parser = &parser;
+	compiler.file = file;
 	initCompiler(&compiler, NULL, 0, TYPE_TOP_LEVEL);
 
 	do {
@@ -835,7 +839,8 @@ bluObjFunction* bluCompile(bluVM* vm, const char* source, const char* name) {
 	}
 
 	bluObjFunction* function = endCompiler(&compiler);
-	function->chunk.name = name;
+	function->chunk.file = file;
+	function->chunk.name = "main";
 
 #ifdef DEBUG_COMPILER_DISASSEMBLE
 	bluDisassembleChunk(&function->chunk);
