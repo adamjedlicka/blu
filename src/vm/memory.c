@@ -19,6 +19,7 @@ static void freeObject(bluVM* vm, bluObj* object) {
 	case OBJ_FUNCTION: {
 		bluObjFunction* function = (bluObjFunction*)object;
 		bluChunkFree(&function->chunk);
+		bluObjUpvalueBufferFree(&function->upvalues);
 		bluDeallocate(vm, function, sizeof(bluObjFunction));
 		break;
 	}

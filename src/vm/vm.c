@@ -456,18 +456,12 @@ bluValue bluPeek(bluVM* vm, int32_t distance) {
 bool bluIsFalsey(bluValue value);
 
 bluInterpretResult bluInterpret(bluVM* vm, const char* source, const char* name) {
-	bluInterpretResult result;
-
-	bluCompiler compiler;
-
-	bluObjFunction* function = bluCompilerCompile(vm, &compiler, source, name);
+	bluObjFunction* function = bluCompile(vm, source, name);
 	if (function == NULL) {
-		result = INTERPRET_COMPILE_ERROR;
+		return INTERPRET_COMPILE_ERROR;
 	} else {
 		callValue(vm, OBJ_VAL(function), 0);
 
-		result = run(vm);
+		return run(vm);
 	}
-
-	return result;
 }

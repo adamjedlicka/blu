@@ -217,8 +217,9 @@ static uint16_t identifierConstant(bluCompiler* compiler, bluToken* name) {
 	return makeConstant(compiler, OBJ_VAL(bluCopyString(compiler->vm, name->start, name->length)));
 }
 
-void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t scopeDepth, bluFunctionType type);
-bluObjFunction* endCompiler(bluCompiler* compiler);
+static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t scopeDepth, bluFunctionType type);
+static bluObjFunction* endCompiler(bluCompiler* compiler);
+static void freeCompiler(bluCompiler* compiler);
 
 static ParseRule* getRule(bluTokenType type);
 static void parsePrecedence(bluCompiler* compiler, Precedence precedence);
@@ -740,9 +741,11 @@ static void function(bluCompiler* compiler, bluFunctionType type) {
 
 	// Emit arguments for each upvalue to know whether to capture a local or an upvalue.
 	for (int32_t i = 0; i < function->upvalues.count; i++) {
-		emitByte(compiler, compiler->upvalues.data[i].isLocal ? 1 : 0);
-		emitShort(compiler, compiler->upvalues.data[i].index);
+		emitByte(compiler, fnCompiler.upvalues.data[i].isLocal ? 1 : 0);
+		emitShort(compiler, fnCompiler.upvalues.data[i].index);
 	}
+
+	freeCompiler(&fnCompiler);
 }
 
 static void fnDeclaration(bluCompiler* compiler) {
@@ -766,7 +769,7 @@ static void declaration(bluCompiler* compiler) {
 	if (compiler->panicMode) synchronize(compiler);
 }
 
-void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t scopeDepth, bluFunctionType type) {
+static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t scopeDepth, bluFunctionType type) {
 	if (enclosing != NULL) {
 		compiler->vm = enclosing->vm;
 		compiler->parser = enclosing->parser;
@@ -803,37 +806,42 @@ void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t scopeDep
 	bluLocalBufferWrite(&compiler->locals, local);
 }
 
-bluObjFunction* endCompiler(bluCompiler* compiler) {
+static bluObjFunction* endCompiler(bluCompiler* compiler) {
 	emitByte(compiler, OP_RETURN);
-
-	bluLocalBufferFree(&compiler->locals);
-	bluUpvalueBufferFree(&compiler->upvalues);
 
 	return compiler->function;
 }
 
-bluObjFunction* bluCompilerCompile(bluVM* vm, bluCompiler* compiler, const char* source, const char* name) {
+static void freeCompiler(bluCompiler* compiler) {
+	bluLocalBufferFree(&compiler->locals);
+	bluUpvalueBufferFree(&compiler->upvalues);
+}
+
+bluObjFunction* bluCompile(bluVM* vm, const char* source, const char* name) {
 	bluParser parser;
 	bluParserInit(&parser, source);
 
-	compiler->vm = vm;
-	compiler->parser = &parser;
-	initCompiler(compiler, NULL, 0, TYPE_TOP_LEVEL);
+	bluCompiler compiler;
+	compiler.vm = vm;
+	compiler.parser = &parser;
+	initCompiler(&compiler, NULL, 0, TYPE_TOP_LEVEL);
 
 	do {
-		advance(compiler);
-	} while (check(compiler, TOKEN_NEWLINE));
+		advance(&compiler);
+	} while (check(&compiler, TOKEN_NEWLINE));
 
-	while (!match(compiler, TOKEN_EOF)) {
-		declaration(compiler);
+	while (!match(&compiler, TOKEN_EOF)) {
+		declaration(&compiler);
 	}
 
-	bluObjFunction* function = endCompiler(compiler);
+	bluObjFunction* function = endCompiler(&compiler);
 	function->chunk.name = name;
 
 #ifdef DEBUG_COMPILER_DISASSEMBLE
 	bluDisassembleChunk(&function->chunk);
 #endif
 
-	return compiler->hadError ? NULL : function;
+	freeCompiler(&compiler);
+
+	return compiler.hadError ? NULL : function;
 }

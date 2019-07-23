@@ -49,6 +49,6 @@ typedef struct bluCompiler {
 	bool panicMode;
 } bluCompiler;
 
-bluObjFunction* bluCompilerCompile(bluVM* vm, bluCompiler* compiler, const char* source, const char* name);
+bluObjFunction* bluCompile(bluVM* vm, const char* source, const char* name);
 
 #endif

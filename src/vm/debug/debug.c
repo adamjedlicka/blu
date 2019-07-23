@@ -89,7 +89,7 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
 		uint16_t slot = ((chunk->code.data[offset + 1] << 8) & 0xff) | (chunk->code.data[offset + 2] & 0xff);
 		offset += 3;
 
-		printf("%-16s %4d ", "OP_CLOSURE", slot);
+		printf("%-16s %6d ", "OP_CLOSURE", slot);
 		bluPrintValue(chunk->constants.data[slot]);
 		printf("\n");
 
@@ -120,5 +120,5 @@ void bluDisassembleChunk(bluChunk* chunk) {
 		offset = bluDisassembleInstruction(chunk, offset);
 	}
 
-	printf("=========\n");
+	printf("\n");
 }
