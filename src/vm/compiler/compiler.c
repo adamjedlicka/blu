@@ -237,8 +237,8 @@ static void freeCompiler(bluCompiler* compiler);
 static ParseRule* getRule(bluTokenType type);
 static void parsePrecedence(bluCompiler* compiler, Precedence precedence);
 
-static void statement(bluCompiler* compiler);
 static void declaration(bluCompiler* compiler);
+static void statement(bluCompiler* compiler);
 static void expression(bluCompiler* compiler);
 
 static void binary(bluCompiler* compiler, bool canAssign) {
@@ -528,18 +528,12 @@ static void parsePrecedence(bluCompiler* compiler, Precedence precedence) {
 	}
 }
 
-static void expression(bluCompiler* compiler) {
-	parsePrecedence(compiler, PREC_ASSIGNMENT);
-}
-
 static void expressionStatement(bluCompiler* compiler) {
 	expression(compiler);
 
 	emitByte(compiler, OP_POP);
 
-	if (!match(compiler, TOKEN_SEMICOLON)) {
-		consume(compiler, TOKEN_NEWLINE, "Expect newline or ';' after expression statement.");
-	}
+	expectNewlineOrSemicolon(compiler);
 }
 
 static void beginScope(bluCompiler* compiler) {
@@ -652,10 +646,9 @@ static void returnStatement(bluCompiler* compiler) {
 	} else {
 		bool needsNewline = !check(compiler, TOKEN_FN);
 
-		// TODO : Initializers
-		// if(compiler->type == TYPE_INITIALIZER) {
-		// 	error(compiler, "Cannot return a value from an initializer.");
-		// }
+		if (compiler->type == TYPE_INITIALIZER) {
+			error(compiler, "Cannot return a value from an initializer.");
+		}
 
 		expression(compiler);
 		emitByte(compiler, OP_RETURN);
@@ -669,24 +662,6 @@ static void assertStatement(bluCompiler* compiler) {
 	emitByte(compiler, OP_ASSERT);
 
 	expectNewlineOrSemicolon(compiler);
-}
-
-static void statement(bluCompiler* compiler) {
-	if (match(compiler, TOKEN_LEFT_BRACE)) {
-		beginScope(compiler);
-		block(compiler);
-		endScope(compiler);
-	} else if (match(compiler, TOKEN_IF)) {
-		ifStatement(compiler);
-	} else if (match(compiler, TOKEN_WHILE)) {
-		whileStatement(compiler);
-	} else if (match(compiler, TOKEN_RETURN)) {
-		returnStatement(compiler);
-	} else if (match(compiler, TOKEN_ASSERT)) {
-		assertStatement(compiler);
-	} else {
-		expressionStatement(compiler);
-	}
 }
 
 static void addLocal(bluCompiler* compiler, bluToken name) {
@@ -782,15 +757,24 @@ static void function(bluCompiler* compiler, bluFunctionType type) {
 	consume(&fnCompiler, TOKEN_RIGHT_PAREN, "Expect ')' after function parameters.");
 
 	// The body
-	consume(&fnCompiler, TOKEN_LEFT_BRACE, "Expect '{' before function body.");
-	beginScope(&fnCompiler);
-	block(&fnCompiler);
-	endScope(&fnCompiler);
+	if (type == TYPE_ANONYMOUS && match(compiler, TOKEN_COLON)) {
+		expression(&fnCompiler);
+		emitByte(&fnCompiler, OP_RETURN);
+	} else if (type != TYPE_INITIALIZER && match(compiler, TOKEN_COLON)) {
+		expression(&fnCompiler);
+		expectNewlineOrSemicolon(&fnCompiler);
+		emitByte(&fnCompiler, OP_RETURN);
+	} else {
+		consume(&fnCompiler, TOKEN_LEFT_BRACE, "Expect '{' before function body.");
+		beginScope(&fnCompiler);
+		block(&fnCompiler);
+		endScope(&fnCompiler);
+	}
 
 	// Create the function object.
 	bluObjFunction* function = endCompiler(&fnCompiler);
 	function->chunk.file = compiler->file;
-	function->chunk.name = function->name->chars;
+	function->chunk.name = function->name != NULL ? function->name->chars : "__anonymous";
 
 #ifdef DEBUG_COMPILER_DISASSEMBLE
 	bluDisassembleChunk(&function->chunk);
@@ -830,6 +814,32 @@ static void declaration(bluCompiler* compiler) {
 	if (compiler->panicMode) synchronize(compiler);
 }
 
+static void statement(bluCompiler* compiler) {
+	if (match(compiler, TOKEN_LEFT_BRACE)) {
+		beginScope(compiler);
+		block(compiler);
+		endScope(compiler);
+	} else if (match(compiler, TOKEN_IF)) {
+		ifStatement(compiler);
+	} else if (match(compiler, TOKEN_WHILE)) {
+		whileStatement(compiler);
+	} else if (match(compiler, TOKEN_RETURN)) {
+		returnStatement(compiler);
+	} else if (match(compiler, TOKEN_ASSERT)) {
+		assertStatement(compiler);
+	} else {
+		expressionStatement(compiler);
+	}
+}
+
+static void expression(bluCompiler* compiler) {
+	if (match(compiler, TOKEN_FN)) {
+		function(compiler, TYPE_ANONYMOUS);
+	} else {
+		parsePrecedence(compiler, PREC_ASSIGNMENT);
+	}
+}
+
 static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t scopeDepth, bluFunctionType type) {
 	if (enclosing != NULL) {
 		compiler->vm = enclosing->vm;
@@ -850,11 +860,19 @@ static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t s
 	bluUpvalueBufferInit(&compiler->upvalues);
 
 	switch (type) {
+
 	case TYPE_FUNCTION:
-		compiler->function->name =
-			bluCopyString(compiler->vm, compiler->parser->previous.start, compiler->parser->previous.length);
+	case TYPE_INITIALIZER: {
+		bluToken previous = compiler->parser->previous;
+		compiler->function->name = bluCopyString(compiler->vm, previous.start, previous.length);
 		break;
-	case TYPE_TOP_LEVEL: compiler->function->name = NULL; break;
+	}
+
+	case TYPE_ANONYMOUS:
+	case TYPE_TOP_LEVEL: {
+		compiler->function->name = NULL;
+		break;
+	}
 	}
 
 	bluLocal local;
@@ -870,7 +888,10 @@ static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t s
 }
 
 static bluObjFunction* endCompiler(bluCompiler* compiler) {
-	emitReturn(compiler);
+	// When last opcode is return, we don't need to emit another one.
+	if (compiler->function->chunk.code.data[compiler->function->chunk.code.count - 1] != OP_RETURN) {
+		emitReturn(compiler);
+	}
 
 	return compiler->function;
 }
@@ -900,7 +921,7 @@ bluObjFunction* bluCompile(bluVM* vm, const char* source, const char* file) {
 
 	bluObjFunction* function = endCompiler(&compiler);
 	function->chunk.file = file;
-	function->chunk.name = "main";
+	function->chunk.name = "__main";
 
 #ifdef DEBUG_COMPILER_DISASSEMBLE
 	bluDisassembleChunk(&function->chunk);

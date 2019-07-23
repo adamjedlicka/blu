@@ -30,6 +30,8 @@ DECLARE_BUFFER(bluUpvalue, bluUpvalue);
 typedef enum {
 	TYPE_TOP_LEVEL,
 	TYPE_FUNCTION,
+	TYPE_ANONYMOUS,
+	TYPE_INITIALIZER,
 } bluFunctionType;
 
 typedef struct bluCompiler {
