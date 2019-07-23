@@ -54,6 +54,7 @@ typedef enum {
 	OP_NEGATE,
 
 	OP_CLOSURE,
+	OP_CLOSE_OPVALUE,
 
 	OP_RETURN,
 

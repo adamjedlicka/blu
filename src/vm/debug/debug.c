@@ -127,6 +127,8 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
 		return offset;
 	}
 
+	case OP_CLOSE_OPVALUE: return simpleInstruction("OP_CLOSE_OPVALUE", offset);
+
 	case OP_RETURN: return simpleInstruction("OP_RETURN", offset);
 
 	case OP_ASSERT: return simpleInstruction("OP_ASSERT", offset);

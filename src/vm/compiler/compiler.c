@@ -552,8 +552,7 @@ static void endScope(bluCompiler* compiler) {
 	while (compiler->locals.count > 0 &&
 		   compiler->locals.data[compiler->locals.count - 1].depth > compiler->scopeDepth) {
 		if (compiler->locals.data[compiler->locals.count - 1].isUpvalue) {
-			// TODO : Upvalues
-			// emitByte(compiler, OP_CLOSE_OPVALUE);
+			emitByte(compiler, OP_CLOSE_OPVALUE);
 		} else {
 			emitByte(compiler, OP_POP);
 		}

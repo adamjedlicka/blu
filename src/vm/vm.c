@@ -424,6 +424,12 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
+		case OP_CLOSE_OPVALUE: {
+			closeUpvalues(vm, vm->stackTop - 1);
+			bluPop(vm);
+			break;
+		}
+
 		case OP_RETURN: {
 			bluValue result = bluPop(vm);
 
