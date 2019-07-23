@@ -207,6 +207,19 @@ static void emitLoop(bluCompiler* compiler, int32_t loopStart) {
 	emitShort(compiler, offset);
 }
 
+static void emitReturn(bluCompiler* compiler) {
+	// TODO : Initializers
+	// An initializer automatically returns "@".
+	// if (compiler->type == TYPE_INITIALIZER) {
+	// 	emitBytes(OP_GET_LOCAL, 0);
+	// } else {
+	//  emitByte(compiler, OP_NIL);
+	// }
+
+	emitByte(compiler, OP_NIL);
+	emitByte(compiler, OP_RETURN);
+}
+
 static bool identifiersEqual(bluToken* a, bluToken* b) {
 	if (a->length != b->length) return false;
 
@@ -404,6 +417,30 @@ static void or (bluCompiler * compiler, bool canAssign) {
 	patchJump(compiler, endJump);
 }
 
+static uint8_t argumentList(bluCompiler* compiler) {
+	uint8_t argCount = 0;
+
+	if (!check(compiler, TOKEN_RIGHT_PAREN)) {
+		do {
+			expression(compiler);
+			argCount++;
+
+			if (argCount > 16) {
+				error(compiler, "Cannot have more than 16 arguments.");
+			}
+		} while (match(compiler, TOKEN_COMMA));
+	}
+
+	consume(compiler, TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+
+	return argCount;
+}
+
+static void call(bluCompiler* compiler, bool canAssign) {
+	uint8_t argCount = argumentList(compiler);
+	emitByte(compiler, OP_CALL_0 + argCount);
+}
+
 ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE}, // TOKEN_AT
 	{NULL, NULL, PREC_NONE}, // TOKEN_COLON
@@ -411,7 +448,7 @@ ParseRule rules[] = {
 	{NULL, NULL, PREC_CALL}, // TOKEN_DOT
 	{NULL, NULL, PREC_NONE}, // TOKEN_LEFT_BRACE
 	{NULL, NULL, PREC_CALL}, // TOKEN_LEFT_BACKET
-	{NULL, NULL, PREC_CALL}, // TOKEN_LEFT_PAREN
+	{NULL, call, PREC_CALL}, // TOKEN_LEFT_PAREN
 	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_BRACE
 	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_BRACKET
 	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_PAREN
@@ -606,6 +643,28 @@ static void whileStatement(bluCompiler* compiler) {
 	endScope(compiler);
 }
 
+static void returnStatement(bluCompiler* compiler) {
+	if (compiler->type == TYPE_TOP_LEVEL) {
+		error(compiler, "Cannot return from top-level code.");
+	}
+
+	if (match(compiler, TOKEN_NEWLINE)) {
+		emitReturn(compiler);
+	} else {
+		bool needsNewline = !check(compiler, TOKEN_FN);
+
+		// TODO : Initializers
+		// if(compiler->type == TYPE_INITIALIZER) {
+		// 	error(compiler, "Cannot return a value from an initializer.");
+		// }
+
+		expression(compiler);
+		emitByte(compiler, OP_RETURN);
+
+		if (needsNewline) expectNewlineOrSemicolon(compiler);
+	}
+}
+
 static void assertStatement(bluCompiler* compiler) {
 	expression(compiler);
 	emitByte(compiler, OP_ASSERT);
@@ -622,6 +681,8 @@ static void statement(bluCompiler* compiler) {
 		ifStatement(compiler);
 	} else if (match(compiler, TOKEN_WHILE)) {
 		whileStatement(compiler);
+	} else if (match(compiler, TOKEN_RETURN)) {
+		returnStatement(compiler);
 	} else if (match(compiler, TOKEN_ASSERT)) {
 		assertStatement(compiler);
 	} else {
@@ -810,7 +871,7 @@ static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t s
 }
 
 static bluObjFunction* endCompiler(bluCompiler* compiler) {
-	emitByte(compiler, OP_RETURN);
+	emitReturn(compiler);
 
 	return compiler->function;
 }

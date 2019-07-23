@@ -134,6 +134,19 @@ static bluObjUpvalue* captureUpvalue(bluVM* vm, bluValue* local) {
 	return createdUpvalue;
 }
 
+static void closeUpvalues(bluVM* vm, bluValue* last) {
+	while (vm->openUpvalues != NULL && vm->openUpvalues->value >= last) {
+		bluObjUpvalue* upvalue = vm->openUpvalues;
+
+		// Move the value into the upvalue itself and point the upvalue to it.
+		upvalue->closed = *upvalue->value;
+		upvalue->value = &upvalue->closed;
+
+		// Pop it off the open upvalue list.
+		vm->openUpvalues = upvalue->next;
+	}
+}
+
 static bluInterpretResult run(bluVM* vm) {
 
 	bluCallFrame* frame = &vm->frames[vm->frameCount - 1];
@@ -223,6 +236,18 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
+		case OP_GET_UPVALUE: {
+			uint16_t slot = READ_SHORT();
+			bluPush(vm, *frame->function->upvalues.data[slot]->value);
+			break;
+		}
+
+		case OP_SET_UPVALUE: {
+			uint16_t slot = READ_SHORT();
+			*frame->function->upvalues.data[slot]->value = bluPeek(vm, 0);
+			break;
+		}
+
 		case OP_JUMP: {
 			uint16_t offset = READ_SHORT();
 			frame->ip += offset;
@@ -244,6 +269,33 @@ static bluInterpretResult run(bluVM* vm) {
 		case OP_LOOP: {
 			uint16_t offset = READ_SHORT();
 			frame->ip -= offset;
+			break;
+		}
+
+		case OP_CALL_0:
+		case OP_CALL_1:
+		case OP_CALL_2:
+		case OP_CALL_3:
+		case OP_CALL_4:
+		case OP_CALL_5:
+		case OP_CALL_6:
+		case OP_CALL_7:
+		case OP_CALL_8:
+		case OP_CALL_9:
+		case OP_CALL_10:
+		case OP_CALL_11:
+		case OP_CALL_12:
+		case OP_CALL_13:
+		case OP_CALL_14:
+		case OP_CALL_15:
+		case OP_CALL_16: {
+			uint8_t argCount = instruction - OP_CALL_0;
+			if (!callValue(vm, bluPeek(vm, argCount), argCount)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			frame = &vm->frames[vm->frameCount - 1];
+
 			break;
 		}
 
@@ -373,7 +425,26 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_RETURN: {
-			return INTERPRET_OK;
+			bluValue result = bluPop(vm);
+
+			closeUpvalues(vm, frame->slots);
+
+			vm->frameCount--;
+			if (vm->frameCount == 0) {
+#if DEBUG
+				if (vm->stackTop - vm->stack != 0) {
+					runtimeError(vm, "Stack not empty!");
+					return INTERPRET_RUNTIME_ERROR;
+				}
+#endif
+				return INTERPRET_OK;
+			}
+
+			vm->stackTop = frame->slots;
+			bluPush(vm, result);
+
+			frame = &vm->frames[vm->frameCount - 1];
+			break;
 		}
 
 		case OP_ASSERT: {
