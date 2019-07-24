@@ -63,10 +63,10 @@ bluObjFunction* bluNewFunction(bluVM* vm) {
 	return function;
 }
 
-bluObjUpvalue* newUpvalue(bluVM* vm, bluValue* slot) {
+bluObjUpvalue* newUpvalue(bluVM* vm, int32_t stackOffset) {
 	bluObjUpvalue* upvalue = (bluObjUpvalue*)allocateObject(vm, sizeof(bluObjUpvalue), OBJ_UPVALUE);
 	upvalue->closed = NIL_VAL;
-	upvalue->value = slot;
+	upvalue->stackOffset = stackOffset;
 	upvalue->next = NULL;
 
 	return upvalue;

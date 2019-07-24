@@ -50,8 +50,8 @@ struct bluObjFunction {
 struct bluObjUpvalue {
 	bluObj obj;
 
-	// Pointer to the variable this upvalue is referencing.
-	bluValue* value;
+	// Stack offset to the variable this upvalue is referencing.
+	int32_t stackOffset;
 
 	// If the upvalue is closed (i.e. the local variable it was pointing to has been popped off the stack) then the
 	// closed-over value is hoisted out of the stack into here. [value] is then be changed to point to this.
@@ -62,7 +62,7 @@ struct bluObjUpvalue {
 };
 
 bluObjFunction* bluNewFunction(bluVM* vm);
-bluObjUpvalue* newUpvalue(bluVM* vm, bluValue* slot);
+bluObjUpvalue* newUpvalue(bluVM* vm, int32_t stackOffset);
 
 bluObjString* bluCopyString(bluVM* vm, const char* chars, int32_t length);
 bluObjString* bluTakeString(bluVM* vm, char* chars, int32_t length);

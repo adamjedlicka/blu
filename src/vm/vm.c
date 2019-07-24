@@ -104,27 +104,27 @@ static bool callValue(bluVM* vm, bluValue callee, int8_t argCount) {
 // Captures the local variable [local] into an [Upvalue]. If that local is already in an upvalue, the existing one is
 // used. (This is important to ensure that multiple closures closing over the same variable actually see the same
 // variable.) Otherwise, it creates a new open upvalue and adds it to the VM's list of upvalues.
-static bluObjUpvalue* captureUpvalue(bluVM* vm, bluValue* local) {
+static bluObjUpvalue* captureUpvalue(bluVM* vm, int32_t localOffset) {
 	// If there are no open upvalues at all, we must need a new one.
 	if (vm->openUpvalues == NULL) {
-		vm->openUpvalues = newUpvalue(vm, local);
+		vm->openUpvalues = newUpvalue(vm, localOffset);
 	}
 
 	bluObjUpvalue* prevUpvalue = NULL;
 	bluObjUpvalue* upvalue = vm->openUpvalues;
 
 	// Walk towards the bottom of the stack until we find a previously existing upvalue or reach where it should be.
-	while (upvalue != NULL && upvalue->value > local) {
+	while (upvalue != NULL && upvalue->stackOffset > localOffset) {
 		prevUpvalue = upvalue;
 		upvalue = upvalue->next;
 	}
 
 	// If we found it, reuse it.
-	if (upvalue != NULL && upvalue->value == local) return upvalue;
+	if (upvalue != NULL && upvalue->stackOffset == localOffset) return upvalue;
 
 	// We walked past the local on the stack, so there must not be an upvalue for it already. Make a new one and link it
 	// in in the right place to keep the list sorted.
-	bluObjUpvalue* createdUpvalue = newUpvalue(vm, local);
+	bluObjUpvalue* createdUpvalue = newUpvalue(vm, localOffset);
 	createdUpvalue->next = upvalue;
 
 	if (prevUpvalue == NULL) {
@@ -137,13 +137,13 @@ static bluObjUpvalue* captureUpvalue(bluVM* vm, bluValue* local) {
 	return createdUpvalue;
 }
 
-static void closeUpvalues(bluVM* vm, bluValue* last) {
-	while (vm->openUpvalues != NULL && vm->openUpvalues->value >= last) {
+static void closeUpvalues(bluVM* vm, int32_t lastOffset) {
+	while (vm->openUpvalues != NULL && vm->openUpvalues->stackOffset >= lastOffset) {
 		bluObjUpvalue* upvalue = vm->openUpvalues;
 
 		// Move the value into the upvalue itself and point the upvalue to it.
-		upvalue->closed = *upvalue->value;
-		upvalue->value = &upvalue->closed;
+		upvalue->closed = vm->stack.data[upvalue->stackOffset];
+		upvalue->stackOffset = -1;
 
 		// Pop it off the open upvalue list.
 		vm->openUpvalues = upvalue->next;
@@ -241,13 +241,23 @@ static bluInterpretResult run(bluVM* vm) {
 
 		case OP_GET_UPVALUE: {
 			uint16_t slot = READ_SHORT();
-			bluPush(vm, *frame->function->upvalues.data[slot]->value);
+
+			if (frame->function->upvalues.data[slot]->stackOffset == -1) {
+				bluPush(vm, frame->function->upvalues.data[slot]->closed);
+			} else {
+				bluPush(vm, vm->stack.data[frame->function->upvalues.data[slot]->stackOffset]);
+			}
 			break;
 		}
 
 		case OP_SET_UPVALUE: {
 			uint16_t slot = READ_SHORT();
-			*frame->function->upvalues.data[slot]->value = bluPeek(vm, 0);
+
+			if (frame->function->upvalues.data[slot]->stackOffset == -1) {
+				frame->function->upvalues.data[slot]->closed = bluPeek(vm, 0);
+			} else {
+				vm->stack.data[frame->function->upvalues.data[slot]->stackOffset] = bluPeek(vm, 0);
+			}
 			break;
 		}
 
@@ -417,7 +427,7 @@ static bluInterpretResult run(bluVM* vm) {
 
 				if (isLocal) {
 					// Make an new upvalue to close over the parent's local variable.
-					function->upvalues.data[i] = captureUpvalue(vm, &vm->stack.data[frame->stackOffset + index]);
+					function->upvalues.data[i] = captureUpvalue(vm, frame->stackOffset + index);
 				} else {
 					// Use the same upvalue as the current call frame.
 					function->upvalues.data[i] = frame->function->upvalues.data[index];
@@ -428,7 +438,7 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_CLOSE_OPVALUE: {
-			closeUpvalues(vm, &vm->stack.data[vm->stack.count - 1]);
+			closeUpvalues(vm, vm->stack.count - 1);
 			bluPop(vm);
 			break;
 		}
@@ -436,7 +446,7 @@ static bluInterpretResult run(bluVM* vm) {
 		case OP_RETURN: {
 			bluValue result = bluPop(vm);
 
-			closeUpvalues(vm, &vm->stack.data[frame->stackOffset]);
+			closeUpvalues(vm, frame->stackOffset);
 
 			vm->frames.count--;
 			if (vm->frames.count == 0) {
