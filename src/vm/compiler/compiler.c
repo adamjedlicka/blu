@@ -856,8 +856,8 @@ static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t s
 	compiler->hadError = false;
 	compiler->panicMode = false;
 
-	bluLocalBufferInit(&compiler->locals);
-	bluUpvalueBufferInit(&compiler->upvalues);
+	bluLocalBufferInit(&compiler->locals, 0);
+	bluUpvalueBufferInit(&compiler->upvalues, 0);
 
 	switch (type) {
 
@@ -873,6 +873,7 @@ static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t s
 		compiler->function->name = NULL;
 		break;
 	}
+
 	}
 
 	bluLocal local;
@@ -883,6 +884,9 @@ static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t s
 	// In a function, it holds the function, but cannot be references, so has no name.
 	local.name.start = "";
 	local.name.length = 0;
+	local.name.column = 0;
+	local.name.line = 0;
+	local.name.type = TOKEN_AT;
 
 	bluLocalBufferWrite(&compiler->locals, local);
 }

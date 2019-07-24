@@ -503,8 +503,8 @@ static bluInterpretResult run(bluVM* vm) {
 bluVM* bluNew() {
 	bluVM* vm = malloc(sizeof(bluVM));
 
-	bluValueBufferInit(&vm->stack);
-	bluCallFrameBufferInit(&vm->frames);
+	bluValueBufferInit(&vm->stack, 1024);
+	bluCallFrameBufferInit(&vm->frames, 32);
 
 	bluTableInit(vm, &vm->globals);
 	bluTableInit(vm, &vm->strings);

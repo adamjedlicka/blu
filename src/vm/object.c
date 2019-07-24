@@ -58,7 +58,7 @@ bluObjFunction* bluNewFunction(bluVM* vm) {
 	function->name = NULL;
 
 	bluChunkInit(&function->chunk);
-	bluObjUpvalueBufferInit(&function->upvalues);
+	bluObjUpvalueBufferInit(&function->upvalues, 8);
 
 	return function;
 }

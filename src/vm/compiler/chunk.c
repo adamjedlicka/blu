@@ -6,11 +6,11 @@ void bluChunkInit(bluChunk* chunk) {
 	chunk->file = NULL;
 	chunk->name = NULL;
 
-	ByteBufferInit(&chunk->code);
-	IntBufferInit(&chunk->lines);
-	IntBufferInit(&chunk->columns);
+	ByteBufferInit(&chunk->code, 0);
+	IntBufferInit(&chunk->lines, 0);
+	IntBufferInit(&chunk->columns, 0);
 
-	bluValueBufferInit(&chunk->constants);
+	bluValueBufferInit(&chunk->constants, 0);
 }
 
 void bluChunkFree(bluChunk* chunk) {
