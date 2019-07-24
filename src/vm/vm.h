@@ -2,7 +2,6 @@
 #define blu_vm_h
 
 #include "blu.h"
-#include "compiler/chunk.h"
 #include "object.h"
 #include "table.h"
 #include "value.h"
@@ -13,15 +12,14 @@
 typedef struct {
 	bluObjFunction* function;
 	uint8_t* ip;
-	bluValue* slots;
+	uint32_t stackOffset;
 } bluCallFrame;
 
-struct bluVM {
-	bluValue stack[STACK_MAX];
-	bluValue* stackTop;
+DECLARE_BUFFER(bluCallFrame, bluCallFrame);
 
-	bluCallFrame frames[FRAMES_MAX];
-	int32_t frameCount;
+struct bluVM {
+	bluValueBuffer stack;
+	bluCallFrameBuffer frames;
 
 	bluTable globals;
 	bluTable strings;

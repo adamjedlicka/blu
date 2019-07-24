@@ -137,12 +137,12 @@ void bluCollectGarbage(bluVM* vm) {
 
 	double start = (double)clock() / CLOCKS_PER_SEC;
 
-	for (bluValue* slot = vm->stack; slot < vm->stackTop; slot++) {
-		bluGrayValue(vm, *slot);
+	for (int32_t i = 0; i < vm->stack.count; i++) {
+		bluGrayValue(vm, vm->stack.data[i]);
 	}
 
-	for (int32_t i = 0; i < vm->frameCount; i++) {
-		bluGrayObject(vm, (bluObj*)vm->frames[i].function);
+	for (int32_t i = 0; i < vm->frames.count; i++) {
+		bluGrayObject(vm, (bluObj*)vm->frames.data[i].function);
 	}
 
 	bluGrayTable(vm, &vm->globals);

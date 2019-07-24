@@ -17,9 +17,10 @@
 		bluPush(vm, valueType(left op right));                                                                         \
 	} while (false)
 
+DEFINE_BUFFER(bluCallFrame, bluCallFrame);
+
 static void resetStack(bluVM* vm) {
-	vm->stackTop = vm->stack;
-	vm->frameCount = 0;
+	vm->stack.count = 0;
 }
 
 static void runtimeError(bluVM* vm, const char* format, ...) {
@@ -29,8 +30,8 @@ static void runtimeError(bluVM* vm, const char* format, ...) {
 	va_end(args);
 	fputs("\n", stderr);
 
-	for (int i = vm->frameCount - 1; i >= 0; i--) {
-		bluCallFrame* frame = &vm->frames[i];
+	for (int i = vm->frames.count - 1; i >= 0; i--) {
+		bluCallFrame* frame = &vm->frames.data[i];
 		bluObjFunction* function = frame->function;
 
 		// -1 because the IP is sitting on the next instruction to be executed.
@@ -64,17 +65,19 @@ static bool call(bluVM* vm, bluObjFunction* function, int8_t argCount) {
 		return false;
 	}
 
-	if (vm->frameCount == FRAMES_MAX) {
+	if (vm->frames.count == FRAMES_MAX) {
 		runtimeError(vm, "Stack overflow.");
 		return false;
 	}
 
-	bluCallFrame* frame = &vm->frames[vm->frameCount++];
-	frame->function = function;
-	frame->ip = function->chunk.code.data;
+	bluCallFrame frame;
+	frame.function = function;
+	frame.ip = function->chunk.code.data;
 
 	// +1 to include either the called function or the receiver.
-	frame->slots = vm->stackTop - (argCount + 1);
+	frame.stackOffset = vm->stack.count - (argCount + 1);
+
+	bluCallFrameBufferWrite(&vm->frames, frame);
 
 	return true;
 }
@@ -149,7 +152,7 @@ static void closeUpvalues(bluVM* vm, bluValue* last) {
 
 static bluInterpretResult run(bluVM* vm) {
 
-	bluCallFrame* frame = &vm->frames[vm->frameCount - 1];
+	bluCallFrame* frame = &vm->frames.data[vm->frames.count - 1];
 
 #define READ_BYTE() (*frame->ip++)
 #define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
@@ -195,13 +198,13 @@ static bluInterpretResult run(bluVM* vm) {
 
 		case OP_GET_LOCAL: {
 			uint16_t slot = READ_SHORT();
-			bluPush(vm, frame->slots[slot]);
+			bluPush(vm, vm->stack.data[frame->stackOffset + slot]);
 			break;
 		}
 
 		case OP_SET_LOCAL: {
 			uint16_t slot = READ_SHORT();
-			frame->slots[slot] = bluPeek(vm, 0);
+			vm->stack.data[frame->stackOffset + slot] = bluPeek(vm, 0);
 			break;
 		}
 
@@ -294,7 +297,7 @@ static bluInterpretResult run(bluVM* vm) {
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
-			frame = &vm->frames[vm->frameCount - 1];
+			frame = &vm->frames.data[vm->frames.count - 1];
 
 			break;
 		}
@@ -414,7 +417,7 @@ static bluInterpretResult run(bluVM* vm) {
 
 				if (isLocal) {
 					// Make an new upvalue to close over the parent's local variable.
-					function->upvalues.data[i] = captureUpvalue(vm, frame->slots + index);
+					function->upvalues.data[i] = captureUpvalue(vm, &vm->stack.data[frame->stackOffset + index]);
 				} else {
 					// Use the same upvalue as the current call frame.
 					function->upvalues.data[i] = frame->function->upvalues.data[index];
@@ -425,7 +428,7 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_CLOSE_OPVALUE: {
-			closeUpvalues(vm, vm->stackTop - 1);
+			closeUpvalues(vm, &vm->stack.data[vm->stack.count - 1]);
 			bluPop(vm);
 			break;
 		}
@@ -433,12 +436,12 @@ static bluInterpretResult run(bluVM* vm) {
 		case OP_RETURN: {
 			bluValue result = bluPop(vm);
 
-			closeUpvalues(vm, frame->slots);
+			closeUpvalues(vm, &vm->stack.data[frame->stackOffset]);
 
-			vm->frameCount--;
-			if (vm->frameCount == 0) {
+			vm->frames.count--;
+			if (vm->frames.count == 0) {
 #if DEBUG
-				if (vm->stackTop - vm->stack != 0) {
+				if (vm->stack.count != 0) {
 					runtimeError(vm, "Stack not empty!");
 					return INTERPRET_RUNTIME_ERROR;
 				}
@@ -446,10 +449,10 @@ static bluInterpretResult run(bluVM* vm) {
 				return INTERPRET_OK;
 			}
 
-			vm->stackTop = frame->slots;
+			vm->stack.count = frame->stackOffset;
 			bluPush(vm, result);
 
-			frame = &vm->frames[vm->frameCount - 1];
+			frame = &vm->frames.data[vm->frames.count - 1];
 			break;
 		}
 
@@ -477,9 +480,9 @@ static bluInterpretResult run(bluVM* vm) {
 
 #ifdef DEBUG_VM_TRACE
 		printf("          ");
-		for (bluValue* value = vm->stack; value < vm->stackTop; value++) {
+		for (int32_t i = 0; i < vm->stack.count; i++) {
 			printf("[ ");
-			bluPrintValue(*value);
+			bluPrintValue(vm->stack.data[i]);
 			printf(" ]");
 		}
 		printf("\n");
@@ -490,9 +493,8 @@ static bluInterpretResult run(bluVM* vm) {
 bluVM* bluNew() {
 	bluVM* vm = malloc(sizeof(bluVM));
 
-	resetStack(vm);
-
-	vm->frameCount = 0;
+	bluValueBufferInit(&vm->stack);
+	bluCallFrameBufferInit(&vm->frames);
 
 	bluTableInit(vm, &vm->globals);
 	bluTableInit(vm, &vm->strings);
@@ -512,6 +514,9 @@ bluVM* bluNew() {
 void bluFree(bluVM* vm) {
 	bluCollectMemory(vm);
 
+	bluValueBufferFree(&vm->stack);
+	bluCallFrameBufferFree(&vm->frames);
+
 	bluTableFree(vm, &vm->globals);
 	bluTableFree(vm, &vm->strings);
 
@@ -519,15 +524,15 @@ void bluFree(bluVM* vm) {
 }
 
 void bluPush(bluVM* vm, bluValue value) {
-	*((vm->stackTop)++) = value;
+	bluValueBufferWrite(&vm->stack, value);
 }
 
 bluValue bluPop(bluVM* vm) {
-	return *(--(vm->stackTop));
+	return vm->stack.data[--vm->stack.count];
 }
 
 bluValue bluPeek(bluVM* vm, int32_t distance) {
-	return vm->stackTop[-1 - distance];
+	return vm->stack.data[vm->stack.count - 1 - distance];
 }
 
 bool bluIsFalsey(bluValue value);
