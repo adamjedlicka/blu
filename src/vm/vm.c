@@ -287,26 +287,11 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
-		case OP_CALL_0:
-		case OP_CALL_1:
-		case OP_CALL_2:
-		case OP_CALL_3:
-		case OP_CALL_4:
-		case OP_CALL_5:
-		case OP_CALL_6:
-		case OP_CALL_7:
-		case OP_CALL_8:
-		case OP_CALL_9:
-		case OP_CALL_10:
-		case OP_CALL_11:
-		case OP_CALL_12:
-		case OP_CALL_13:
-		case OP_CALL_14:
-		case OP_CALL_15:
-		case OP_CALL_16: {
+		case OP_CALL: {
+			uint8_t argCount = READ_BYTE();
+
 			STORE_FRAME();
 
-			uint8_t argCount = instruction - OP_CALL_0;
 			if (!callValue(vm, PEEK(argCount), argCount)) {
 				return INTERPRET_RUNTIME_ERROR;
 			}

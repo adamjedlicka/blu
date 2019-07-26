@@ -16,16 +16,11 @@ static int32_t simpleInstruction(const char* name, int32_t offset) {
 	return offset + 1;
 }
 
-static int32_t simpleInstructionN(const char* name, int32_t n, int32_t offset) {
-	printf("%s_%d\n", name, n);
-	return offset + 1;
+static int32_t byteInstruction(const char* name, bluChunk* chunk, int32_t offset) {
+	uint8_t slot = chunk->code.data[offset + 1];
+	printf("%-16s %6d\n", name, slot);
+	return offset + 2;
 }
-
-// static int32_t byteInstruction(const char* name, bluChunk* chunk, int32_t offset) {
-// 	uint8_t slot = chunk->code.data[offset + 1];
-// 	printf("%-16s %6d\n", name, slot);
-// 	return offset + 2;
-// }
 
 static int32_t shortInstruction(const char* name, bluChunk* chunk, int32_t offset) {
 	uint16_t slot = ((chunk->code.data[offset + 1] << 8) & 0xff) | (chunk->code.data[offset + 2] & 0xff);
@@ -76,23 +71,7 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
 	case OP_JUMP_IF_TRUE: return jumpInstruction("OP_JUMP_IF_TRUE", chunk, offset);
 	case OP_LOOP: return loopInstruction("OP_LOOP", chunk, offset);
 
-	case OP_CALL_0:
-	case OP_CALL_1:
-	case OP_CALL_2:
-	case OP_CALL_3:
-	case OP_CALL_4:
-	case OP_CALL_5:
-	case OP_CALL_6:
-	case OP_CALL_7:
-	case OP_CALL_8:
-	case OP_CALL_9:
-	case OP_CALL_10:
-	case OP_CALL_11:
-	case OP_CALL_12:
-	case OP_CALL_13:
-	case OP_CALL_14:
-	case OP_CALL_15:
-	case OP_CALL_16: return simpleInstructionN("OP_CALL", instruction - OP_CALL_0, offset);
+	case OP_CALL: return byteInstruction("OP_CALL", chunk, offset);
 
 	case OP_EQUAL: return simpleInstruction("OP_EQUAL", offset);
 	case OP_NOT_EQUAL: return simpleInstruction("OP_NOT_EQUAL", offset);

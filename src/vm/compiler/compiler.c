@@ -157,10 +157,10 @@ static void emitShort(bluCompiler* compiler, uint16_t _short) {
 	emitByte(compiler, _short & 0xff);
 }
 
-// static void emitBytes(bluCompiler* compiler, uint8_t byte1, uint8_t byte2) {
-// 	emitByte(compiler, byte1);
-// 	emitByte(compiler, byte2);
-// }
+static void emitBytes(bluCompiler* compiler, uint8_t byte1, uint8_t byte2) {
+	emitByte(compiler, byte1);
+	emitByte(compiler, byte2);
+}
 
 static uint16_t makeConstant(bluCompiler* compiler, bluValue value) {
 	int32_t constant = bluValueBufferWrite(&compiler->function->chunk.constants, value);
@@ -438,7 +438,7 @@ static uint8_t argumentList(bluCompiler* compiler) {
 
 static void call(bluCompiler* compiler, bool canAssign) {
 	uint8_t argCount = argumentList(compiler);
-	emitByte(compiler, OP_CALL_0 + argCount);
+	emitBytes(compiler, OP_CALL, argCount);
 }
 
 ParseRule rules[] = {
