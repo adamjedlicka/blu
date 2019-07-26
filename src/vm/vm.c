@@ -7,7 +7,7 @@
 
 #define BINARY_OP(valueType, op)                                                                                       \
 	do {                                                                                                               \
-		if (!IS_NUMBER(bluPeek(vm, 0)) || !IS_NUMBER(bluPeek(vm, 1))) {                                                \
+		if (!IS_NUMBER(PEEK(0)) || !IS_NUMBER(PEEK(1))) {                                                              \
 			runtimeError(vm, "Operands must be numbers.");                                                             \
 			return INTERPRET_RUNTIME_ERROR;                                                                            \
 		}                                                                                                              \
@@ -149,19 +149,34 @@ static void closeUpvalues(bluVM* vm, bluValue* last) {
 
 static bluInterpretResult run(bluVM* vm) {
 
-	bluCallFrame* frame = &vm->frames[vm->frameCount - 1];
+	register bluCallFrame* frame;
+	register bluValue* slots;
+	register uint8_t* ip;
 
-#define READ_BYTE() (*frame->ip++)
-#define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
+#define PUSH(value) (*((vm->stackTop)++) = value)
+#define POP() (*(--(vm->stackTop)))
+#define DROP() (--(vm->stackTop))
+#define PEEK(distance) (vm->stackTop[-1 - distance])
+#define READ_BYTE() (*ip++)
+#define READ_SHORT() (ip += 2, (uint16_t)((ip[-2] << 8) | ip[-1]))
 #define READ_CONSTANT() (frame->function->chunk.constants.data[READ_SHORT()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
+
+#define STORE_FRAME() frame->ip = ip
+
+#define LOAD_FRAME()                                                                                                   \
+	frame = &vm->frames[vm->frameCount - 1];                                                                           \
+	slots = frame->slots;                                                                                              \
+	ip = frame->ip
+
+	LOAD_FRAME();
 
 	while (true) {
 
 		if (vm->shouldGC) bluCollectGarbage(vm);
 
 #ifdef DEBUG_VM_TRACE
-		bluDisassembleInstruction(&frame->function->chunk, frame->ip - frame->function->chunk.code.data);
+		bluDisassembleInstruction(&frame->function->chunk, ip - frame->function->chunk.code.data);
 #endif
 
 		uint8_t instruction = READ_BYTE();
@@ -169,46 +184,46 @@ static bluInterpretResult run(bluVM* vm) {
 		switch (instruction) {
 
 		case OP_CONSTANT: {
-			bluPush(vm, READ_CONSTANT());
+			PUSH(READ_CONSTANT());
 			break;
 		}
 
 		case OP_FALSE: {
-			bluPush(vm, BOOL_VAL(false));
+			PUSH(BOOL_VAL(false));
 			break;
 		}
 
 		case OP_NIL: {
-			bluPush(vm, NIL_VAL);
+			PUSH(NIL_VAL);
 			break;
 		}
 
 		case OP_TRUE: {
-			bluPush(vm, BOOL_VAL(true));
+			PUSH(BOOL_VAL(true));
 			break;
 		}
 
 		case OP_POP: {
-			bluPop(vm);
+			DROP();
 			break;
 		}
 
 		case OP_GET_LOCAL: {
 			uint16_t slot = READ_SHORT();
-			bluPush(vm, frame->slots[slot]);
+			PUSH(slots[slot]);
 			break;
 		}
 
 		case OP_SET_LOCAL: {
 			uint16_t slot = READ_SHORT();
-			frame->slots[slot] = bluPeek(vm, 0);
+			slots[slot] = PEEK(0);
 			break;
 		}
 
 		case OP_DEFINE_GLOBAL: {
 			bluObjString* name = READ_STRING();
 
-			bluTableSet(vm, &vm->globals, name, bluPop(vm));
+			bluTableSet(vm, &vm->globals, name, POP());
 			break;
 		}
 
@@ -221,14 +236,14 @@ static bluInterpretResult run(bluVM* vm) {
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
-			bluPush(vm, value);
+			PUSH(value);
 			break;
 		}
 
 		case OP_SET_GLOBAL: {
 			bluObjString* name = READ_STRING();
 
-			if (bluTableSet(vm, &vm->globals, name, bluPeek(vm, 0))) {
+			if (bluTableSet(vm, &vm->globals, name, PEEK(0))) {
 				bluTableDelete(vm, &vm->globals, name);
 				runtimeError(vm, "Undefined global variable '%s'.", name->chars);
 				return INTERPRET_RUNTIME_ERROR;
@@ -238,37 +253,37 @@ static bluInterpretResult run(bluVM* vm) {
 
 		case OP_GET_UPVALUE: {
 			uint16_t slot = READ_SHORT();
-			bluPush(vm, *frame->function->upvalues.data[slot]->value);
+			PUSH(*frame->function->upvalues.data[slot]->value);
 			break;
 		}
 
 		case OP_SET_UPVALUE: {
 			uint16_t slot = READ_SHORT();
-			*frame->function->upvalues.data[slot]->value = bluPeek(vm, 0);
+			*frame->function->upvalues.data[slot]->value = PEEK(0);
 			break;
 		}
 
 		case OP_JUMP: {
 			uint16_t offset = READ_SHORT();
-			frame->ip += offset;
+			ip += offset;
 			break;
 		}
 
 		case OP_JUMP_IF_FALSE: {
 			uint16_t offset = READ_SHORT();
-			if (bluIsFalsey(bluPeek(vm, 0))) frame->ip += offset;
+			if (bluIsFalsey(PEEK(0))) ip += offset;
 			break;
 		}
 
 		case OP_JUMP_IF_TRUE: {
 			uint16_t offset = READ_SHORT();
-			if (!bluIsFalsey(bluPeek(vm, 0))) frame->ip += offset;
+			if (!bluIsFalsey(PEEK(0))) ip += offset;
 			break;
 		}
 
 		case OP_LOOP: {
 			uint16_t offset = READ_SHORT();
-			frame->ip -= offset;
+			ip -= offset;
 			break;
 		}
 
@@ -289,33 +304,35 @@ static bluInterpretResult run(bluVM* vm) {
 		case OP_CALL_14:
 		case OP_CALL_15:
 		case OP_CALL_16: {
+			STORE_FRAME();
+
 			uint8_t argCount = instruction - OP_CALL_0;
-			if (!callValue(vm, bluPeek(vm, argCount), argCount)) {
+			if (!callValue(vm, PEEK(argCount), argCount)) {
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
-			frame = &vm->frames[vm->frameCount - 1];
+			LOAD_FRAME();
 
 			break;
 		}
 
 		case OP_EQUAL: {
-			bluValue right = bluPop(vm);
-			bluValue left = bluPop(vm);
+			bluValue right = POP();
+			bluValue left = POP();
 
 			bool equal = bluValuesEqual(left, right);
 
-			bluPush(vm, BOOL_VAL(equal));
+			PUSH(BOOL_VAL(equal));
 			break;
 		}
 
 		case OP_NOT_EQUAL: {
-			bluValue right = bluPop(vm);
-			bluValue left = bluPop(vm);
+			bluValue right = POP();
+			bluValue left = POP();
 
 			bool notEqual = !bluValuesEqual(left, right);
 
-			bluPush(vm, BOOL_VAL(notEqual));
+			PUSH(BOOL_VAL(notEqual));
 			break;
 		}
 
@@ -340,13 +357,13 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_ADD: {
-			if (IS_STRING(bluPeek(vm, 0)) && IS_STRING(bluPeek(vm, 1))) {
+			if (IS_STRING(PEEK(0)) && IS_STRING(PEEK(1))) {
 				concatenate(vm);
-			} else if (IS_NUMBER(bluPeek(vm, 0)) && IS_NUMBER(bluPeek(vm, 1))) {
-				double left = AS_NUMBER(bluPop(vm));
-				double right = AS_NUMBER(bluPop(vm));
+			} else if (IS_NUMBER(PEEK(0)) && IS_NUMBER(PEEK(1))) {
+				double left = AS_NUMBER(POP());
+				double right = AS_NUMBER(POP());
 
-				bluPush(vm, NUMBER_VAL(left + right));
+				PUSH(NUMBER_VAL(left + right));
 			} else {
 				runtimeError(vm, "Operands must be both numbers or strings.");
 			}
@@ -360,17 +377,17 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_REMINDER: {
-			if (!IS_NUMBER(bluPeek(vm, 0)) || !IS_NUMBER(bluPeek(vm, 1))) {
+			if (!IS_NUMBER(PEEK(0)) || !IS_NUMBER(PEEK(1))) {
 				runtimeError(vm, "Operands must be numbers.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
-			bluValue right = bluPop(vm);
-			bluValue left = bluPop(vm);
+			bluValue right = POP();
+			bluValue left = POP();
 
 			double result = (int)AS_NUMBER(left) % (int)AS_NUMBER(right);
 
-			bluPush(vm, NUMBER_VAL(result));
+			PUSH(NUMBER_VAL(result));
 			break;
 		}
 
@@ -385,28 +402,28 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_NOT: {
-			bluValue value = bluPop(vm);
+			bluValue value = POP();
 
-			bluPush(vm, BOOL_VAL(bluIsFalsey(value)));
+			PUSH(BOOL_VAL(bluIsFalsey(value)));
 			break;
 		}
 
 		case OP_NEGATE: {
-			if (!IS_NUMBER(bluPeek(vm, 0))) {
+			if (!IS_NUMBER(PEEK(0))) {
 				runtimeError(vm, "Operand must be a number.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
-			double number = AS_NUMBER(bluPop(vm));
+			double number = AS_NUMBER(POP());
 
-			bluPush(vm, NUMBER_VAL(-number));
+			PUSH(NUMBER_VAL(-number));
 
 			break;
 		}
 
 		case OP_CLOSURE: {
 			bluObjFunction* function = AS_FUNCTION(READ_CONSTANT());
-			bluPush(vm, OBJ_VAL(function));
+			PUSH(OBJ_VAL(function));
 
 			for (int32_t i = 0; i < function->upvalues.count; i++) {
 				bool isLocal = READ_BYTE();
@@ -414,7 +431,7 @@ static bluInterpretResult run(bluVM* vm) {
 
 				if (isLocal) {
 					// Make an new upvalue to close over the parent's local variable.
-					function->upvalues.data[i] = captureUpvalue(vm, frame->slots + index);
+					function->upvalues.data[i] = captureUpvalue(vm, slots + index);
 				} else {
 					// Use the same upvalue as the current call frame.
 					function->upvalues.data[i] = frame->function->upvalues.data[index];
@@ -426,16 +443,16 @@ static bluInterpretResult run(bluVM* vm) {
 
 		case OP_CLOSE_OPVALUE: {
 			closeUpvalues(vm, vm->stackTop - 1);
-			bluPop(vm);
+			DROP();
 			break;
 		}
 
 		case OP_RETURN: {
-			bluValue result = bluPop(vm);
-
-			closeUpvalues(vm, frame->slots);
-
+			bluValue result = POP();
 			vm->frameCount--;
+
+			closeUpvalues(vm, slots);
+
 			if (vm->frameCount == 0) {
 #if DEBUG
 				if (vm->stackTop - vm->stack != 0) {
@@ -446,23 +463,24 @@ static bluInterpretResult run(bluVM* vm) {
 				return INTERPRET_OK;
 			}
 
-			vm->stackTop = frame->slots;
-			bluPush(vm, result);
+			vm->stackTop = slots;
 
-			frame = &vm->frames[vm->frameCount - 1];
+			PUSH(result);
+
+			LOAD_FRAME();
 			break;
 		}
 
 		case OP_ASSERT: {
 #ifdef DEBUG
-			bluValue value = bluPop(vm);
+			bluValue value = POP();
 
 			if (bluIsFalsey(value)) {
 				runtimeError(vm, "Assertion failed.");
 				return INTERPRET_ASSERTION_ERROR;
 			}
 #else
-			bluPop(vm);
+			DROP();
 #endif
 
 			break;
