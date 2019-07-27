@@ -66,12 +66,18 @@ static void help() {
 	printf("%s %s\n", "blu", BLU_VERSION_STR);
 }
 
+static void version() {
+	printf("%s %s\n", "blu", BLU_VERSION_STR);
+}
+
 int main(int argc, const char* argv[]) {
 	if (argc == 1) {
 		repl();
 	} else if (argc == 2) {
 		if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
 			help();
+		} else if (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0) {
+			version();
 		} else {
 			runFile(argv[1]);
 		}

@@ -183,7 +183,11 @@ run: $(BIN_NAME)
 # Runs tests
 .PHONY: test
 test: debug
-	@bash test.sh
+	@bash scripts/test.sh
+
+.PHONY: bench
+bench: release
+	@bash scripts/bench.sh
 
 # Installs to the set path
 .PHONY: install

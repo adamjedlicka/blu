@@ -4,4 +4,4 @@ def fib(x)
     return fib(x - 2) + fib(x - 1)
 end
 
-puts fib 35
+fib(35)

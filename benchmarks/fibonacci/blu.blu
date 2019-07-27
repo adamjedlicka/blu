@@ -4,4 +4,4 @@ fn fib(x) {
     return fib(x - 2) + fib(x - 1)
 }
 
-echo fib(35)
+fib(35)
