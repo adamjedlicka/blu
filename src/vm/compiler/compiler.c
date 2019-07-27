@@ -230,6 +230,14 @@ static uint16_t identifierConstant(bluCompiler* compiler, bluToken* name) {
 	return makeConstant(compiler, OBJ_VAL(bluCopyString(compiler->vm, name->start, name->length)));
 }
 
+static bluToken syntheticToken(bluCompiler* compiler, const char* text) {
+	bluToken token;
+	token.start = text;
+	token.length = (uint8_t)strlen(text);
+
+	return token;
+}
+
 static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t scopeDepth, bluFunctionType type);
 static bluObjFunction* endCompiler(bluCompiler* compiler);
 static void freeCompiler(bluCompiler* compiler);
@@ -802,11 +810,83 @@ static void fnDeclaration(bluCompiler* compiler) {
 	defineVariable(compiler, name);
 }
 
+static void method(bluCompiler* compiler) {
+	consume(compiler, TOKEN_IDENTIFIER, "Expect method name.");
+	uint16_t name = identifierConstant(compiler, &compiler->parser->previous);
+
+	bluFunctionType type = TYPE_METHOD;
+	if (compiler->parser->previous.length == 6 && memcmp(compiler->parser->previous.start, "__init", 6) == 0) {
+		type = TYPE_INITIALIZER;
+	}
+
+	function(compiler, type);
+
+	emitByte(compiler, OP_METHOD);
+	emitShort(compiler, name);
+}
+
+static void classDeclaration(bluCompiler* compiler) {
+	uint16_t name = parseVariable(compiler, "Expect class name.");
+	bluToken className = compiler->parser->previous;
+
+	emitByte(compiler, OP_CLASS);
+	emitShort(compiler, name);
+	defineVariable(compiler, name);
+
+	bluClassCompiler classCompiler;
+	classCompiler.name = className;
+	classCompiler.hasSuperClass = false;
+	classCompiler.enclosing = compiler->classCompiler;
+
+	compiler->classCompiler = &classCompiler;
+
+	if (match(compiler, TOKEN_LESS)) {
+		consume(compiler, TOKEN_IDENTIFIER, "Expect superclass name.");
+
+		if (identifiersEqual(&className, &compiler->parser->previous)) {
+			error(compiler, "A class cannot inherit from itself.");
+		}
+
+		classCompiler.hasSuperClass = true;
+
+		beginScope(compiler);
+
+		// Store the superclass in a local variable named "super".
+		variable(compiler, false);
+		addLocal(compiler, syntheticToken(compiler, "super"));
+		defineVariable(compiler, 0);
+
+		namedVariable(compiler, className, false);
+		emitByte(compiler, OP_INHERIT);
+	}
+
+	consume(compiler, TOKEN_LEFT_BRACE, "Expect '{' before class body.");
+
+	while (!check(compiler, TOKEN_RIGHT_BRACE) && !check(compiler, TOKEN_EOF)) {
+		if (match(compiler, TOKEN_FN)) {
+			namedVariable(compiler, className, false);
+			method(compiler);
+		} else {
+			errorAtCurrent(compiler, "Expect method declaration.");
+		}
+	}
+
+	consume(compiler, TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
+
+	if (classCompiler.hasSuperClass) {
+		endScope(compiler);
+	}
+
+	compiler->classCompiler = classCompiler.enclosing;
+}
+
 static void declaration(bluCompiler* compiler) {
 	if (match(compiler, TOKEN_VAR)) {
 		varDeclaration(compiler);
 	} else if (match(compiler, TOKEN_FN)) {
 		fnDeclaration(compiler);
+	} else if (match(compiler, TOKEN_CLASS)) {
+		classDeclaration(compiler);
 	} else {
 		statement(compiler);
 	}
@@ -845,6 +925,8 @@ static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t s
 		compiler->vm = enclosing->vm;
 		compiler->parser = enclosing->parser;
 
+		compiler->classCompiler = enclosing->classCompiler;
+
 		compiler->file = enclosing->file;
 	}
 
@@ -862,6 +944,7 @@ static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t s
 	switch (type) {
 
 	case TYPE_FUNCTION:
+	case TYPE_METHOD:
 	case TYPE_INITIALIZER: {
 		bluToken previous = compiler->parser->previous;
 		compiler->function->name = bluCopyString(compiler->vm, previous.start, previous.length);
@@ -879,10 +962,15 @@ static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t s
 	local.depth = compiler->scopeDepth;
 	local.isUpvalue = false;
 
-	// TODO : Other function types
-	// In a function, it holds the function, but cannot be references, so has no name.
-	local.name.start = "";
-	local.name.length = 0;
+	if (type == TYPE_METHOD || type == TYPE_INITIALIZER) {
+		// In a method, it holds the receiver, "@".
+		local.name.start = "@";
+		local.name.length = 1;
+	} else {
+		// In a function, it holds the function, but cannot be references, so has no name.
+		local.name.start = "";
+		local.name.length = 0;
+	}
 
 	bluLocalBufferWrite(&compiler->locals, local);
 }
@@ -908,6 +996,7 @@ bluObjFunction* bluCompile(bluVM* vm, const char* source, const char* file) {
 	bluCompiler compiler;
 	compiler.vm = vm;
 	compiler.parser = &parser;
+	compiler.classCompiler = NULL;
 	compiler.file = file;
 	initCompiler(&compiler, NULL, 0, TYPE_TOP_LEVEL);
 

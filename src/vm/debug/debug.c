@@ -87,6 +87,7 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
 	case OP_NOT: return simpleInstruction("OP_NOT", offset);
 	case OP_NEGATE: return simpleInstruction("OP_NEGATE", offset);
 
+	case OP_CLOSE_OPVALUE: return simpleInstruction("OP_CLOSE_OPVALUE", offset);
 	case OP_CLOSURE: {
 		uint16_t slot = ((chunk->code.data[offset + 1] << 8) & 0xff) | (chunk->code.data[offset + 2] & 0xff);
 		offset += 3;
@@ -106,7 +107,9 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
 		return offset;
 	}
 
-	case OP_CLOSE_OPVALUE: return simpleInstruction("OP_CLOSE_OPVALUE", offset);
+	case OP_CLASS: return shortInstruction("OP_CLASS", chunk, offset);
+	case OP_INHERIT: return simpleInstruction("OP_INHERIT", offset);
+	case OP_METHOD: return shortInstruction("OP_METHOD", chunk, offset);
 
 	case OP_RETURN: return simpleInstruction("OP_RETURN", offset);
 

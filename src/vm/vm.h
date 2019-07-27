@@ -28,6 +28,8 @@ struct bluVM {
 
 	bluObjUpvalue* openUpvalues;
 
+	bluObjString* stringInitializer;
+
 	bluObj* objects;
 
 	size_t bytesAllocated;

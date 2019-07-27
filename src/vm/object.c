@@ -52,6 +52,16 @@ bluObjString* bluCopyString(bluVM* vm, const char* chars, int32_t length) {
 	return allocateString(vm, heapChars, length, hash);
 }
 
+bluObjClass* bluNewClass(bluVM* vm, bluObjString* name) {
+	bluObjClass* class = (bluObjClass*)allocateObject(vm, sizeof(bluObjClass), OBJ_CLASS);
+	class->superclass = NULL;
+	class->name = name;
+
+	bluTableInit(vm, &class->methods);
+
+	return class;
+}
+
 bluObjFunction* bluNewFunction(bluVM* vm) {
 	bluObjFunction* function = (bluObjFunction*)allocateObject(vm, sizeof(bluObjFunction), OBJ_FUNCTION);
 	function->arity = 0;
@@ -61,6 +71,15 @@ bluObjFunction* bluNewFunction(bluVM* vm) {
 	bluObjUpvalueBufferInit(&function->upvalues);
 
 	return function;
+}
+
+bluObjInstance* newInstance(bluVM* vm, bluObjClass* class) {
+	bluObjInstance* instance = (bluObjInstance*)allocateObject(vm, sizeof(bluObjInstance), OBJ_INSTANCE);
+	instance->class = class;
+
+	bluTableInit(vm, &instance->fields);
+
+	return instance;
 }
 
 bluObjUpvalue* newUpvalue(bluVM* vm, bluValue* slot) {
@@ -88,12 +107,22 @@ void bluPrintObject(bluValue value) {
 
 	switch (OBJ_TYPE(value)) {
 
+	case OBJ_CLASS: {
+		printf("<class %s>", AS_CLASS(value)->name->chars);
+		break;
+	}
+
 	case OBJ_FUNCTION: {
 		if (AS_FUNCTION(value)->name == NULL) {
 			printf("<anonymous fn>");
 		} else {
 			printf("<fn %s>", AS_FUNCTION(value)->name->chars);
 		}
+		break;
+	}
+
+	case OBJ_INSTANCE: {
+		printf("<instance of %s>", AS_INSTANCE(value)->class->name->chars);
 		break;
 	}
 

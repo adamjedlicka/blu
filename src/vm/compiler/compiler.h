@@ -31,13 +31,23 @@ typedef enum {
 	TYPE_TOP_LEVEL,
 	TYPE_FUNCTION,
 	TYPE_ANONYMOUS,
+	TYPE_METHOD,
 	TYPE_INITIALIZER,
 } bluFunctionType;
+
+typedef struct bluClassCompiler {
+	struct bluClassCompiler* enclosing;
+
+	bluToken name;
+	bool hasSuperClass;
+} bluClassCompiler;
 
 typedef struct bluCompiler {
 	bluVM* vm;
 	bluParser* parser;
 	struct bluCompiler* enclosing;
+
+	bluClassCompiler* classCompiler;
 
 	const char* file;
 

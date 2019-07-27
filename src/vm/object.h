@@ -3,24 +3,34 @@
 
 #include "blu.h"
 #include "compiler/chunk.h"
+#include "table.h"
 #include "value.h"
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
+#define IS_CLASS(value) bluIsObjType(value, OBJ_CLASS)
 #define IS_FUNCTION(value) bluIsObjType(value, OBJ_FUNCTION)
+#define IS_INSTANCE(value) bluIsObjType(value, OBJ_INSTANCE)
 #define IS_STRING(value) bluIsObjType(value, OBJ_STRING)
 
-#define AS_CSTRING(value) (((bluObjString*)AS_OBJ(value))->chars)
+#define AS_CLASS(value) ((bluObjClass*)AS_OBJ(value))
 #define AS_FUNCTION(value) ((bluObjFunction*)AS_OBJ(value))
+#define AS_INSTANCE(value) ((bluObjInstance*)AS_OBJ(value))
 #define AS_STRING(value) ((bluObjString*)AS_OBJ(value))
 
+#define AS_CSTRING(value) (((bluObjString*)AS_OBJ(value))->chars)
+
+typedef struct bluObjClass bluObjClass;
 typedef struct bluObjFunction bluObjFunction;
+typedef struct bluObjInstance bluObjInstance;
 typedef struct bluObjUpvalue bluObjUpvalue;
 
 DECLARE_BUFFER(bluObjUpvalue, bluObjUpvalue*);
 
 typedef enum {
+	OBJ_CLASS,
 	OBJ_FUNCTION,
+	OBJ_INSTANCE,
 	OBJ_STRING,
 	OBJ_UPVALUE,
 } bluObjType;
@@ -32,11 +42,11 @@ struct bluObj {
 	bluObj* next;
 };
 
-struct bluObjString {
+struct bluObjClass {
 	bluObj obj;
-	int32_t length;
-	char* chars;
-	int32_t hash;
+	bluObjString* name;
+	bluObjClass* superclass;
+	bluTable methods;
 };
 
 struct bluObjFunction {
@@ -45,6 +55,19 @@ struct bluObjFunction {
 	bluChunk chunk;
 	bluObjUpvalueBuffer upvalues;
 	bluObjString* name;
+};
+
+struct bluObjInstance {
+	bluObj obj;
+	bluObjClass* class;
+	bluTable fields;
+};
+
+struct bluObjString {
+	bluObj obj;
+	int32_t length;
+	char* chars;
+	int32_t hash;
 };
 
 struct bluObjUpvalue {
@@ -61,7 +84,9 @@ struct bluObjUpvalue {
 	bluObjUpvalue* next;
 };
 
+bluObjClass* bluNewClass(bluVM* vm, bluObjString* name);
 bluObjFunction* bluNewFunction(bluVM* vm);
+bluObjInstance* newInstance(bluVM* vm, bluObjClass* class);
 bluObjUpvalue* newUpvalue(bluVM* vm, bluValue* slot);
 
 bluObjString* bluCopyString(bluVM* vm, const char* chars, int32_t length);

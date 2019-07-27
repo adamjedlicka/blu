@@ -87,6 +87,24 @@ static bool callValue(bluVM* vm, bluValue callee, int8_t argCount) {
 
 	switch (OBJ_TYPE(callee)) {
 
+	case OBJ_CLASS: {
+		bluObjClass* class = AS_CLASS(callee);
+
+		// Create the instance.
+		vm->stackTop[-argCount - 1] = OBJ_VAL(newInstance(vm, class));
+
+		// Call the initializer, if there is one.
+		bluValue initializer;
+		if (bluTableGet(vm, &class->methods, vm->stringInitializer, &initializer)) {
+			return call(vm, AS_FUNCTION(initializer), argCount);
+		} else if (argCount != 0) {
+			runtimeError(vm, "Expected 0 arguments but got %d.", argCount);
+			return false;
+		}
+
+		return true;
+	}
+
 	case OBJ_FUNCTION: {
 		return call(vm, AS_FUNCTION(callee), argCount);
 	}
@@ -145,6 +163,12 @@ static void closeUpvalues(bluVM* vm, bluValue* last) {
 		// Pop it off the open upvalue list.
 		vm->openUpvalues = upvalue->next;
 	}
+}
+
+static void defineMethod(bluVM* vm, bluObjString* name) {
+	bluValue method = bluPop(vm);
+	bluObjClass* class = AS_CLASS(bluPop(vm));
+	bluTableSet(vm, &class->methods, name, method);
 }
 
 static bluInterpretResult run(bluVM* vm) {
@@ -406,6 +430,12 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
+		case OP_CLOSE_OPVALUE: {
+			closeUpvalues(vm, vm->stackTop - 1);
+			DROP();
+			break;
+		}
+
 		case OP_CLOSURE: {
 			bluObjFunction* function = AS_FUNCTION(READ_CONSTANT());
 			PUSH(OBJ_VAL(function));
@@ -426,9 +456,26 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
-		case OP_CLOSE_OPVALUE: {
-			closeUpvalues(vm, vm->stackTop - 1);
-			DROP();
+		case OP_CLASS: {
+			PUSH(OBJ_VAL(bluNewClass(vm, READ_STRING())));
+			break;
+		}
+
+		case OP_INHERIT: {
+			bluValue superclass = PEEK(1);
+			if (!IS_CLASS(superclass)) {
+				runtimeError(vm, "Superclass must be a class.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			bluObjClass* subclass = AS_CLASS(POP());
+			subclass->superclass = AS_CLASS(superclass);
+
+			break;
+		}
+
+		case OP_METHOD: {
+			defineMethod(vm, READ_STRING());
 			break;
 		}
 
@@ -501,8 +548,9 @@ bluVM* bluNew() {
 	bluTableInit(vm, &vm->strings);
 
 	vm->openUpvalues = NULL;
-
 	vm->objects = NULL;
+
+	vm->stringInitializer = bluCopyString(vm, "__init", 6);
 
 	vm->bytesAllocated = 0;
 	vm->nextGC = 1024 * 1024;

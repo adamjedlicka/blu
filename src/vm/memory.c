@@ -16,11 +16,25 @@ static void freeObject(bluVM* vm, bluObj* object) {
 
 	switch (object->type) {
 
+	case OBJ_CLASS: {
+		bluObjClass* class = (bluObjClass*)object;
+		bluTableFree(vm, &class->methods);
+		bluDeallocate(vm, class, sizeof(bluObjClass));
+		break;
+	}
+
 	case OBJ_FUNCTION: {
 		bluObjFunction* function = (bluObjFunction*)object;
 		bluChunkFree(&function->chunk);
 		bluObjUpvalueBufferFree(&function->upvalues);
 		bluDeallocate(vm, function, sizeof(bluObjFunction));
+		break;
+	}
+
+	case OBJ_INSTANCE: {
+		bluObjInstance* instance = (bluObjInstance*)object;
+		bluTableFree(vm, &instance->fields);
+		bluDeallocate(vm, instance, sizeof(bluObjInstance));
 		break;
 	}
 
@@ -69,10 +83,24 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 
 	switch (object->type) {
 
+	case OBJ_CLASS: {
+		bluObjClass* class = (bluObjClass*)class;
+		bluGrayObject(vm, (bluObj*)class->name);
+		bluGrayTable(vm, &class->methods);
+		break;
+	}
+
 	case OBJ_FUNCTION: {
 		bluObjFunction* function = (bluObjFunction*)object;
 		bluGrayObject(vm, (bluObj*)function->name);
 		bluGrayValueBuffer(vm, &function->chunk.constants);
+		break;
+	}
+
+	case OBJ_INSTANCE: {
+		bluObjInstance* instance = (bluObjInstance*)object;
+		bluGrayObject(vm, (bluObj*)instance->class);
+		bluGrayTable(vm, &instance->fields);
 		break;
 	}
 
@@ -146,6 +174,8 @@ void bluCollectGarbage(bluVM* vm) {
 	}
 
 	bluGrayTable(vm, &vm->globals);
+
+	bluGrayObject(vm, (bluObj*)vm->stringInitializer);
 
 	tableDeleteWhite(vm, &vm->strings);
 
