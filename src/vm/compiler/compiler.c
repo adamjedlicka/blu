@@ -406,6 +406,11 @@ static void literal(bluCompiler* compiler, bool canAssign) {
 	}
 }
 
+static void grouping(bluCompiler* compiler, bool canAssign) {
+	expression(compiler);
+	consume(compiler, TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
+}
+
 static void and (bluCompiler * compiler, bool canAssign) {
 	int32_t endJump = emitJump(compiler, OP_JUMP_IF_FALSE);
 	emitByte(compiler, OP_POP);
@@ -479,17 +484,17 @@ static void at(bluCompiler* compiler, bool canAssign) {
 }
 
 ParseRule rules[] = {
-	{at, NULL, PREC_NONE},   // TOKEN_AT
-	{NULL, NULL, PREC_NONE}, // TOKEN_COLON
-	{NULL, NULL, PREC_NONE}, // TOKEN_COMMA
-	{NULL, dot, PREC_CALL},  // TOKEN_DOT
-	{NULL, NULL, PREC_NONE}, // TOKEN_LEFT_BRACE
-	{NULL, NULL, PREC_CALL}, // TOKEN_LEFT_BACKET
-	{NULL, call, PREC_CALL}, // TOKEN_LEFT_PAREN
-	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_BRACE
-	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_BRACKET
-	{NULL, NULL, PREC_NONE}, // TOKEN_RIGHT_PAREN
-	{NULL, NULL, PREC_NONE}, // TOKEN_SEMICOLON
+	{at, NULL, PREC_NONE},		 // TOKEN_AT
+	{NULL, NULL, PREC_NONE},	 // TOKEN_COLON
+	{NULL, NULL, PREC_NONE},	 // TOKEN_COMMA
+	{NULL, dot, PREC_CALL},		 // TOKEN_DOT
+	{NULL, NULL, PREC_NONE},	 // TOKEN_LEFT_BRACE
+	{NULL, NULL, PREC_CALL},	 // TOKEN_LEFT_BACKET
+	{grouping, call, PREC_CALL}, // TOKEN_LEFT_PAREN
+	{NULL, NULL, PREC_NONE},	 // TOKEN_RIGHT_BRACE
+	{NULL, NULL, PREC_NONE},	 // TOKEN_RIGHT_BRACKET
+	{NULL, NULL, PREC_NONE},	 // TOKEN_RIGHT_PAREN
+	{NULL, NULL, PREC_NONE},	 // TOKEN_SEMICOLON
 
 	{NULL, binary, PREC_EQUALITY},   // TOKEN_BANG_EQUAL
 	{unary, NULL, PREC_NONE},		 // TOKEN_BANG
