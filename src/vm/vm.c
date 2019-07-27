@@ -116,6 +116,44 @@ static bool callValue(bluVM* vm, bluValue callee, int8_t argCount) {
 	}
 }
 
+static bool invokeFromClass(bluVM* vm, bluObjClass* class, bluObjString* name, int8_t argCount) {
+	// Look for the method.
+	bluValue method;
+	if (!bluTableGet(vm, &class->methods, name, &method)) {
+		if (class->superclass != NULL && invokeFromClass(vm, class->superclass, name, argCount)) {
+			return true;
+		} else {
+			runtimeError(vm, "Undefined property '%s'.", name->chars);
+			return false;
+		}
+	}
+
+	// TODO : Natives
+
+	return call(vm, AS_FUNCTION(method), argCount);
+}
+
+static bool invoke(bluVM* vm, bluObjString* name, int8_t argCount) {
+	bluValue receiver = bluPeek(vm, argCount);
+
+	// TODO : Invoking on non-instances (for example: 3.toString())
+	if (!IS_INSTANCE(receiver)) {
+		runtimeError(vm, "Can only call methods on instances.");
+		return false;
+	}
+
+	bluObjInstance* instance = AS_INSTANCE(receiver);
+
+	// First we look for a field which may shadow a method.
+	bluValue value;
+	if (bluTableGet(vm, &instance->fields, name, &value)) {
+		vm->stackTop[-argCount] = value;
+		return callValue(vm, value, argCount);
+	}
+
+	return invokeFromClass(vm, instance->obj.class, name, argCount);
+}
+
 // Captures the local variable [local] into an [Upvalue]. If that local is already in an upvalue, the existing one is
 // used. (This is important to ensure that multiple closures closing over the same variable actually see the same
 // variable.) Otherwise, it creates a new open upvalue and adds it to the VM's list of upvalues.
@@ -195,6 +233,13 @@ static bluInterpretResult run(bluVM* vm) {
 
 	LOAD_FRAME();
 
+#define RUNTIME_ERROR(...)                                                                                             \
+	do {                                                                                                               \
+		STORE_FRAME();                                                                                                 \
+		runtimeError(vm, __VA_ARGS__);                                                                                 \
+		LOAD_FRAME();                                                                                                  \
+	} while (false)
+
 	while (true) {
 
 		if (vm->shouldGC) bluCollectGarbage(vm);
@@ -256,7 +301,7 @@ static bluInterpretResult run(bluVM* vm) {
 			bluValue value;
 
 			if (!bluTableGet(vm, &vm->globals, name, &value)) {
-				runtimeError(vm, "Undefined global variable '%s'.", name->chars);
+				RUNTIME_ERROR("Undefined global variable '%s'.", name->chars);
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
@@ -269,7 +314,7 @@ static bluInterpretResult run(bluVM* vm) {
 
 			if (bluTableSet(vm, &vm->globals, name, PEEK(0))) {
 				bluTableDelete(vm, &vm->globals, name);
-				runtimeError(vm, "Undefined global variable '%s'.", name->chars);
+				RUNTIME_ERROR("Undefined global variable '%s'.", name->chars);
 				return INTERPRET_RUNTIME_ERROR;
 			}
 			break;
@@ -278,12 +323,77 @@ static bluInterpretResult run(bluVM* vm) {
 		case OP_GET_UPVALUE: {
 			uint16_t slot = READ_SHORT();
 			PUSH(*frame->function->upvalues.data[slot]->value);
+
 			break;
 		}
 
 		case OP_SET_UPVALUE: {
 			uint16_t slot = READ_SHORT();
 			*frame->function->upvalues.data[slot]->value = PEEK(0);
+			break;
+		}
+
+		case OP_GET_PROPERTY: {
+			if (!IS_INSTANCE(PEEK(0))) {
+				RUNTIME_ERROR("Only instances have properties.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			bluObjInstance* instance = AS_INSTANCE(POP());
+			bluObjString* name = READ_STRING();
+
+			bluValue value;
+			if (bluTableGet(vm, &instance->fields, name, &value)) {
+				PUSH(value);
+				break;
+			}
+
+			// TODO : Method binding.
+
+			break;
+		}
+
+		case OP_SET_PROPERTY: {
+			if (!IS_INSTANCE(PEEK(1))) {
+				RUNTIME_ERROR("Only instances have fields.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			bluObjInstance* instance = AS_INSTANCE(PEEK(1));
+			bluTableSet(vm, &instance->fields, READ_STRING(), PEEK(0));
+			bluValue value = POP();
+			DROP(); // Instance
+			PUSH(value);
+
+			break;
+		}
+
+		case OP_CALL: {
+			uint8_t argCount = READ_BYTE();
+
+			STORE_FRAME();
+
+			if (!callValue(vm, PEEK(argCount), argCount)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			LOAD_FRAME();
+
+			break;
+		}
+
+		case OP_INVOKE: {
+			uint8_t argCount = READ_BYTE();
+			bluObjString* name = READ_STRING();
+
+			STORE_FRAME();
+
+			if (!invoke(vm, name, argCount)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			LOAD_FRAME();
+
 			break;
 		}
 
@@ -308,20 +418,6 @@ static bluInterpretResult run(bluVM* vm) {
 		case OP_LOOP: {
 			uint16_t offset = READ_SHORT();
 			ip -= offset;
-			break;
-		}
-
-		case OP_CALL: {
-			uint8_t argCount = READ_BYTE();
-
-			STORE_FRAME();
-
-			if (!callValue(vm, PEEK(argCount), argCount)) {
-				return INTERPRET_RUNTIME_ERROR;
-			}
-
-			LOAD_FRAME();
-
 			break;
 		}
 
@@ -374,7 +470,8 @@ static bluInterpretResult run(bluVM* vm) {
 
 				PUSH(NUMBER_VAL(left + right));
 			} else {
-				runtimeError(vm, "Operands must be both numbers or strings.");
+				RUNTIME_ERROR("Operands must be both numbers or strings.");
+				return INTERPRET_RUNTIME_ERROR;
 			}
 
 			break;
@@ -387,7 +484,7 @@ static bluInterpretResult run(bluVM* vm) {
 
 		case OP_REMINDER: {
 			if (!IS_NUMBER(PEEK(0)) || !IS_NUMBER(PEEK(1))) {
-				runtimeError(vm, "Operands must be numbers.");
+				RUNTIME_ERROR("Operands must be numbers.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
@@ -419,7 +516,7 @@ static bluInterpretResult run(bluVM* vm) {
 
 		case OP_NEGATE: {
 			if (!IS_NUMBER(PEEK(0))) {
-				runtimeError(vm, "Operand must be a number.");
+				RUNTIME_ERROR("Operand must be a number.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
@@ -464,7 +561,7 @@ static bluInterpretResult run(bluVM* vm) {
 		case OP_INHERIT: {
 			bluValue superclass = PEEK(1);
 			if (!IS_CLASS(superclass)) {
-				runtimeError(vm, "Superclass must be a class.");
+				RUNTIME_ERROR("Superclass must be a class.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
@@ -488,7 +585,7 @@ static bluInterpretResult run(bluVM* vm) {
 			if (vm->frameCount == 0) {
 #if DEBUG
 				if (vm->stackTop - vm->stack != 0) {
-					runtimeError(vm, "Stack not empty!");
+					RUNTIME_ERROR("Stack not empty!");
 					return INTERPRET_RUNTIME_ERROR;
 				}
 #endif
@@ -508,7 +605,7 @@ static bluInterpretResult run(bluVM* vm) {
 			bluValue value = POP();
 
 			if (bluIsFalsey(value)) {
-				runtimeError(vm, "Assertion failed.");
+				RUNTIME_ERROR("Assertion failed.");
 				return INTERPRET_ASSERTION_ERROR;
 			}
 #else
@@ -519,7 +616,7 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		default: {
-			runtimeError(vm, "Unknown opcode.");
+			RUNTIME_ERROR("Unknown opcode.");
 			return INTERPRET_RUNTIME_ERROR;
 			break;
 		}

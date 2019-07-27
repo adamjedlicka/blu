@@ -81,6 +81,9 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 
 	object->isDark = true;
 
+	// TODO : Remove if when all objects have own class.
+	if (object->class != NULL) bluGrayObject(vm, (bluObj*)object->class);
+
 	switch (object->type) {
 
 	case OBJ_CLASS: {
@@ -99,7 +102,6 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 
 	case OBJ_INSTANCE: {
 		bluObjInstance* instance = (bluObjInstance*)object;
-		bluGrayObject(vm, (bluObj*)instance->class);
 		bluGrayTable(vm, &instance->fields);
 		break;
 	}

@@ -28,6 +28,13 @@ static int32_t shortInstruction(const char* name, bluChunk* chunk, int32_t offse
 	return offset + 3;
 }
 
+static int32_t invokeInstruction(const char* name, bluChunk* chunk, int32_t offset) {
+	uint8_t argCount = chunk->code.data[offset + 1];
+	uint16_t slot = ((chunk->code.data[offset + 2] << 8) & 0xff) | (chunk->code.data[offset + 3] & 0xff);
+	printf("%-16s %6d (%d)\n", name, slot, argCount);
+	return offset + 4;
+}
+
 static int32_t jumpInstruction(const char* name, bluChunk* chunk, int32_t offset) {
 	uint16_t slot = ((chunk->code.data[offset + 1] << 8) & 0xff) | (chunk->code.data[offset + 2] & 0xff);
 	printf("%-16s %6d (%d)\n", name, slot, slot + offset + 3);
@@ -65,13 +72,15 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
 	case OP_SET_GLOBAL: return constantInstruction("OP_SET_GLOBAL", chunk, offset);
 	case OP_GET_UPVALUE: return shortInstruction("OP_GET_UPVALUE", chunk, offset);
 	case OP_SET_UPVALUE: return shortInstruction("OP_SET_UPVALUE", chunk, offset);
+	case OP_GET_PROPERTY: return shortInstruction("OP_GET_PROPERTY", chunk, offset);
+	case OP_SET_PROPERTY: return shortInstruction("OP_SET_PROPERTY", chunk, offset);
 
+	case OP_CALL: return byteInstruction("OP_CALL", chunk, offset);
+	case OP_INVOKE: return invokeInstruction("OP_INVOKE", chunk, offset);
 	case OP_JUMP: return jumpInstruction("OP_JUMP", chunk, offset);
 	case OP_JUMP_IF_FALSE: return jumpInstruction("OP_JUMP_IF_FALSE", chunk, offset);
 	case OP_JUMP_IF_TRUE: return jumpInstruction("OP_JUMP_IF_TRUE", chunk, offset);
 	case OP_LOOP: return loopInstruction("OP_LOOP", chunk, offset);
-
-	case OP_CALL: return byteInstruction("OP_CALL", chunk, offset);
 
 	case OP_EQUAL: return simpleInstruction("OP_EQUAL", offset);
 	case OP_NOT_EQUAL: return simpleInstruction("OP_NOT_EQUAL", offset);

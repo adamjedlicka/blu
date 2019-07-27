@@ -208,15 +208,14 @@ static void emitLoop(bluCompiler* compiler, int32_t loopStart) {
 }
 
 static void emitReturn(bluCompiler* compiler) {
-	// TODO : Initializers
 	// An initializer automatically returns "@".
-	// if (compiler->type == TYPE_INITIALIZER) {
-	// 	emitBytes(OP_GET_LOCAL, 0);
-	// } else {
-	//  emitByte(compiler, OP_NIL);
-	// }
+	if (compiler->type == TYPE_INITIALIZER) {
+		emitByte(compiler, OP_GET_LOCAL);
+		emitShort(compiler, 0);
+	} else {
+		emitByte(compiler, OP_NIL);
+	}
 
-	emitByte(compiler, OP_NIL);
 	emitByte(compiler, OP_RETURN);
 }
 
@@ -449,11 +448,41 @@ static void call(bluCompiler* compiler, bool canAssign) {
 	emitBytes(compiler, OP_CALL, argCount);
 }
 
+static void dot(bluCompiler* compiler, bool canAssign) {
+	consume(compiler, TOKEN_IDENTIFIER, "Expect property name after '.'.");
+	uint16_t name = identifierConstant(compiler, &compiler->parser->previous);
+
+	if (canAssign && match(compiler, TOKEN_EQUAL)) {
+		expression(compiler);
+		emitByte(compiler, OP_SET_PROPERTY);
+		emitShort(compiler, name);
+	} else if (match(compiler, TOKEN_LEFT_PAREN)) {
+		uint8_t argCount = argumentList(compiler);
+		emitBytes(compiler, OP_INVOKE, argCount);
+		emitShort(compiler, name);
+	} else {
+		emitByte(compiler, OP_GET_PROPERTY);
+		emitShort(compiler, name);
+	}
+}
+
+static void at(bluCompiler* compiler, bool canAssign) {
+	if (compiler->classCompiler == NULL) {
+		error(compiler, "Cannot use '@' outside of a class.");
+		return;
+	}
+
+	variable(compiler, false);
+	if (check(compiler, TOKEN_IDENTIFIER)) {
+		dot(compiler, canAssign);
+	}
+}
+
 ParseRule rules[] = {
-	{NULL, NULL, PREC_NONE}, // TOKEN_AT
+	{at, NULL, PREC_NONE},   // TOKEN_AT
 	{NULL, NULL, PREC_NONE}, // TOKEN_COLON
 	{NULL, NULL, PREC_NONE}, // TOKEN_COMMA
-	{NULL, NULL, PREC_CALL}, // TOKEN_DOT
+	{NULL, dot, PREC_CALL},  // TOKEN_DOT
 	{NULL, NULL, PREC_NONE}, // TOKEN_LEFT_BRACE
 	{NULL, NULL, PREC_CALL}, // TOKEN_LEFT_BACKET
 	{NULL, call, PREC_CALL}, // TOKEN_LEFT_PAREN
@@ -976,8 +1005,11 @@ static void initCompiler(bluCompiler* compiler, bluCompiler* enclosing, int8_t s
 }
 
 static bluObjFunction* endCompiler(bluCompiler* compiler) {
-	// When last opcode is return, we don't need to emit another one.
-	if (compiler->function->chunk.code.data[compiler->function->chunk.code.count - 1] != OP_RETURN) {
+	if (compiler->function->chunk.code.count == 0) {
+		// We need to emit return when chunk is empty.
+		emitReturn(compiler);
+	} else if (compiler->function->chunk.code.data[compiler->function->chunk.code.count - 1] != OP_RETURN) {
+		// We need to emit return when last opcode of a chunk isn't a return.
 		emitReturn(compiler);
 	}
 

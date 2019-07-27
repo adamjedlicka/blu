@@ -37,6 +37,7 @@ typedef enum {
 
 struct bluObj {
 	bluObjType type;
+	bluObjClass* class;
 
 	bool isDark;
 	bluObj* next;
@@ -59,7 +60,6 @@ struct bluObjFunction {
 
 struct bluObjInstance {
 	bluObj obj;
-	bluObjClass* class;
 	bluTable fields;
 };
 

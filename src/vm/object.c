@@ -9,6 +9,7 @@ DEFINE_BUFFER(bluObjUpvalue, bluObjUpvalue*);
 static bluObj* allocateObject(bluVM* vm, size_t size, bluObjType type) {
 	bluObj* object = (bluObj*)bluAllocate(vm, size);
 	object->type = type;
+	object->class = NULL;
 	object->isDark = false;
 	object->next = vm->objects;
 
@@ -75,7 +76,7 @@ bluObjFunction* bluNewFunction(bluVM* vm) {
 
 bluObjInstance* newInstance(bluVM* vm, bluObjClass* class) {
 	bluObjInstance* instance = (bluObjInstance*)allocateObject(vm, sizeof(bluObjInstance), OBJ_INSTANCE);
-	instance->class = class;
+	instance->obj.class = class;
 
 	bluTableInit(vm, &instance->fields);
 
@@ -122,7 +123,7 @@ void bluPrintObject(bluValue value) {
 	}
 
 	case OBJ_INSTANCE: {
-		printf("<instance of %s>", AS_INSTANCE(value)->class->name->chars);
+		printf("<instance of %s>", AS_INSTANCE(value)->obj.class->name->chars);
 		break;
 	}
 
