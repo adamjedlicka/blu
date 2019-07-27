@@ -53,6 +53,14 @@ bluObjString* bluCopyString(bluVM* vm, const char* chars, int32_t length) {
 	return allocateString(vm, heapChars, length, hash);
 }
 
+bluObjBoundMethod* bluNewBoundMethod(bluVM* vm, bluValue receiver, bluObjFunction* function) {
+	bluObjBoundMethod* method = (bluObjBoundMethod*)allocateObject(vm, sizeof(bluObjBoundMethod), OBJ_BOUND_METHOD);
+	method->receiver = receiver;
+	method->function = function;
+
+	return method;
+}
+
 bluObjClass* bluNewClass(bluVM* vm, bluObjString* name) {
 	bluObjClass* class = (bluObjClass*)allocateObject(vm, sizeof(bluObjClass), OBJ_CLASS);
 	class->superclass = NULL;
@@ -107,6 +115,11 @@ bluObjString* bluTakeString(bluVM* vm, char* chars, int32_t length) {
 void bluPrintObject(bluValue value) {
 
 	switch (OBJ_TYPE(value)) {
+
+	case OBJ_BOUND_METHOD: {
+		printf("<method %s>", AS_BOUND_METHOD(value)->function->name->chars);
+		break;
+	}
 
 	case OBJ_CLASS: {
 		printf("<class %s>", AS_CLASS(value)->name->chars);

@@ -39,7 +39,7 @@ typedef struct bluClassCompiler {
 	struct bluClassCompiler* enclosing;
 
 	bluToken name;
-	bool hasSuperClass;
+	bool hasSuperclass;
 } bluClassCompiler;
 
 typedef struct bluCompiler {

@@ -16,6 +16,12 @@ static void freeObject(bluVM* vm, bluObj* object) {
 
 	switch (object->type) {
 
+	case OBJ_BOUND_METHOD: {
+		bluObjBoundMethod* boundMethod = (bluObjBoundMethod*)object;
+		bluDeallocate(vm, boundMethod, sizeof(bluObjBoundMethod));
+		break;
+	}
+
 	case OBJ_CLASS: {
 		bluObjClass* class = (bluObjClass*)object;
 		bluTableFree(vm, &class->methods);
@@ -86,8 +92,15 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 
 	switch (object->type) {
 
+	case OBJ_BOUND_METHOD: {
+		bluObjBoundMethod* boundMethod = (bluObjBoundMethod*)object;
+		bluGrayValue(vm, boundMethod->receiver);
+		bluGrayObject(vm, (bluObj*)boundMethod->function);
+		break;
+	}
+
 	case OBJ_CLASS: {
-		bluObjClass* class = (bluObjClass*)class;
+		bluObjClass* class = (bluObjClass*)object;
 		bluGrayObject(vm, (bluObj*)class->name);
 		bluGrayTable(vm, &class->methods);
 		break;

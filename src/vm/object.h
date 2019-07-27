@@ -8,11 +8,13 @@
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
+#define IS_BOUND_METHOD(value) bluIsObjType(value, OBJ_BOUND_METHOD)
 #define IS_CLASS(value) bluIsObjType(value, OBJ_CLASS)
 #define IS_FUNCTION(value) bluIsObjType(value, OBJ_FUNCTION)
 #define IS_INSTANCE(value) bluIsObjType(value, OBJ_INSTANCE)
 #define IS_STRING(value) bluIsObjType(value, OBJ_STRING)
 
+#define AS_BOUND_METHOD(value) ((bluObjBoundMethod*)AS_OBJ(value))
 #define AS_CLASS(value) ((bluObjClass*)AS_OBJ(value))
 #define AS_FUNCTION(value) ((bluObjFunction*)AS_OBJ(value))
 #define AS_INSTANCE(value) ((bluObjInstance*)AS_OBJ(value))
@@ -20,6 +22,7 @@
 
 #define AS_CSTRING(value) (((bluObjString*)AS_OBJ(value))->chars)
 
+typedef struct bluObjBoundMethod bluObjBoundMethod;
 typedef struct bluObjClass bluObjClass;
 typedef struct bluObjFunction bluObjFunction;
 typedef struct bluObjInstance bluObjInstance;
@@ -28,6 +31,7 @@ typedef struct bluObjUpvalue bluObjUpvalue;
 DECLARE_BUFFER(bluObjUpvalue, bluObjUpvalue*);
 
 typedef enum {
+	OBJ_BOUND_METHOD,
 	OBJ_CLASS,
 	OBJ_FUNCTION,
 	OBJ_INSTANCE,
@@ -41,6 +45,12 @@ struct bluObj {
 
 	bool isDark;
 	bluObj* next;
+};
+
+struct bluObjBoundMethod {
+	bluObj obj;
+	bluValue receiver;
+	bluObjFunction* function;
 };
 
 struct bluObjClass {
@@ -84,6 +94,7 @@ struct bluObjUpvalue {
 	bluObjUpvalue* next;
 };
 
+bluObjBoundMethod* bluNewBoundMethod(bluVM* vm, bluValue receiver, bluObjFunction* function);
 bluObjClass* bluNewClass(bluVM* vm, bluObjString* name);
 bluObjFunction* bluNewFunction(bluVM* vm);
 bluObjInstance* newInstance(bluVM* vm, bluObjClass* class);

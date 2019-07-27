@@ -87,6 +87,14 @@ static bool callValue(bluVM* vm, bluValue callee, int8_t argCount) {
 
 	switch (OBJ_TYPE(callee)) {
 
+	case OBJ_BOUND_METHOD: {
+		bluObjBoundMethod* boundMethod = AS_BOUND_METHOD(callee);
+
+		// Replace the bound method with the new receiver so it's in the right slot when the method is called.
+		vm->stackTop[-argCount - 1] = boundMethod->receiver;
+		return call(vm, boundMethod->function, argCount);
+	}
+
 	case OBJ_CLASS: {
 		bluObjClass* class = AS_CLASS(callee);
 
@@ -207,6 +215,19 @@ static void defineMethod(bluVM* vm, bluObjString* name) {
 	bluValue method = bluPop(vm);
 	bluObjClass* class = AS_CLASS(bluPop(vm));
 	bluTableSet(vm, &class->methods, name, method);
+}
+
+static bool bindMethod(bluVM* vm, bluObjClass* class, bluObjString* name) {
+	bluValue method;
+	if (!bluTableGet(vm, &class->methods, name, &method)) {
+		runtimeError(vm, "Undefined property '%s'.", name->chars);
+		return false;
+	}
+
+	bluObjBoundMethod* bound = bluNewBoundMethod(vm, bluPop(vm), AS_FUNCTION(method));
+	bluPush(vm, OBJ_VAL(bound));
+
+	return true;
 }
 
 static bluInterpretResult run(bluVM* vm) {
@@ -339,16 +360,19 @@ static bluInterpretResult run(bluVM* vm) {
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
-			bluObjInstance* instance = AS_INSTANCE(POP());
+			bluObjInstance* instance = AS_INSTANCE(PEEK(0));
 			bluObjString* name = READ_STRING();
 
 			bluValue value;
 			if (bluTableGet(vm, &instance->fields, name, &value)) {
+				DROP(); // Instance.
 				PUSH(value);
 				break;
 			}
 
-			// TODO : Method binding.
+			if (!bindMethod(vm, instance->obj.class, name)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
 
 			break;
 		}
@@ -364,6 +388,17 @@ static bluInterpretResult run(bluVM* vm) {
 			bluValue value = POP();
 			DROP(); // Instance
 			PUSH(value);
+
+			break;
+		}
+
+		case OP_GET_SUPER: {
+			bluObjString* name = READ_STRING();
+			bluObjClass* superclass = AS_CLASS(POP());
+
+			if (!bindMethod(vm, superclass, name)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
 
 			break;
 		}
@@ -389,6 +424,22 @@ static bluInterpretResult run(bluVM* vm) {
 			STORE_FRAME();
 
 			if (!invoke(vm, name, argCount)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			LOAD_FRAME();
+
+			break;
+		}
+
+		case OP_SUPER: {
+			uint8_t argCount = READ_BYTE();
+			bluObjString* name = READ_STRING();
+			bluObjClass* superclass = AS_CLASS(POP());
+
+			STORE_FRAME();
+
+			if (!invokeFromClass(vm, superclass, name, argCount)) {
 				return INTERPRET_RUNTIME_ERROR;
 			}
 

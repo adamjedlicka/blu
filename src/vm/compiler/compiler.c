@@ -483,6 +483,50 @@ static void at(bluCompiler* compiler, bool canAssign) {
 	}
 }
 
+static void pushSuperclass(bluCompiler* compiler) {
+	if (compiler->classCompiler == NULL) return;
+	namedVariable(compiler, syntheticToken(compiler, "super"), false);
+}
+
+static void super(bluCompiler* compiler, bool canAssign) {
+	if (compiler->classCompiler == NULL) {
+		error(compiler, "Cannot use 'super' outside of a class.");
+	} else if (!compiler->classCompiler->hasSuperclass) {
+		// TODO : Every class will have superclass 'Object'
+		error(compiler, "Cannot use 'super' in a class with no superclass.");
+	}
+
+	if (match(compiler, TOKEN_LEFT_PAREN)) {
+		namedVariable(compiler, syntheticToken(compiler, "@"), false);
+
+		uint8_t argCount = argumentList(compiler);
+
+		pushSuperclass(compiler);
+		emitBytes(compiler, OP_SUPER, argCount);
+		emitShort(compiler, makeConstant(compiler, OBJ_VAL(bluCopyString(compiler->vm, "__init", 6))));
+		return;
+	}
+
+	consume(compiler, TOKEN_DOT, "Expect '.' after 'super'.");
+	consume(compiler, TOKEN_IDENTIFIER, "Expect superclass method name.");
+	uint8_t name = identifierConstant(compiler, &compiler->parser->previous);
+
+	// Push the receiver.
+	namedVariable(compiler, syntheticToken(compiler, "@"), false);
+
+	if (match(compiler, TOKEN_LEFT_PAREN)) {
+		uint8_t argCount = argumentList(compiler);
+
+		pushSuperclass(compiler);
+		emitBytes(compiler, OP_SUPER, argCount);
+		emitShort(compiler, name);
+	} else {
+		pushSuperclass(compiler);
+		emitByte(compiler, OP_GET_SUPER);
+		emitShort(compiler, name);
+	}
+}
+
 ParseRule rules[] = {
 	{at, NULL, PREC_NONE},		 // TOKEN_AT
 	{NULL, NULL, PREC_NONE},	 // TOKEN_COLON
@@ -526,7 +570,7 @@ ParseRule rules[] = {
 	{literal, NULL, PREC_NONE}, // TOKEN_NIL
 	{NULL, or, PREC_OR},		// TOKEN_OR
 	{NULL, NULL, PREC_NONE},	// TOKEN_RETURN
-	{NULL, NULL, PREC_NONE},	// TOKEN_SUPER
+	{super, NULL, PREC_NONE},   // TOKEN_SUPER
 	{literal, NULL, PREC_NONE}, // TOKEN_TRUE
 	{NULL, NULL, PREC_NONE},	// TOKEN_VAR
 	{NULL, NULL, PREC_NONE},	// TOKEN_WHILE
@@ -869,7 +913,7 @@ static void classDeclaration(bluCompiler* compiler) {
 
 	bluClassCompiler classCompiler;
 	classCompiler.name = className;
-	classCompiler.hasSuperClass = false;
+	classCompiler.hasSuperclass = false;
 	classCompiler.enclosing = compiler->classCompiler;
 
 	compiler->classCompiler = &classCompiler;
@@ -881,7 +925,7 @@ static void classDeclaration(bluCompiler* compiler) {
 			error(compiler, "A class cannot inherit from itself.");
 		}
 
-		classCompiler.hasSuperClass = true;
+		classCompiler.hasSuperclass = true;
 
 		beginScope(compiler);
 
@@ -907,7 +951,7 @@ static void classDeclaration(bluCompiler* compiler) {
 
 	consume(compiler, TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
 
-	if (classCompiler.hasSuperClass) {
+	if (classCompiler.hasSuperclass) {
 		endScope(compiler);
 	}
 
