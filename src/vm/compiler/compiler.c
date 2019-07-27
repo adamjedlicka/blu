@@ -602,6 +602,7 @@ ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE},	// TOKEN_ASSERT
 	{NULL, NULL, PREC_NONE},	// TOKEN_BREAK
 	{NULL, NULL, PREC_NONE},	// TOKEN_CLASS
+	{NULL, NULL, PREC_NONE},	// TOKEN_ECHO
 	{NULL, NULL, PREC_NONE},	// TOKEN_ELSE
 	{literal, NULL, PREC_NONE}, // TOKEN_FALSE
 	{NULL, NULL, PREC_NONE},	// TOKEN_FN
@@ -850,6 +851,13 @@ static void returnStatement(bluCompiler* compiler) {
 	}
 }
 
+static void echoStatement(bluCompiler* compiler) {
+	expression(compiler);
+	emitByte(compiler, OP_ECHO);
+
+	expectNewlineOrSemicolon(compiler);
+}
+
 static void assertStatement(bluCompiler* compiler) {
 	expression(compiler);
 	emitByte(compiler, OP_ASSERT);
@@ -1092,6 +1100,8 @@ static void statement(bluCompiler* compiler) {
 		forStatement(compiler);
 	} else if (match(compiler, TOKEN_RETURN)) {
 		returnStatement(compiler);
+	} else if (match(compiler, TOKEN_ECHO)) {
+		echoStatement(compiler);
 	} else if (match(compiler, TOKEN_ASSERT)) {
 		assertStatement(compiler);
 	} else {

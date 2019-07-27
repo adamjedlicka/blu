@@ -127,6 +127,7 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
 	case OP_INHERIT: return simpleInstruction("OP_INHERIT", offset);
 	case OP_METHOD: return shortInstruction("OP_METHOD", chunk, offset);
 
+	case OP_ECHO: return simpleInstruction("OP_ECHO", offset);
 	case OP_RETURN: return simpleInstruction("OP_RETURN", offset);
 
 	case OP_ASSERT: return simpleInstruction("OP_ASSERT", offset);

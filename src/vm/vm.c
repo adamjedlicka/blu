@@ -707,6 +707,12 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
+		case OP_ECHO: {
+			bluPrintValue(POP());
+			printf("\n");
+			break;
+		}
+
 		case OP_RETURN: {
 			bluValue result = POP();
 			vm->frameCount--;

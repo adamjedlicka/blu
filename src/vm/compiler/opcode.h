@@ -53,6 +53,7 @@ typedef enum {
 	OP_INHERIT,
 	OP_METHOD,
 
+	OP_ECHO,
 	OP_RETURN,
 
 	OP_ASSERT,
