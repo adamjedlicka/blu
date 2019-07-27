@@ -123,7 +123,7 @@ static bool match(bluCompiler* compiler, bluTokenType type) {
 
 static void expectNewlineOrSemicolon(bluCompiler* compiler) {
 	if (!match(compiler, TOKEN_SEMICOLON)) {
-		consume(compiler, TOKEN_NEWLINE, "Expect newline or ';' after variable declaration.");
+		consume(compiler, TOKEN_NEWLINE, "Expect newline or ';'.");
 	}
 }
 
@@ -527,18 +527,58 @@ static void super(bluCompiler* compiler, bool canAssign) {
 	}
 }
 
+static void array(bluCompiler* compiler, bool canAssign) {
+	uint16_t len = 0;
+
+	consumeNewlines(compiler);
+
+	while (!check(compiler, TOKEN_RIGHT_BRACKET) && !check(compiler, TOKEN_EOF)) {
+		if (len > 0) {
+			consume(compiler, TOKEN_COMMA, "Expect ',' between expressions.");
+			consumeNewlines(compiler);
+		}
+
+		expression(compiler);
+		consumeNewlines(compiler);
+
+		len++;
+	}
+
+	consume(compiler, TOKEN_RIGHT_BRACKET, "Expect ']' after array.");
+
+	emitByte(compiler, OP_ARRAY);
+	emitShort(compiler, len);
+}
+
+static void subscript(bluCompiler* compiler, bool canAssign) {
+	if (match(compiler, TOKEN_RIGHT_BRACKET) && canAssign && match(compiler, TOKEN_EQUAL)) {
+		expression(compiler);
+		emitByte(compiler, OP_ARRAY_PUSH);
+	}
+
+	expression(compiler);
+	consume(compiler, TOKEN_RIGHT_BRACKET, "Expect ']' after subscript operator.");
+
+	if (canAssign && match(compiler, TOKEN_EQUAL)) {
+		expression(compiler);
+		emitByte(compiler, OP_SET_ARRAY);
+	} else {
+		emitByte(compiler, OP_GET_ARRAY);
+	}
+}
+
 ParseRule rules[] = {
-	{at, NULL, PREC_NONE},		 // TOKEN_AT
-	{NULL, NULL, PREC_NONE},	 // TOKEN_COLON
-	{NULL, NULL, PREC_NONE},	 // TOKEN_COMMA
-	{NULL, dot, PREC_CALL},		 // TOKEN_DOT
-	{NULL, NULL, PREC_NONE},	 // TOKEN_LEFT_BRACE
-	{NULL, NULL, PREC_CALL},	 // TOKEN_LEFT_BACKET
-	{grouping, call, PREC_CALL}, // TOKEN_LEFT_PAREN
-	{NULL, NULL, PREC_NONE},	 // TOKEN_RIGHT_BRACE
-	{NULL, NULL, PREC_NONE},	 // TOKEN_RIGHT_BRACKET
-	{NULL, NULL, PREC_NONE},	 // TOKEN_RIGHT_PAREN
-	{NULL, NULL, PREC_NONE},	 // TOKEN_SEMICOLON
+	{at, NULL, PREC_NONE},		   // TOKEN_AT
+	{NULL, NULL, PREC_NONE},	   // TOKEN_COLON
+	{NULL, NULL, PREC_NONE},	   // TOKEN_COMMA
+	{NULL, dot, PREC_CALL},		   // TOKEN_DOT
+	{NULL, NULL, PREC_NONE},	   // TOKEN_LEFT_BRACE
+	{array, subscript, PREC_CALL}, // TOKEN_LEFT_BRACKET
+	{grouping, call, PREC_CALL},   // TOKEN_LEFT_PAREN
+	{NULL, NULL, PREC_NONE},	   // TOKEN_RIGHT_BRACE
+	{NULL, NULL, PREC_NONE},	   // TOKEN_RIGHT_BRACKET
+	{NULL, NULL, PREC_NONE},	   // TOKEN_RIGHT_PAREN
+	{NULL, NULL, PREC_NONE},	   // TOKEN_SEMICOLON
 
 	{NULL, binary, PREC_EQUALITY},   // TOKEN_BANG_EQUAL
 	{unary, NULL, PREC_NONE},		 // TOKEN_BANG

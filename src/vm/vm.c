@@ -293,8 +293,37 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
+		case OP_ARRAY: {
+			uint16_t len = READ_SHORT();
+
+			bluObjArray* array = bluNewArray(vm, len);
+
+			for (uint16_t i = 0; i < len; i++) {
+				// Expressions are on tzhe stack in reverse order to which we want them in the array.
+				array->data[len - i - 1] = POP();
+			}
+
+			PUSH(OBJ_VAL(array));
+
+			break;
+		}
+
 		case OP_POP: {
 			DROP();
+			break;
+		}
+
+		case OP_ARRAY_PUSH: {
+			bluValue value = POP();
+			bluValue array = PEEK(0);
+
+			if (!IS_ARRAY(array)) {
+				RUNTIME_ERROR("Can only push to arrays.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			bluArrayPush(vm, AS_ARRAY(array), value);
+
 			break;
 		}
 
@@ -399,6 +428,57 @@ static bluInterpretResult run(bluVM* vm) {
 			if (!bindMethod(vm, superclass, name)) {
 				return INTERPRET_RUNTIME_ERROR;
 			}
+
+			break;
+		}
+
+		case OP_GET_ARRAY: {
+			bluValue index = POP();
+
+			if (!IS_NUMBER(index)) {
+				RUNTIME_ERROR("Array index has to be a number.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			bluValue array = POP();
+
+			if (!IS_ARRAY(array)) {
+				RUNTIME_ERROR("Only arrays can be indexed.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			if (AS_NUMBER(index) >= AS_ARRAY(array)->len || AS_NUMBER(index) < 0) {
+				RUNTIME_ERROR("Array index out of range.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			PUSH(AS_ARRAY(array)->data[(int)AS_NUMBER(index)]);
+
+			break;
+		}
+
+		case OP_SET_ARRAY: {
+			bluValue value = POP();
+			bluValue index = POP();
+
+			if (!IS_NUMBER(index)) {
+				RUNTIME_ERROR("Array index has to be a number.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			bluValue array = PEEK(0);
+
+			if (!IS_ARRAY(array)) {
+				RUNTIME_ERROR("Only arrays can be indexed.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			if (AS_NUMBER(index) >= AS_ARRAY(array)->len || AS_NUMBER(index) < 0) {
+				RUNTIME_ERROR("Array index out of range.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			AS_ARRAY(array)->data[(int)AS_NUMBER(index)] = value;
 
 			break;
 		}

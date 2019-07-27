@@ -16,6 +16,13 @@ static void freeObject(bluVM* vm, bluObj* object) {
 
 	switch (object->type) {
 
+	case OBJ_ARRAY: {
+		bluObjArray* array = (bluObjArray*)object;
+		bluDeallocate(vm, array->data, (sizeof(bluValue) * array->cap));
+		bluDeallocate(vm, array, sizeof(bluObjArray));
+		break;
+	}
+
 	case OBJ_BOUND_METHOD: {
 		bluObjBoundMethod* boundMethod = (bluObjBoundMethod*)object;
 		bluDeallocate(vm, boundMethod, sizeof(bluObjBoundMethod));
@@ -91,6 +98,14 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 	if (object->class != NULL) bluGrayObject(vm, (bluObj*)object->class);
 
 	switch (object->type) {
+
+	case OBJ_ARRAY: {
+		bluObjArray* array = (bluObjArray*)object;
+		for (int32_t i = 0; i < array->len; i++) {
+			bluGrayValue(vm, array->data[i]);
+		}
+		break;
+	}
 
 	case OBJ_BOUND_METHOD: {
 		bluObjBoundMethod* boundMethod = (bluObjBoundMethod*)object;

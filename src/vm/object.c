@@ -53,6 +53,15 @@ bluObjString* bluCopyString(bluVM* vm, const char* chars, int32_t length) {
 	return allocateString(vm, heapChars, length, hash);
 }
 
+bluObjArray* bluNewArray(bluVM* vm, int32_t len) {
+	bluObjArray* array = (bluObjArray*)allocateObject(vm, sizeof(bluObjArray), OBJ_ARRAY);
+	array->cap = bluPowerOf2Ceil(len);
+	array->len = len;
+	array->data = bluAllocate(vm, (sizeof(bluValue) * array->cap));
+
+	return array;
+}
+
 bluObjBoundMethod* bluNewBoundMethod(bluVM* vm, bluValue receiver, bluObjFunction* function) {
 	bluObjBoundMethod* method = (bluObjBoundMethod*)allocateObject(vm, sizeof(bluObjBoundMethod), OBJ_BOUND_METHOD);
 	method->receiver = receiver;
@@ -112,9 +121,34 @@ bluObjString* bluTakeString(bluVM* vm, char* chars, int32_t length) {
 	return allocateString(vm, chars, length, hash);
 }
 
+void bluArrayPush(bluVM* vm, bluObjArray* array, bluValue value) {
+	if (array->len == array->cap) {
+		int32_t newCap = bluPowerOf2Ceil(array->cap * 2);
+		array->data = bluReallocate(vm, array->data, (sizeof(bluValue) * array->cap), (sizeof(bluValue) * newCap));
+		array->cap = newCap;
+	}
+
+	array->data[array->len++] = value;
+}
+
 void bluPrintObject(bluValue value) {
 
 	switch (OBJ_TYPE(value)) {
+
+	case OBJ_ARRAY: {
+		bluObjArray* array = AS_ARRAY(value);
+
+		printf("[");
+		for (int32_t i = 0; i < array->len; i++) {
+			if (i > 0) {
+				printf(", ");
+			}
+
+			bluPrintValue(array->data[i]);
+		}
+		printf("]");
+		break;
+	}
 
 	case OBJ_BOUND_METHOD: {
 		printf("<method %s>", AS_BOUND_METHOD(value)->function->name->chars);
