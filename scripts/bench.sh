@@ -16,4 +16,14 @@ do
     ruby --version
     time ruby "$i/ruby.rb"
     echo ""
+
+    printf " => Benchmarking php: "
+    php --version | head -1
+    time php "$i/php.php"
+    echo ""
+
+    printf " => Benchmarking node: "
+    node --version
+    time node "$i/js.js"
+    echo ""
 done
