@@ -762,6 +762,73 @@ static void whileStatement(bluCompiler* compiler) {
 	endScope(compiler);
 }
 
+// We need varDeclaration for the forStatement.
+static void varDeclaration(bluCompiler* compiler);
+
+static void forStatement(bluCompiler* compiler) {
+	beginScope(compiler);
+
+	// The initialization clause.
+	if (match(compiler, TOKEN_VAR)) {
+		varDeclaration(compiler);
+	} else if (match(compiler, TOKEN_SEMICOLON)) {
+		// No initializer;
+	} else {
+		expressionStatement(compiler);
+	}
+
+	int32_t loopStart = compiler->function->chunk.code.count;
+
+	// The exit condition.
+	int32_t exitJump = 0;
+	if (!match(compiler, TOKEN_SEMICOLON)) {
+		expression(compiler);
+		consume(compiler, TOKEN_SEMICOLON, "Expect ';' after loop condition.");
+
+		// Jump out of the loop if the condition is false.
+		exitJump = emitJump(compiler, OP_JUMP_IF_FALSE);
+		emitByte(compiler, OP_POP); // Condition.
+	}
+
+	// Increment ste.
+	if (!match(compiler, TOKEN_LEFT_BRACE)) {
+		// We don't want to execute the incrment before the body, so jump over it.
+		int32_t bodyJump = emitJump(compiler, OP_JUMP);
+
+		int32_t incrementStart = compiler->function->chunk.code.count;
+		expression(compiler);
+		emitByte(compiler, OP_POP);
+
+		// After the increment, start the whole loop over.
+		emitLoop(compiler, loopStart);
+
+		// At the end of the body, we want to jump to the increment, not the top of the loop.
+		loopStart = incrementStart;
+
+		patchJump(compiler, bodyJump);
+	}
+
+	// Compile the body.
+	if (match(compiler, TOKEN_COLON)) {
+		statement(compiler);
+	} else {
+		consume(compiler, TOKEN_LEFT_BRACE, "Expect '{' after for clause.");
+		beginScope(compiler);
+		block(compiler);
+		endScope(compiler);
+	}
+
+	// Jump back to the begining (or the increment).
+	emitLoop(compiler, loopStart);
+
+	if (exitJump != 0) {
+		patchJump(compiler, exitJump);
+		emitByte(compiler, OP_POP); // Condition;
+	}
+
+	endScope(compiler);
+}
+
 static void returnStatement(bluCompiler* compiler) {
 	if (compiler->type == TYPE_TOP_LEVEL) {
 		error(compiler, "Cannot return from top-level code.");
@@ -1021,6 +1088,8 @@ static void statement(bluCompiler* compiler) {
 		ifStatement(compiler);
 	} else if (match(compiler, TOKEN_WHILE)) {
 		whileStatement(compiler);
+	} else if (match(compiler, TOKEN_FOR)) {
+		forStatement(compiler);
 	} else if (match(compiler, TOKEN_RETURN)) {
 		returnStatement(compiler);
 	} else if (match(compiler, TOKEN_ASSERT)) {
