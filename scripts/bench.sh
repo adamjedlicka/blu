@@ -26,4 +26,9 @@ do
     node --version
     time node "$i/js.js"
     echo ""
+
+    printf " => Benchmarking lua: "
+    lua -v
+    time lua "$i/lua.lua"
+    echo ""
 done
