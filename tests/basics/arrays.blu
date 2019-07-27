@@ -1,0 +1,23 @@
+var arr1 = [1, 2, 3]
+assert 2 == arr1[1]
+
+arr1[] = 4
+assert 4 == arr1[3]
+
+arr1[0] = 5
+assert 5 == arr1[0]
+
+var arr2 = [false, true, nil, "string", 42, 3.14, ["another", "array"]]
+
+assert arr2[0] == false
+assert arr2[1] == true
+assert arr2[2] == nil
+assert arr2[3] == "string"
+assert arr2[4] == 42
+assert arr2[5] == 3.14
+assert arr2[6][0] == "another"
+assert arr2[6][1] == "array"
+
+var arr3 = []
+var arr4 = []
+assert arr3 != arr4

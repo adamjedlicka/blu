@@ -2,7 +2,7 @@
 
 CODE=0
 
-for f in tests/*
+for f in $(find tests -name '*.blu')
 do
     printf " => Executing file: %-25s\n" "$f"
 

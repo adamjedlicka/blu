@@ -8,7 +8,7 @@
 #define BINARY_OP(valueType, op)                                                                                       \
 	do {                                                                                                               \
 		if (!IS_NUMBER(PEEK(0)) || !IS_NUMBER(PEEK(1))) {                                                              \
-			runtimeError(vm, "Operands must be numbers.");                                                             \
+			RUNTIME_ERROR("Operands must be numbers.");                                                                \
 			return INTERPRET_RUNTIME_ERROR;                                                                            \
 		}                                                                                                              \
                                                                                                                        \
@@ -234,39 +234,30 @@ static bluInterpretResult run(bluVM* vm) {
 
 	register bluCallFrame* frame;
 	register bluValue* slots;
-	register uint8_t* ip;
 
 #define PUSH(value) (*((vm->stackTop)++) = value)
 #define POP() (*(--(vm->stackTop)))
 #define DROP() (--(vm->stackTop))
 #define PEEK(distance) (vm->stackTop[-1 - distance])
-#define READ_BYTE() (*ip++)
-#define READ_SHORT() (ip += 2, (uint16_t)((ip[-2] << 8) | ip[-1]))
+#define READ_BYTE() (*(frame->ip++))
+#define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
 #define READ_CONSTANT() (frame->function->chunk.constants.data[READ_SHORT()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 
-#define STORE_FRAME() frame->ip = ip
+#define RUNTIME_ERROR(...) runtimeError(vm, __VA_ARGS__)
 
 #define LOAD_FRAME()                                                                                                   \
 	frame = &vm->frames[vm->frameCount - 1];                                                                           \
-	slots = frame->slots;                                                                                              \
-	ip = frame->ip
+	slots = frame->slots;
 
 	LOAD_FRAME();
-
-#define RUNTIME_ERROR(...)                                                                                             \
-	do {                                                                                                               \
-		STORE_FRAME();                                                                                                 \
-		runtimeError(vm, __VA_ARGS__);                                                                                 \
-		LOAD_FRAME();                                                                                                  \
-	} while (false)
 
 	while (true) {
 
 		if (vm->shouldGC) bluCollectGarbage(vm);
 
 #ifdef DEBUG_VM_TRACE
-		bluDisassembleInstruction(&frame->function->chunk, ip - frame->function->chunk.code.data);
+		bluDisassembleInstruction(&frame->function->chunk, frame->ip - frame->function->chunk.code.data);
 #endif
 
 		uint8_t instruction = READ_BYTE();
@@ -486,8 +477,6 @@ static bluInterpretResult run(bluVM* vm) {
 		case OP_CALL: {
 			uint8_t argCount = READ_BYTE();
 
-			STORE_FRAME();
-
 			if (!callValue(vm, PEEK(argCount), argCount)) {
 				return INTERPRET_RUNTIME_ERROR;
 			}
@@ -500,8 +489,6 @@ static bluInterpretResult run(bluVM* vm) {
 		case OP_INVOKE: {
 			uint8_t argCount = READ_BYTE();
 			bluObjString* name = READ_STRING();
-
-			STORE_FRAME();
 
 			if (!invoke(vm, name, argCount)) {
 				return INTERPRET_RUNTIME_ERROR;
@@ -517,8 +504,6 @@ static bluInterpretResult run(bluVM* vm) {
 			bluObjString* name = READ_STRING();
 			bluObjClass* superclass = AS_CLASS(POP());
 
-			STORE_FRAME();
-
 			if (!invokeFromClass(vm, superclass, name, argCount)) {
 				return INTERPRET_RUNTIME_ERROR;
 			}
@@ -530,25 +515,25 @@ static bluInterpretResult run(bluVM* vm) {
 
 		case OP_JUMP: {
 			uint16_t offset = READ_SHORT();
-			ip += offset;
+			frame->ip += offset;
 			break;
 		}
 
 		case OP_JUMP_IF_FALSE: {
 			uint16_t offset = READ_SHORT();
-			if (bluIsFalsey(PEEK(0))) ip += offset;
+			if (bluIsFalsey(PEEK(0))) frame->ip += offset;
 			break;
 		}
 
 		case OP_JUMP_IF_TRUE: {
 			uint16_t offset = READ_SHORT();
-			if (!bluIsFalsey(PEEK(0))) ip += offset;
+			if (!bluIsFalsey(PEEK(0))) frame->ip += offset;
 			break;
 		}
 
 		case OP_LOOP: {
 			uint16_t offset = READ_SHORT();
-			ip -= offset;
+			frame->ip -= offset;
 			break;
 		}
 
@@ -738,16 +723,12 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_ASSERT: {
-#ifdef DEBUG
 			bluValue value = POP();
 
 			if (bluIsFalsey(value)) {
 				RUNTIME_ERROR("Assertion failed.");
 				return INTERPRET_ASSERTION_ERROR;
 			}
-#else
-			DROP();
-#endif
 
 			break;
 		}

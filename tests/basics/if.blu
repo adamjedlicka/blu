@@ -1,0 +1,60 @@
+var tmp;
+
+tmp = false;
+
+if true {
+    tmp = true;
+} else if true {
+    tmp = false;
+} else if true {
+    tmp = false
+} else {
+    tmp = false;
+}
+
+assert tmp == true
+
+
+tmp = false;
+
+if false {
+    tmp = false;
+} else if true {
+    tmp = true;
+} else if true {
+    tmp = false
+} else {
+    tmp = false;
+}
+
+assert tmp == true
+
+
+tmp = false;
+
+if false {
+    tmp = false;
+} else if false {
+    tmp = false;
+} else if true {
+    tmp = true
+} else {
+    tmp = false;
+}
+
+assert tmp == true
+
+
+tmp = false;
+
+if false {
+    tmp = false;
+} else if false {
+    tmp = false;
+} else if false {
+    tmp = false
+} else {
+    tmp = true;
+}
+
+assert tmp == true

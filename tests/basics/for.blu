@@ -1,0 +1,13 @@
+var cnt1 = 0
+
+for var i = 0; i < 10; i = i + 1 {
+    cnt1 = cnt1 + i
+}
+
+assert 45 == cnt1
+
+var cnt2 = 0
+
+for var i = 0; i < 10; i = i + 1: cnt2 = cnt2 + i
+
+assert 45 == cnt2

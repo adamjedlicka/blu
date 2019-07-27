@@ -1,0 +1,37 @@
+fn identity(x): x
+
+assert "Hello, World!" == identity("Hello, World!")
+
+fn add(x, y) {
+    return x + y
+}
+
+assert 3 == add(1, 2)
+
+fn counter() {
+    var cnt = 0
+
+    return fn() {
+        return cnt = cnt + 1
+
+        return cnt
+    }
+}
+
+var cnt1 = counter()
+assert 1 == cnt1()
+assert 2 == cnt1()
+assert 3 == cnt1()
+
+var cnt2 = counter()
+assert 1 == cnt2()
+assert 2 == cnt2()
+assert 3 == cnt2()
+
+fn fib(x) {
+    if x <= 1: return x
+
+    return fib(x - 1) + fib(x - 2)
+}
+
+assert 55 == fib(10)

@@ -1,0 +1,24 @@
+class Animal {
+    fn __init(name) {
+        @animal = "Generic"
+        @name = name
+    }
+
+    fn toString() {
+        return @animal + " " + @name + " " + @sound()
+    }
+}
+
+class Cat < Animal {
+    fn __init(name) {
+        super.__init(name)
+        @animal = "cat"
+    }
+
+    fn sound() {
+        return "meow"
+    }
+}
+
+var cat = Cat("dog")
+assert "cat dog meow" == cat.toString()
