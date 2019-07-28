@@ -14,6 +14,10 @@ int8_t System__print(bluVM* vm, int8_t argCount, bluValue* args) {
 }
 
 int8_t System__println(bluVM* vm, int8_t argCount, bluValue* args) {
+	if (argCount == 0) {
+		printf("\n");
+	}
+
 	for (int32_t i = 1; i <= argCount; i++) {
 		bluPrintValue(args[i]);
 		printf("\n");
