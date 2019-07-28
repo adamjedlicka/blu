@@ -4,7 +4,7 @@ class Set {
 	}
 
 	fn add(val) {
-		if @has(val) : return false
+		if @has(val): return false
 
 		@_arr.push(val)
 
@@ -12,8 +12,8 @@ class Set {
 	}
 
 	fn has(val) {
-		for var i = 0; i < len(@_arr); i = i + 1 {
-			if @_arr[i] == val : return true
+		for var i = 0; i < @_arr.len(); i = i + 1 {
+			if @_arr[i] == val: return true
 		}
 
 		return false
@@ -23,6 +23,7 @@ class Set {
 class Sudoku {
 	fn __init() {
 		@_arr = []
+
 		for var i = 0; i < 81; i = i + 1 {
 			@_arr.push(0)
 		}
@@ -33,14 +34,14 @@ class Sudoku {
 	}
 
 	fn _solve(row, col) {
-		if col == 9 : return @_solve(row + 1, 0)
-		if row == 9 : return true
-		if @get(row, col) : return @_solve(row, col + 1)
+		if col == 9: return @_solve(row + 1, 0)
+		if row == 9: return true
+		if @get(row, col) != 0: return @_solve(row, col + 1)
 
 		for var i = 1; i <= 9; i = i + 1 {
 			@set(row, col, i)
 
-			if @_check(row, col) and @_solve(row, col + 1) : return true
+			if @_check(row, col) and @_solve(row, col + 1): return true
 		}
 
 		@set(row, col, 0)
@@ -50,15 +51,15 @@ class Sudoku {
 
 	fn _emptyIndex() {
 		for var i = 0; i < 81; i = i + 1 {
-			if !@_arr[i] : return i
+			if !@_arr[i]: return i
 		}
 
 		return -1
 	}
 
-	fn get(row, col) : @_arr[row * 9 + col]
+	fn get(row, col): @_arr[row * 9 + col]
 
-	fn set(row, col, val) : @_arr[row * 9 + col] = val
+	fn set(row, col, val): @_arr[row * 9 + col] = val
 
 	fn _check(row, col) {
 		return @_checkRow(row) and @_checkCol(col) and @_checkSquare(row, col)
@@ -70,7 +71,7 @@ class Sudoku {
 		for var i = 0; i < 9; i = i + 1 {
 			var val = @get(row, i)
 
-			if val and !set.add(val) : return false
+			if val != 0 and !set.add(val): return false
 		}
 
 		return true
@@ -82,7 +83,7 @@ class Sudoku {
 		for var i = 0; i < 9; i = i + 1 {
 			var val = @get(i, col)
 
-			if val and !set.add(val) : return false
+			if val != 0 and !set.add(val): return false
 		}
 
 		return true
@@ -91,14 +92,14 @@ class Sudoku {
 	fn _checkSquare(row, col) {
 		var set = Set()
 
-		var rowStart = int(row / 3) * 3
-		var colStart = int(col / 3) * 3
+		var rowStart = Math.floor(row / 3) * 3
+		var colStart = Math.floor(col / 3) * 3
 
 		for var i = rowStart; i < rowStart + 3; i = i + 1 {
 			for var j = colStart; j < colStart + 3; j = j + 1 {
 				var val = @get(i, j)
 
-				if val and !set.add(val) : return false
+				if val != 0 and !set.add(val): return false
 			}
 		}
 
@@ -108,26 +109,27 @@ class Sudoku {
 	fn print() {
 		for var i = 0; i < 9; i = i + 1 {
 			if i % 3 == 0 {
-				for var j = 0; j < 22; j = j + 1 : print("-")
-				println("")
+				for var j = 0; j < 22; j = j + 1: System.print("-")
+				System.println("")
 			}
 
 			for var j = 0; j < 9; j = j + 1 {
-				if j % 3 == 0 : print("|")
+				if j % 3 == 0: System.print("|")
 
 				var cell = @_arr[i * 9 + j]
 				if cell {
-					print(" " + cell)
+					System.print(" ")
+					System.print(cell)
 				} else {
-					print("  ")
+					System.print("  ")
 				}
 			}
 
-			println("|")
+			System.println("|")
 		}
 
-		for var j = 0; j < 22; j = j + 1 : print("-")
-		println("")
+		for var j = 0; j < 22; j = j + 1: System.print("-")
+		System.println("")
 	}
 }
 
@@ -153,12 +155,12 @@ for var i = 0; i < 9; i = i + 1 {
 	}
 }
 
-println("Unsolved:")
+System.println("Unsolved:")
 s.print()
-println("")
+System.println("")
 
 assert true == s.solve()
 
-println("Solved:")
+System.println("Solved:")
 s.print()
-println("")
+System.println("")

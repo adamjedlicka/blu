@@ -1,0 +1,53 @@
+if false and false {
+    assert false
+} else {
+    assert true
+}
+
+if true and false {
+    assert false
+} else {
+    assert true
+}
+
+if false and true {
+    assert false
+} else {
+    assert true
+}
+
+if true and true {
+    assert true
+} else {
+    assert false
+}
+
+if false or false {
+    assert false
+} else {
+    assert true
+}
+
+if true or false {
+    assert true
+} else {
+    assert false
+}
+
+if false or true {
+    assert true
+} else {
+    assert false
+}
+
+if true or true {
+    assert true
+} else {
+    assert false
+}
+
+if 1 + 1 > 0 and 0 < 1 + 1 {
+    assert true
+} else {
+    assert false
+}

@@ -125,6 +125,7 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 		bluObjClass* class = (bluObjClass*)object;
 		bluGrayObject(vm, (bluObj*)class->name);
 		bluGrayTable(vm, &class->methods);
+		bluGrayTable(vm, &class->staticMethods);
 		break;
 	}
 

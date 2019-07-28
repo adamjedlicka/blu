@@ -12,10 +12,10 @@ DEFINE_BUFFER(bluUpvalue, bluUpvalue);
 typedef enum {
 	PREC_NONE,
 	PREC_ASSIGNMENT, // =
-	PREC_EQUALITY,   // == !=
-	PREC_COMPARISON, // < > <= >=
 	PREC_OR,		 // or
 	PREC_AND,		 // and
+	PREC_EQUALITY,   // == !=
+	PREC_COMPARISON, // < > <= >=
 	PREC_TERM,		 // + -
 	PREC_FACTOR,	 // * /
 	PREC_UNARY,		 // ! -
