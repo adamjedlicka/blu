@@ -46,5 +46,6 @@ bluInterpretResult bluInterpret(bluVM* vm, const char* source, const char* name)
 bluObj* bluGetGlobal(bluVM* vm, const char* name);
 
 bool bluDefineMethod(bluVM* vm, bluObj* obj, const char* name, bluNativeFn function, int8_t arity);
+bool bluDefineStaticMethod(bluVM* vm, bluObj* obj, const char* name, bluNativeFn function, int8_t arity);
 
 #endif

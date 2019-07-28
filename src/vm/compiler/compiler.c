@@ -1015,25 +1015,12 @@ static void method(bluCompiler* compiler) {
 }
 
 static void staticMethod(bluCompiler* compiler) {
-}
-
-static void foreignMethod(bluCompiler* compiler) {
 	consume(compiler, TOKEN_IDENTIFIER, "Expect method name.");
 	uint16_t name = identifierConstant(compiler, &compiler->parser->previous);
 
-	// Compile the parameter list.
-	consume(compiler, TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+	function(compiler, TYPE_FUNCTION);
 
-	if (!check(compiler, TOKEN_RIGHT_PAREN)) {
-		do {
-			consume(compiler, TOKEN_IDENTIFIER, "Expect parameter name.");
-		} while (match(compiler, TOKEN_COMMA));
-	}
-
-	consume(compiler, TOKEN_RIGHT_PAREN, "Expect ')' after function parameters.");
-	expectNewlineOrSemicolon(compiler);
-
-	emitByte(compiler, OP_FOREIGN);
+	emitByte(compiler, OP_METHOD_STATIC);
 	emitShort(compiler, name);
 }
 
@@ -1092,9 +1079,6 @@ static void classDeclaration(bluCompiler* compiler) {
 		} else if (match(compiler, TOKEN_STATIC) && match(compiler, TOKEN_FN)) {
 			namedVariable(compiler, className, false);
 			staticMethod(compiler);
-		} else if (match(compiler, TOKEN_FOREIGN) && match(compiler, TOKEN_FN)) {
-			namedVariable(compiler, className, false);
-			foreignMethod(compiler);
 		} else {
 			errorAtCurrent(compiler, "Expect method declaration.");
 		}

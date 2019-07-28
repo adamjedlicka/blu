@@ -80,6 +80,7 @@ bluObjClass* bluNewClass(bluVM* vm, bluObjString* name) {
 	class->name = name;
 
 	bluTableInit(vm, &class->methods);
+	bluTableInit(vm, &class->staticMethods);
 
 	return class;
 }

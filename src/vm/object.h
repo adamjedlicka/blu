@@ -73,6 +73,7 @@ struct bluObjClass {
 	bluObjString* name;
 	bluObjClass* superclass;
 	bluTable methods;
+	bluTable staticMethods;
 };
 
 struct bluObjFunction {

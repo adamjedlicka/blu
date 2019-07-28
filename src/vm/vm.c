@@ -1,6 +1,7 @@
 #include "vm.h"
 #include "compiler/compiler.h"
 #include "core/core.h"
+#include "core/system.h"
 #include "vm/debug/debug.h"
 #include "vm/memory.h"
 #include "vm/object.h"
@@ -162,11 +163,31 @@ static bool invokeFromClass(bluVM* vm, bluObjClass* class, bluObjString* name, i
 	return call(vm, AS_FUNCTION(method), argCount);
 }
 
+static bool invokeStatic(bluVM* vm, bluObjClass* class, bluObjString* name, int8_t argCount) {
+	bluValue method;
+	if (!bluTableGet(vm, &class->staticMethods, name, &method)) {
+		if (class->superclass != NULL && invokeStatic(vm, class->superclass, name, argCount)) {
+			return true;
+		} else {
+			runtimeError(vm, "Undefined static property '%s'.", name->chars);
+			return false;
+		}
+	}
+
+	if (IS_NATIVE(method)) {
+		return callValue(vm, method, argCount);
+	}
+
+	return call(vm, AS_FUNCTION(method), argCount);
+}
+
 static bool invoke(bluVM* vm, bluObjString* name, int8_t argCount) {
 	bluValue receiver = bluPeek(vm, argCount);
 
-	// TODO : Invoking on non-instances (for example: 3.toString())
-	if (!IS_INSTANCE(receiver)) {
+	if (IS_CLASS(receiver)) {
+		bluObjClass* class = AS_CLASS(receiver);
+		return invokeStatic(vm, class, name, argCount);
+	} else if (!IS_INSTANCE(receiver)) {
 		bluObjClass* class = bluGetClass(vm, receiver);
 		return invokeFromClass(vm, class, name, argCount);
 	}
@@ -230,12 +251,6 @@ static void closeUpvalues(bluVM* vm, bluValue* last) {
 		// Pop it off the open upvalue list.
 		vm->openUpvalues = upvalue->next;
 	}
-}
-
-static void defineMethod(bluVM* vm, bluObjString* name) {
-	bluValue method = bluPop(vm);
-	bluObjClass* class = AS_CLASS(bluPop(vm));
-	bluTableSet(vm, &class->methods, name, method);
 }
 
 static bool bindMethod(bluVM* vm, bluObjClass* class, bluObjString* name) {
@@ -681,13 +696,6 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
-		case OP_FOREIGN: {
-			bluObjString* name = READ_STRING();
-			bluObjClass* class = AS_CLASS(POP());
-			bluTableSet(vm, &class->methods, name, OBJ_VAL(bluNewNative(vm, NULL, -1)));
-			break;
-		}
-
 		case OP_INHERIT: {
 			bluValue superclass = PEEK(1);
 			if (!IS_CLASS(superclass)) {
@@ -702,7 +710,23 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_METHOD: {
-			defineMethod(vm, READ_STRING());
+			bluValue method = bluPop(vm);
+			bluObjClass* class = AS_CLASS(bluPop(vm));
+			bluTableSet(vm, &class->methods, READ_STRING(), method);
+			break;
+		}
+
+		case OP_METHOD_FOREIGN: {
+			bluObjString* name = READ_STRING();
+			bluObjClass* class = AS_CLASS(POP());
+			bluTableSet(vm, &class->methods, name, OBJ_VAL(bluNewNative(vm, NULL, -1)));
+			break;
+		}
+
+		case OP_METHOD_STATIC: {
+			bluValue method = bluPop(vm);
+			bluObjClass* class = AS_CLASS(bluPop(vm));
+			bluTableSet(vm, &class->staticMethods, READ_STRING(), method);
 			break;
 		}
 
@@ -787,6 +811,7 @@ bluVM* bluNewVM() {
 	vm->timeGC = 0;
 
 	bluInitCore(vm);
+	bluInitSystem(vm);
 
 	return vm;
 }
@@ -850,4 +875,15 @@ bool bluDefineMethod(bluVM* vm, bluObj* obj, const char* name, bluNativeFn funct
 
 	bluObjClass* class = (bluObjClass*)obj;
 	return bluTableSet(vm, &class->methods, bluCopyString(vm, name, strlen(name)), OBJ_VAL(native));
+}
+
+bool bluDefineStaticMethod(bluVM* vm, bluObj* obj, const char* name, bluNativeFn function, int8_t arity) {
+	if (obj->type != OBJ_CLASS) {
+		return false;
+	}
+
+	bluObjNative* native = bluNewNative(vm, function, arity);
+
+	bluObjClass* class = (bluObjClass*)obj;
+	return bluTableSet(vm, &class->staticMethods, bluCopyString(vm, name, strlen(name)), OBJ_VAL(native));
 }

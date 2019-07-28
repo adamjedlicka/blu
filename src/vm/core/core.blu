@@ -1,7 +1,9 @@
 class Object {
-    foreign fn getClass()
-    foreign fn isFalsey()
-    foreign fn isTruthy()
+    // fn getClass()
+    // fn isFalsey()
+    // fn isTruthy()
+
+    static fn getClass(): Class
 
     fn isNil(): false
     fn equals(other): @ == other
@@ -28,8 +30,8 @@ class Number {
 }
 
 class Array {
-    foreign fn push(value)
-    foreign fn len()
+    // fn push(value)
+    // fn len()
 
     fn filter(callback) {
         var arr = []

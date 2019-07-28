@@ -32,6 +32,7 @@ static void freeObject(bluVM* vm, bluObj* object) {
 	case OBJ_CLASS: {
 		bluObjClass* class = (bluObjClass*)object;
 		bluTableFree(vm, &class->methods);
+		bluTableFree(vm, &class->staticMethods);
 		bluDeallocate(vm, class, sizeof(bluObjClass));
 		break;
 	}
