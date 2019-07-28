@@ -14,5 +14,5 @@ class Dog {
 
 var maxipes = Dog("Fík")
 
-3.times(fn(i): maxipes.bark()).each(fn(val): System.println(val))
+3.times(maxipes.bark).each(System.println)
 ```
