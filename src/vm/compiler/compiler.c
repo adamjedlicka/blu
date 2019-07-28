@@ -485,15 +485,15 @@ static void at(bluCompiler* compiler, bool canAssign) {
 
 static void pushSuperclass(bluCompiler* compiler) {
 	if (compiler->classCompiler == NULL) return;
-	namedVariable(compiler, syntheticToken(compiler, "super"), false);
+	namedVariable(compiler, syntheticToken(compiler, "^"), false);
 }
 
-static void super(bluCompiler* compiler, bool canAssign) {
+static void caret(bluCompiler* compiler, bool canAssign) {
 	if (compiler->classCompiler == NULL) {
-		error(compiler, "Cannot use 'super' outside of a class.");
+		error(compiler, "Cannot use '^' outside of a class.");
 	} else if (!compiler->classCompiler->hasSuperclass) {
 		// TODO : Every class will have superclass 'Object'
-		error(compiler, "Cannot use 'super' in a class with no superclass.");
+		error(compiler, "Cannot use '^' in a class with no superclass.");
 	}
 
 	if (match(compiler, TOKEN_LEFT_PAREN)) {
@@ -507,7 +507,6 @@ static void super(bluCompiler* compiler, bool canAssign) {
 		return;
 	}
 
-	consume(compiler, TOKEN_DOT, "Expect '.' after 'super'.");
 	consume(compiler, TOKEN_IDENTIFIER, "Expect superclass method name.");
 	uint8_t name = identifierConstant(compiler, &compiler->parser->previous);
 
@@ -564,6 +563,7 @@ static void subscript(bluCompiler* compiler, bool canAssign) {
 
 ParseRule rules[] = {
 	{at, NULL, PREC_NONE},		   // TOKEN_AT
+	{caret, NULL, PREC_NONE},	  // TOKEN_CARET
 	{NULL, NULL, PREC_NONE},	   // TOKEN_COLON
 	{NULL, NULL, PREC_NONE},	   // TOKEN_COMMA
 	{NULL, dot, PREC_CALL},		   // TOKEN_DOT
@@ -607,7 +607,7 @@ ParseRule rules[] = {
 	{literal, NULL, PREC_NONE}, // TOKEN_NIL
 	{NULL, or, PREC_OR},		// TOKEN_OR
 	{NULL, NULL, PREC_NONE},	// TOKEN_RETURN
-	{super, NULL, PREC_NONE},   // TOKEN_SUPER
+	{NULL, NULL, PREC_NONE},	// TOKEN_STATIC
 	{literal, NULL, PREC_NONE}, // TOKEN_TRUE
 	{NULL, NULL, PREC_NONE},	// TOKEN_VAR
 	{NULL, NULL, PREC_NONE},	// TOKEN_WHILE
@@ -1014,7 +1014,10 @@ static void method(bluCompiler* compiler) {
 	emitShort(compiler, name);
 }
 
-static void foreign(bluCompiler* compiler) {
+static void staticMethod(bluCompiler* compiler) {
+}
+
+static void foreignMethod(bluCompiler* compiler) {
 	consume(compiler, TOKEN_IDENTIFIER, "Expect method name.");
 	uint16_t name = identifierConstant(compiler, &compiler->parser->previous);
 
@@ -1062,7 +1065,7 @@ static void classDeclaration(bluCompiler* compiler) {
 
 		// Store the superclass in a local variable named "super".
 		variable(compiler, false);
-		addLocal(compiler, syntheticToken(compiler, "super"));
+		addLocal(compiler, syntheticToken(compiler, "^"));
 		defineVariable(compiler, 0);
 
 		namedVariable(compiler, className, false);
@@ -1073,7 +1076,7 @@ static void classDeclaration(bluCompiler* compiler) {
 		beginScope(compiler);
 
 		namedVariable(compiler, syntheticToken(compiler, "Object"), false);
-		addLocal(compiler, syntheticToken(compiler, "super"));
+		addLocal(compiler, syntheticToken(compiler, "^"));
 		defineVariable(compiler, 0);
 
 		namedVariable(compiler, className, false);
@@ -1086,9 +1089,12 @@ static void classDeclaration(bluCompiler* compiler) {
 		if (match(compiler, TOKEN_FN)) {
 			namedVariable(compiler, className, false);
 			method(compiler);
+		} else if (match(compiler, TOKEN_STATIC) && match(compiler, TOKEN_FN)) {
+			namedVariable(compiler, className, false);
+			staticMethod(compiler);
 		} else if (match(compiler, TOKEN_FOREIGN) && match(compiler, TOKEN_FN)) {
 			namedVariable(compiler, className, false);
-			foreign(compiler);
+			foreignMethod(compiler);
 		} else {
 			errorAtCurrent(compiler, "Expect method declaration.");
 		}

@@ -11,7 +11,7 @@ class Animal {
 
 class Cat < Animal {
     fn __init(name) {
-        super.__init(name)
+        ^__init(name)
         @animal = "cat"
     }
 

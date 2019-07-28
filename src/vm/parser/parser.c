@@ -165,7 +165,7 @@ static bluTokenType identifierType(bluParser* parser) {
 	case 'n': return checkKeyword(parser, 1, 2, "il", TOKEN_NIL);
 	case 'o': return checkKeyword(parser, 1, 1, "r", TOKEN_OR);
 	case 'r': return checkKeyword(parser, 1, 5, "eturn", TOKEN_RETURN);
-	case 's': return checkKeyword(parser, 1, 4, "uper", TOKEN_SUPER);
+	case 's': return checkKeyword(parser, 1, 5, "tatic", TOKEN_STATIC);
 	case 't':
 		if (parser->at - parser->from > 1) {
 			switch (parser->source[parser->from + 1]) {
@@ -269,6 +269,7 @@ bluToken bluParserNextToken(bluParser* parser) {
 	case '}': return makeToken(parser, TOKEN_RIGHT_BRACE);
 	case ';': return makeToken(parser, TOKEN_SEMICOLON);
 	case '@': return makeToken(parser, TOKEN_AT);
+	case '^': return makeToken(parser, TOKEN_CARET);
 	case ':': return makeToken(parser, TOKEN_COLON);
 	case ',': return makeToken(parser, TOKEN_COMMA);
 	case '.': return makeToken(parser, TOKEN_DOT);

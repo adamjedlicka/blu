@@ -4,6 +4,7 @@
 typedef enum {
 	// Single-character tokens.
 	TOKEN_AT,
+	TOKEN_CARET,
 	TOKEN_COLON,
 	TOKEN_COMMA,
 	TOKEN_DOT,
@@ -50,7 +51,7 @@ typedef enum {
 	TOKEN_NIL,
 	TOKEN_OR,
 	TOKEN_RETURN,
-	TOKEN_SUPER,
+	TOKEN_STATIC,
 	TOKEN_TRUE,
 	TOKEN_VAR,
 	TOKEN_WHILE,
