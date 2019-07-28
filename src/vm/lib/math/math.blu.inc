@@ -2,4 +2,5 @@
 static const char* mathSource =
 "class Math {\n"
 "    // static fn floor(value)\n"
+"    // static fn ceil(value)\n"
 "}\n";
