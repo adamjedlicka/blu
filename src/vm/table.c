@@ -72,7 +72,7 @@ bool bluTableSet(bluVM* vm, bluTable* table, bluObjString* key, bluValue value) 
 		// TODO : Make macro for growing capacity
 		int32_t capacityMask = ((table->capacityMask + 1) * 2) - 1;
 		if (capacityMask == -1) {
-			capacityMask = 7;
+			capacityMask = 63;
 		}
 
 		adjustCapacity(vm, table, capacityMask);

@@ -650,8 +650,8 @@ static void parsePrecedence(bluCompiler* compiler, Precedence precedence) {
 		if (match(compiler, TOKEN_EQUAL)) {
 			error(compiler, "Invalid assignment target.");
 
-			// TODO
-			// expression(compiler);
+			// Parse the expression so compiler prints propper error messages.
+			expression(compiler);
 		}
 	}
 }
