@@ -16,7 +16,7 @@
 #define BLU_VERSION_MINOR 5
 #define BLU_VERSION_PATCH 0
 
-#define BLU_VERSION BLU_VERSION_MAJOR * 1000000 + BLU_VERSION_MINOR * 1000 + BLU_VERSION_MINOR
+#define BLU_VERSION BLU_VERSION_MAJOR * 1000000 + BLU_VERSION_MINOR * 1000 + BLU_VERSION_PATCH
 
 #define BLU_VERSION_STR "v" STR(BLU_VERSION_MAJOR) "." STR(BLU_VERSION_MINOR) "." STR(BLU_VERSION_PATCH)
 
@@ -33,9 +33,9 @@ typedef enum {
 	INTERPRET_ASSERTION_ERROR,
 } bluInterpretResult;
 
-bluVM* bluNew();
+bluVM* bluNewVM();
 
-void bluFree(bluVM* vm);
+void bluFreeVM(bluVM* vm);
 
 bluInterpretResult bluInterpret(bluVM* vm, const char* source, const char* name);
 

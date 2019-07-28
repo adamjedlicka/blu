@@ -752,7 +752,7 @@ static bluInterpretResult run(bluVM* vm) {
 	}
 }
 
-bluVM* bluNew() {
+bluVM* bluNewVM() {
 	bluVM* vm = malloc(sizeof(bluVM));
 
 	resetStack(vm);
@@ -775,7 +775,7 @@ bluVM* bluNew() {
 	return vm;
 }
 
-void bluFree(bluVM* vm) {
+void bluFreeVM(bluVM* vm) {
 	bluCollectMemory(vm);
 
 	bluTableFree(vm, &vm->globals);

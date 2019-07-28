@@ -3,7 +3,7 @@
 static void repl() {
 	char line[1024];
 
-	bluVM* vm = bluNew();
+	bluVM* vm = bluNewVM();
 
 	while (true) {
 		printf("> ");
@@ -16,7 +16,7 @@ static void repl() {
 		bluInterpret(vm, line, "REPL");
 	}
 
-	bluFree(vm);
+	bluFreeVM(vm);
 }
 
 static char* readFile(const char* path) {
@@ -49,13 +49,13 @@ static char* readFile(const char* path) {
 }
 
 static void runFile(const char* path) {
-	bluVM* vm = bluNew();
+	bluVM* vm = bluNewVM();
 	char* source = readFile(path);
 
 	bluInterpretResult result = bluInterpret(vm, source, path);
 
 	free(source);
-	bluFree(vm);
+	bluFreeVM(vm);
 
 	if (result == INTERPRET_COMPILE_ERROR) exit(65);
 	if (result == INTERPRET_RUNTIME_ERROR) exit(70);
@@ -63,11 +63,12 @@ static void runFile(const char* path) {
 }
 
 static void help() {
-	printf("%s %s\n", "blu", BLU_VERSION_STR);
+	printf("%s %s\n\n", "blu", BLU_VERSION_STR);
+	printf("Usage: blu [path]\n");
 }
 
 static void version() {
-	printf("%s %s\n", "blu", BLU_VERSION_STR);
+	printf("%s (%d)\n", BLU_VERSION_STR, BLU_VERSION);
 }
 
 int main(int argc, const char* argv[]) {
@@ -82,7 +83,7 @@ int main(int argc, const char* argv[]) {
 			runFile(argv[1]);
 		}
 	} else {
-		fprintf(stderr, "Usage: blu [path]\n");
+		help();
 		exit(64);
 	}
 
