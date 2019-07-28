@@ -162,27 +162,12 @@ static bool invokeFromClass(bluVM* vm, bluObjClass* class, bluObjString* name, i
 	return call(vm, AS_FUNCTION(method), argCount);
 }
 
-static bluObjClass* getClass(bluVM* vm, bluValue value) {
-
-	switch (value.type) {
-
-	case VAL_OBJ: {
-		switch (AS_OBJ(value)->type) {
-		case OBJ_ARRAY: return vm->arrayClass;
-		default: return NULL;
-		}
-	}
-
-	default: return NULL;
-	}
-}
-
 static bool invoke(bluVM* vm, bluObjString* name, int8_t argCount) {
 	bluValue receiver = bluPeek(vm, argCount);
 
 	// TODO : Invoking on non-instances (for example: 3.toString())
 	if (!IS_INSTANCE(receiver)) {
-		bluObjClass* class = getClass(vm, receiver);
+		bluObjClass* class = bluGetClass(vm, receiver);
 		return invokeFromClass(vm, class, name, argCount);
 	}
 
@@ -696,6 +681,13 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
+		case OP_FOREIGN: {
+			bluObjString* name = READ_STRING();
+			bluObjClass* class = AS_CLASS(POP());
+			bluTableSet(vm, &class->methods, name, OBJ_VAL(bluNewNative(vm, NULL, -1)));
+			break;
+		}
+
 		case OP_INHERIT: {
 			bluValue superclass = PEEK(1);
 			if (!IS_CLASS(superclass)) {
@@ -817,6 +809,23 @@ bluInterpretResult bluInterpret(bluVM* vm, const char* source, const char* name)
 
 		return run(vm);
 	}
+}
+
+bluObjClass* bluGetClass(bluVM* vm, bluValue value) {
+	switch (value.type) {
+	case VAL_NIL: return vm->nilClass;
+	case VAL_BOOL: return vm->boolClass;
+	case VAL_NUMBER: return vm->numberClass;
+	case VAL_OBJ:
+		if (IS_CLASS(value)) {
+			// Core classes were created before Class so they don't have a reference to it.
+			return vm->classClass;
+		} else {
+			return AS_OBJ(value)->class;
+		}
+	}
+
+	__builtin_unreachable();
 }
 
 bluObj* bluGetGlobal(bluVM* vm, const char* name) {

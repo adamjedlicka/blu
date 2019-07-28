@@ -140,8 +140,24 @@ static bluTokenType identifierType(bluParser* parser) {
 		if (parser->at - parser->from > 1) {
 			switch (parser->source[parser->from + 1]) {
 			case 'a': return checkKeyword(parser, 2, 3, "lse", TOKEN_FALSE);
-			case 'o': return checkKeyword(parser, 2, 1, "r", TOKEN_FOR);
 			case 'n': return checkKeyword(parser, 2, 0, NULL, TOKEN_FN);
+			case 'o': {
+				if (parser->at - parser->from > 2) {
+					switch (parser->source[parser->from + 2]) {
+					case 'r': {
+						if (parser->at - parser->from > 3) {
+							switch (parser->source[parser->from + 3]) {
+							case 'e': return checkKeyword(parser, 4, 3, "ign", TOKEN_FOREIGN);
+							}
+						} else {
+							return TOKEN_FOR;
+						}
+						break;
+					}
+					}
+				}
+				break;
+			}
 			}
 		}
 		break;

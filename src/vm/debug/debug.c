@@ -123,6 +123,7 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
 	}
 
 	case OP_CLASS: return shortInstruction("OP_CLASS", chunk, offset);
+	case OP_FOREIGN: return shortInstruction("OP_FOREIGN", chunk, offset);
 	case OP_INHERIT: return simpleInstruction("OP_INHERIT", offset);
 	case OP_METHOD: return shortInstruction("OP_METHOD", chunk, offset);
 

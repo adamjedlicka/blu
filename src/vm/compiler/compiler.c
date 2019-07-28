@@ -602,6 +602,7 @@ ParseRule rules[] = {
 	{literal, NULL, PREC_NONE}, // TOKEN_FALSE
 	{NULL, NULL, PREC_NONE},	// TOKEN_FN
 	{NULL, NULL, PREC_NONE},	// TOKEN_FOR
+	{NULL, NULL, PREC_NONE},	// TOKEN_FOREIGN
 	{NULL, NULL, PREC_NONE},	// TOKEN_IF
 	{literal, NULL, PREC_NONE}, // TOKEN_NIL
 	{NULL, or, PREC_OR},		// TOKEN_OR
@@ -1013,6 +1014,26 @@ static void method(bluCompiler* compiler) {
 	emitShort(compiler, name);
 }
 
+static void foreign(bluCompiler* compiler) {
+	consume(compiler, TOKEN_IDENTIFIER, "Expect method name.");
+	uint16_t name = identifierConstant(compiler, &compiler->parser->previous);
+
+	// Compile the parameter list.
+	consume(compiler, TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+
+	if (!check(compiler, TOKEN_RIGHT_PAREN)) {
+		do {
+			consume(compiler, TOKEN_IDENTIFIER, "Expect parameter name.");
+		} while (match(compiler, TOKEN_COMMA));
+	}
+
+	consume(compiler, TOKEN_RIGHT_PAREN, "Expect ')' after function parameters.");
+	expectNewlineOrSemicolon(compiler);
+
+	emitByte(compiler, OP_FOREIGN);
+	emitShort(compiler, name);
+}
+
 static void classDeclaration(bluCompiler* compiler) {
 	uint16_t name = parseVariable(compiler, "Expect class name.");
 	bluToken className = compiler->parser->previous;
@@ -1065,6 +1086,9 @@ static void classDeclaration(bluCompiler* compiler) {
 		if (match(compiler, TOKEN_FN)) {
 			namedVariable(compiler, className, false);
 			method(compiler);
+		} else if (match(compiler, TOKEN_FOREIGN) && match(compiler, TOKEN_FN)) {
+			namedVariable(compiler, className, false);
+			foreign(compiler);
 		} else {
 			errorAtCurrent(compiler, "Expect method declaration.");
 		}

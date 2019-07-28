@@ -22,3 +22,5 @@ class Cat < Animal {
 
 var cat = Cat("dog")
 assert "cat dog meow" == cat.toString()
+
+assert cat.getClass() == Cat

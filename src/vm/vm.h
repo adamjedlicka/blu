@@ -28,7 +28,13 @@ struct bluVM {
 
 	bluObjUpvalue* openUpvalues;
 
+	bluObjClass* nilClass;
+	bluObjClass* boolClass;
+	bluObjClass* numberClass;
 	bluObjClass* arrayClass;
+	bluObjClass* classClass;
+	bluObjClass* functionClass;
+	bluObjClass* stringClass;
 
 	bluObjString* stringInitializer;
 
@@ -39,6 +45,9 @@ struct bluVM {
 	bool shouldGC;
 	double timeGC;
 };
+
+bool bluIsFalsey(bluValue value);
+bluObjClass* bluGetClass(bluVM* vm, bluValue value);
 
 static inline void bluPush(bluVM* vm, bluValue value) {
 	*((vm->stackTop)++) = value;
@@ -51,7 +60,5 @@ static inline bluValue bluPop(bluVM* vm) {
 static inline bluValue bluPeek(bluVM* vm, int32_t distance) {
 	return vm->stackTop[-1 - distance];
 }
-
-bool bluIsFalsey(bluValue value);
 
 #endif

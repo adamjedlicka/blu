@@ -1,7 +1,32 @@
 class Object {
-    fn getClass(): Object
+    foreign fn getClass()
+}
+
+class Nil {
+
+}
+
+class Bool {
+
+}
+
+class Number {
+
 }
 
 class Array {
-    fn push(value): nil
+    foreign fn push(value)
+    foreign fn len()
+}
+
+class Class {
+
+}
+
+class Function {
+
+}
+
+class String {
+
 }

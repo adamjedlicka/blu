@@ -1,0 +1,23 @@
+assert nil.getClass() == Nil
+
+assert false.getClass() == Bool
+assert true.getClass() == Bool
+
+assert (-1).getClass() == Number
+assert 0.getClass() == Number
+assert 1.getClass() == Number
+assert (-1.1).getClass() == Number
+assert 0.1.getClass() == Number
+assert 1.1.getClass() == Number
+
+assert "".getClass() == String
+assert "1".getClass() == String
+assert "Hello, World!".getClass() == String
+
+assert [].getClass() == Array
+assert [1, 2, 3].getClass() == Array
+assert [[], [[], []]].getClass() == Array
+
+assert (fn(): nil).getClass() == Function
+
+assert Object.getClass() == Class

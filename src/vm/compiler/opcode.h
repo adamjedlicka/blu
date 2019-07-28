@@ -49,6 +49,7 @@ typedef enum {
 	OP_CLOSURE,
 
 	OP_CLASS,
+	OP_FOREIGN,
 	OP_INHERIT,
 	OP_METHOD,
 

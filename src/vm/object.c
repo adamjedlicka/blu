@@ -31,6 +31,7 @@ static int32_t hashString(const char* key, int32_t length) {
 
 static bluObjString* allocateString(bluVM* vm, char* chars, int32_t length, int32_t hash) {
 	bluObjString* string = (bluObjString*)allocateObject(vm, sizeof(bluObjString), OBJ_STRING);
+	string->obj.class = vm->stringClass;
 	string->chars = chars;
 	string->length = length;
 	string->hash = hash;
@@ -55,6 +56,7 @@ bluObjString* bluCopyString(bluVM* vm, const char* chars, int32_t length) {
 
 bluObjArray* bluNewArray(bluVM* vm, int32_t len) {
 	bluObjArray* array = (bluObjArray*)allocateObject(vm, sizeof(bluObjArray), OBJ_ARRAY);
+	array->obj.class = vm->arrayClass;
 	array->cap = bluPowerOf2Ceil(len);
 	array->len = len;
 	array->data = bluAllocate(vm, (sizeof(bluValue) * array->cap));
@@ -64,6 +66,7 @@ bluObjArray* bluNewArray(bluVM* vm, int32_t len) {
 
 bluObjBoundMethod* bluNewBoundMethod(bluVM* vm, bluValue receiver, bluObjFunction* function) {
 	bluObjBoundMethod* method = (bluObjBoundMethod*)allocateObject(vm, sizeof(bluObjBoundMethod), OBJ_BOUND_METHOD);
+	method->obj.class = vm->functionClass;
 	method->receiver = receiver;
 	method->function = function;
 
@@ -72,6 +75,7 @@ bluObjBoundMethod* bluNewBoundMethod(bluVM* vm, bluValue receiver, bluObjFunctio
 
 bluObjClass* bluNewClass(bluVM* vm, bluObjString* name) {
 	bluObjClass* class = (bluObjClass*)allocateObject(vm, sizeof(bluObjClass), OBJ_CLASS);
+	class->obj.class = vm->classClass;
 	class->superclass = NULL;
 	class->name = name;
 
@@ -82,6 +86,7 @@ bluObjClass* bluNewClass(bluVM* vm, bluObjString* name) {
 
 bluObjFunction* bluNewFunction(bluVM* vm) {
 	bluObjFunction* function = (bluObjFunction*)allocateObject(vm, sizeof(bluObjFunction), OBJ_FUNCTION);
+	function->obj.class = vm->functionClass;
 	function->arity = 0;
 	function->name = NULL;
 
@@ -102,6 +107,7 @@ bluObjInstance* bluNewInstance(bluVM* vm, bluObjClass* class) {
 
 bluObjNative* bluNewNative(bluVM* vm, bluNativeFn function, int8_t arity) {
 	bluObjNative* native = (bluObjNative*)allocateObject(vm, sizeof(bluObjNative), OBJ_NATIVE);
+	native->obj.class = vm->functionClass;
 	native->function = function;
 	native->arity = arity;
 
@@ -110,6 +116,8 @@ bluObjNative* bluNewNative(bluVM* vm, bluNativeFn function, int8_t arity) {
 
 bluObjUpvalue* bluNewUpvalue(bluVM* vm, bluValue* slot) {
 	bluObjUpvalue* upvalue = (bluObjUpvalue*)allocateObject(vm, sizeof(bluObjUpvalue), OBJ_UPVALUE);
+	// TODO : This should not be needed.
+	// upvalue->obj.class = bluGetClass(vm, *slot);
 	upvalue->closed = NIL_VAL;
 	upvalue->value = slot;
 	upvalue->next = NULL;

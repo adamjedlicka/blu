@@ -1,5 +1,6 @@
 var arr1 = [1, 2, 3]
 assert 2 == arr1[1]
+assert arr1.len() == 3
 
 arr1.push(4)
 assert 4 == arr1[3]

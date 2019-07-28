@@ -6,7 +6,7 @@ class Set {
 	fn add(val) {
 		if @has(val) : return false
 
-		@_arr[] = val
+		@_arr.push(val)
 
 		return true
 	}
@@ -24,7 +24,7 @@ class Sudoku {
 	fn __init() {
 		@_arr = []
 		for var i = 0; i < 81; i = i + 1 {
-			@_arr[] = 0
+			@_arr.push(0)
 		}
 	}
 
