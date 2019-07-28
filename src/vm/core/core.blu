@@ -1,3 +1,7 @@
+class Object {
+    fn getClass(): Object
+}
+
 class Array {
     fn push(value): nil
 }

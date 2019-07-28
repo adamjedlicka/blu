@@ -83,14 +83,14 @@ install: export BIN_PATH := bin/release
 # recently modified
 ifeq ($(UNAME_S),Darwin)
 	SOURCES = $(shell find $(SRC_PATH) -name '*.$(SRC_EXT)' | sort -k 1nr | cut -f2-)
+	BLU_TEMPLATES = $(shell find $(SRC_PATH) -name '*.$(SRC_EXT)' | sort -k 1nr | cut -f2-)
 else
-	SOURCES = $(shell find $(SRC_PATH) -name '*.$(SRC_EXT)' -printf '%T@\t%p\n' \
-						| sort -k 1nr | cut -f2-)
+	SOURCES = $(shell find $(SRC_PATH) -name '*.$(SRC_EXT)' -printf '%T@\t%p\n' | sort -k 1nr | cut -f2-)
+	BLU_TEMPLATES = $(shell find $(SRC_PATH) -name '*.blu' -printf '%T@\t%p\n' | sort -k 1nr | cut -f2-)
 endif
 
 # fallback in case the above fails
-rwildcard = $(foreach d, $(wildcard $1*), $(call rwildcard,$d/,$2) \
-						$(filter $(subst *,%,$2), $d))
+rwildcard = $(foreach d, $(wildcard $1*), $(call rwildcard,$d/,$2) $(filter $(subst *,%,$2), $d))
 ifeq ($(SOURCES),)
 	SOURCES := $(call rwildcard, $(SRC_PATH), *.$(SRC_EXT))
 endif
@@ -98,6 +98,7 @@ endif
 # Set the object file names, with the source directory stripped
 # from the path, and the build path prepended in its place
 OBJECTS = $(SOURCES:$(SRC_PATH)/%.$(SRC_EXT)=$(BUILD_PATH)/%.o)
+BLU_INCLUDES = $(BLU_TEMPLATES:$(SRC_PATH)/%.blu=$(SRC_PATH)/%.blu.inc)
 # Set the dependency files that will be used to add header dependencies
 DEPS = $(OBJECTS:.o=.d)
 
@@ -217,7 +218,7 @@ all: $(BIN_PATH)/$(BIN_NAME)
 	@ln -s $(BIN_PATH)/$(BIN_NAME) $(BIN_NAME)
 
 # Link the executable
-$(BIN_PATH)/$(BIN_NAME): $(OBJECTS)
+$(BIN_PATH)/$(BIN_NAME): $(BLU_INCLUDES) $(OBJECTS)
 	@echo "Linking: $@"
 	@$(START_TIME)
 	$(CMD_PREFIX)$(CC) $(OBJECTS) $(LDFLAGS) -o $@
@@ -235,4 +236,11 @@ $(BUILD_PATH)/%.o: $(SRC_PATH)/%.$(SRC_EXT)
 	@$(START_TIME)
 	$(CMD_PREFIX)$(CC) $(CFLAGS) $(INCLUDES) -MP -MMD -c $< -o $@
 	@echo -en "\t Compile time: "
+	@$(END_TIME)
+
+$(SRC_PATH)/%.blu.inc: $(SRC_PATH)/%.blu
+	@echo "Generating: $< -> $@"
+	@$(START_TIME)
+	@python ./scripts/blu_to_c_string.py $< $@
+	@echo -en "\t Generation time: "
 	@$(END_TIME)

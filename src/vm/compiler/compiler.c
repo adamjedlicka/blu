@@ -1046,6 +1046,17 @@ static void classDeclaration(bluCompiler* compiler) {
 
 		namedVariable(compiler, className, false);
 		emitByte(compiler, OP_INHERIT);
+	} else if (strncmp("Object", compiler->parser->previous.start, 6) != 0) {
+		classCompiler.hasSuperclass = true;
+
+		beginScope(compiler);
+
+		namedVariable(compiler, syntheticToken(compiler, "Object"), false);
+		addLocal(compiler, syntheticToken(compiler, "super"));
+		defineVariable(compiler, 0);
+
+		namedVariable(compiler, className, false);
+		emitByte(compiler, OP_INHERIT);
 	}
 
 	consume(compiler, TOKEN_LEFT_BRACE, "Expect '{' before class body.");

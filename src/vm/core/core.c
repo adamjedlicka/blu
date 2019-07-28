@@ -3,6 +3,8 @@
 #include "vm/value.h"
 #include "vm/vm.h"
 
+#include "core.blu.inc"
+
 int8_t Array_push(bluVM* vm, int8_t argCount, bluValue* args) {
 	bluObjArray* array = AS_ARRAY(args[0]);
 	bluValue value = args[1];
@@ -22,9 +24,7 @@ int8_t Array_push(bluVM* vm, int8_t argCount, bluValue* args) {
 }
 
 void bluInitCore(bluVM* vm) {
-	char* source = "class Array {}";
-
-	bluInterpret(vm, source, "__CORE__");
+	bluInterpret(vm, coreSource, "__CORE__");
 
 	bluObj* arrayClass = bluGetGlobal(vm, "Array");
 	bluDefineMethod(vm, arrayClass, "push", Array_push, 1);
