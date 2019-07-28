@@ -22,9 +22,13 @@
 
 typedef struct bluVM bluVM;
 
+typedef struct bluValue bluValue;
+
 typedef struct bluObj bluObj;
 
 typedef struct bluObjString bluObjString;
+
+typedef int8_t (*bluNativeFn)(bluVM* vm, int8_t argCount, bluValue* args);
 
 typedef enum {
 	INTERPRET_OK,
@@ -38,5 +42,9 @@ bluVM* bluNewVM();
 void bluFreeVM(bluVM* vm);
 
 bluInterpretResult bluInterpret(bluVM* vm, const char* source, const char* name);
+
+bluObj* bluGetGlobal(bluVM* vm, const char* name);
+
+bool bluDefineMethod(bluVM* vm, bluObj* obj, const char* name, bluNativeFn function, int8_t arity);
 
 #endif

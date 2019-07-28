@@ -1,0 +1,3 @@
+class Array {
+    fn push(value): nil
+}

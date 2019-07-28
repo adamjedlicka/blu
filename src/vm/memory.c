@@ -51,6 +51,12 @@ static void freeObject(bluVM* vm, bluObj* object) {
 		break;
 	}
 
+	case OBJ_NATIVE: {
+		bluObjNative* native = (bluObjNative*)object;
+		bluDeallocate(vm, native, sizeof(bluObjNative));
+		break;
+	}
+
 	case OBJ_UPVALUE: {
 		bluObjUpvalue* upvalue = (bluObjUpvalue*)object;
 		bluDeallocate(vm, upvalue, sizeof(bluObjUpvalue));
@@ -134,8 +140,13 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 		break;
 	}
 
+	case OBJ_NATIVE: {
+		break;
+	}
+
 	case OBJ_UPVALUE: {
-		bluGrayValue(vm, ((bluObjUpvalue*)object)->closed);
+		bluObjUpvalue* upvalue = (bluObjUpvalue*)object;
+		bluGrayValue(vm, upvalue->closed);
 		break;
 	}
 

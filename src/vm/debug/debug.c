@@ -66,7 +66,6 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
 	case OP_ARRAY: return shortInstruction("OP_ARRAY", chunk, offset);
 
 	case OP_POP: return simpleInstruction("OP_POP", offset);
-	case OP_ARRAY_PUSH: return simpleInstruction("OP_ARRAY_PUSH", offset);
 
 	case OP_GET_LOCAL: return shortInstruction("OP_GET_LOCAL", chunk, offset);
 	case OP_SET_LOCAL: return shortInstruction("OP_SET_LOCAL", chunk, offset);

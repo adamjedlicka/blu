@@ -10,14 +10,14 @@ typedef enum {
 	VAL_OBJ,
 } bluValueType;
 
-typedef struct {
+struct bluValue {
 	bluValueType type;
 	union {
 		bool boolean;
 		double number;
 		bluObj* obj;
 	} as;
-} bluValue;
+};
 
 #define IS_BOOL(value) ((value).type == VAL_BOOL)
 #define IS_NIL(value) ((value).type == VAL_NIL)

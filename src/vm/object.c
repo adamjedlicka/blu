@@ -91,7 +91,7 @@ bluObjFunction* bluNewFunction(bluVM* vm) {
 	return function;
 }
 
-bluObjInstance* newInstance(bluVM* vm, bluObjClass* class) {
+bluObjInstance* bluNewInstance(bluVM* vm, bluObjClass* class) {
 	bluObjInstance* instance = (bluObjInstance*)allocateObject(vm, sizeof(bluObjInstance), OBJ_INSTANCE);
 	instance->obj.class = class;
 
@@ -100,7 +100,15 @@ bluObjInstance* newInstance(bluVM* vm, bluObjClass* class) {
 	return instance;
 }
 
-bluObjUpvalue* newUpvalue(bluVM* vm, bluValue* slot) {
+bluObjNative* bluNewNative(bluVM* vm, bluNativeFn function, int8_t arity) {
+	bluObjNative* native = (bluObjNative*)allocateObject(vm, sizeof(bluObjNative), OBJ_NATIVE);
+	native->function = function;
+	native->arity = arity;
+
+	return native;
+}
+
+bluObjUpvalue* bluNewUpvalue(bluVM* vm, bluValue* slot) {
 	bluObjUpvalue* upvalue = (bluObjUpvalue*)allocateObject(vm, sizeof(bluObjUpvalue), OBJ_UPVALUE);
 	upvalue->closed = NIL_VAL;
 	upvalue->value = slot;
@@ -119,16 +127,6 @@ bluObjString* bluTakeString(bluVM* vm, char* chars, int32_t length) {
 	}
 
 	return allocateString(vm, chars, length, hash);
-}
-
-void bluArrayPush(bluVM* vm, bluObjArray* array, bluValue value) {
-	if (array->len == array->cap) {
-		int32_t newCap = bluPowerOf2Ceil(array->cap * 2);
-		array->data = bluReallocate(vm, array->data, (sizeof(bluValue) * array->cap), (sizeof(bluValue) * newCap));
-		array->cap = newCap;
-	}
-
-	array->data[array->len++] = value;
 }
 
 void bluPrintObject(bluValue value) {
@@ -171,6 +169,11 @@ void bluPrintObject(bluValue value) {
 
 	case OBJ_INSTANCE: {
 		printf("<instance of %s>", AS_INSTANCE(value)->obj.class->name->chars);
+		break;
+	}
+
+	case OBJ_NATIVE: {
+		printf("<native fn>");
 		break;
 	}
 

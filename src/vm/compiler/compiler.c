@@ -551,12 +551,6 @@ static void array(bluCompiler* compiler, bool canAssign) {
 }
 
 static void subscript(bluCompiler* compiler, bool canAssign) {
-	if (match(compiler, TOKEN_RIGHT_BRACKET) && canAssign && match(compiler, TOKEN_EQUAL)) {
-		expression(compiler);
-		emitByte(compiler, OP_ARRAY_PUSH);
-		return;
-	}
-
 	expression(compiler);
 	consume(compiler, TOKEN_RIGHT_BRACKET, "Expect ']' after subscript operator.");
 

@@ -28,6 +28,8 @@ struct bluVM {
 
 	bluObjUpvalue* openUpvalues;
 
+	bluObjClass* arrayClass;
+
 	bluObjString* stringInitializer;
 
 	bluObj* objects;
@@ -38,15 +40,15 @@ struct bluVM {
 	double timeGC;
 };
 
-inline void bluPush(bluVM* vm, bluValue value) {
+static inline void bluPush(bluVM* vm, bluValue value) {
 	*((vm->stackTop)++) = value;
 }
 
-inline bluValue bluPop(bluVM* vm) {
+static inline bluValue bluPop(bluVM* vm) {
 	return *(--(vm->stackTop));
 }
 
-inline bluValue bluPeek(bluVM* vm, int32_t distance) {
+static inline bluValue bluPeek(bluVM* vm, int32_t distance) {
 	return vm->stackTop[-1 - distance];
 }
 

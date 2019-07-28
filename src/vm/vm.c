@@ -1,5 +1,6 @@
 #include "vm.h"
 #include "compiler/compiler.h"
+#include "core/core.h"
 #include "vm/debug/debug.h"
 #include "vm/memory.h"
 #include "vm/object.h"
@@ -98,7 +99,7 @@ static bool callValue(bluVM* vm, bluValue callee, int8_t argCount) {
 		bluObjClass* class = AS_CLASS(callee);
 
 		// Create the instance.
-		vm->stackTop[-argCount - 1] = OBJ_VAL(newInstance(vm, class));
+		vm->stackTop[-argCount - 1] = OBJ_VAL(bluNewInstance(vm, class));
 
 		// Call the initializer, if there is one.
 		bluValue initializer;
@@ -114,6 +115,25 @@ static bool callValue(bluVM* vm, bluValue callee, int8_t argCount) {
 
 	case OBJ_FUNCTION: {
 		return call(vm, AS_FUNCTION(callee), argCount);
+	}
+
+	case OBJ_NATIVE: {
+		bluObjNative* native = AS_NATIVE(callee);
+
+		if (argCount != native->arity) {
+			runtimeError(vm, "Expected %d arguments but got %d.", native->arity, argCount);
+			return false;
+		}
+
+		int8_t result = native->function(vm, argCount, vm->stackTop - argCount - 1);
+		if (result < 0) {
+			runtimeError(vm, "Something went wrong.");
+			return false;
+		}
+
+		vm->stackTop -= argCount + 1 - result;
+
+		return true;
 	}
 
 	default: {
@@ -135,9 +155,26 @@ static bool invokeFromClass(bluVM* vm, bluObjClass* class, bluObjString* name, i
 		}
 	}
 
-	// TODO : Natives
+	if (IS_NATIVE(method)) {
+		return callValue(vm, method, argCount);
+	}
 
 	return call(vm, AS_FUNCTION(method), argCount);
+}
+
+static bluObjClass* getClass(bluVM* vm, bluValue value) {
+
+	switch (value.type) {
+
+	case VAL_OBJ: {
+		switch (AS_OBJ(value)->type) {
+		case OBJ_ARRAY: return vm->arrayClass;
+		default: return NULL;
+		}
+	}
+
+	default: return NULL;
+	}
 }
 
 static bool invoke(bluVM* vm, bluObjString* name, int8_t argCount) {
@@ -145,8 +182,8 @@ static bool invoke(bluVM* vm, bluObjString* name, int8_t argCount) {
 
 	// TODO : Invoking on non-instances (for example: 3.toString())
 	if (!IS_INSTANCE(receiver)) {
-		runtimeError(vm, "Can only call methods on instances.");
-		return false;
+		bluObjClass* class = getClass(vm, receiver);
+		return invokeFromClass(vm, class, name, argCount);
 	}
 
 	bluObjInstance* instance = AS_INSTANCE(receiver);
@@ -167,7 +204,7 @@ static bool invoke(bluVM* vm, bluObjString* name, int8_t argCount) {
 static bluObjUpvalue* captureUpvalue(bluVM* vm, bluValue* local) {
 	// If there are no open upvalues at all, we must need a new one.
 	if (vm->openUpvalues == NULL) {
-		vm->openUpvalues = newUpvalue(vm, local);
+		vm->openUpvalues = bluNewUpvalue(vm, local);
 	}
 
 	bluObjUpvalue* prevUpvalue = NULL;
@@ -184,7 +221,7 @@ static bluObjUpvalue* captureUpvalue(bluVM* vm, bluValue* local) {
 
 	// We walked past the local on the stack, so there must not be an upvalue for it already. Make a new one and link it
 	// in in the right place to keep the list sorted.
-	bluObjUpvalue* createdUpvalue = newUpvalue(vm, local);
+	bluObjUpvalue* createdUpvalue = bluNewUpvalue(vm, local);
 	createdUpvalue->next = upvalue;
 
 	if (prevUpvalue == NULL) {
@@ -300,20 +337,6 @@ static bluInterpretResult run(bluVM* vm) {
 
 		case OP_POP: {
 			DROP();
-			break;
-		}
-
-		case OP_ARRAY_PUSH: {
-			bluValue value = POP();
-			bluValue array = PEEK(0);
-
-			if (!IS_ARRAY(array)) {
-				RUNTIME_ERROR("Can only push to arrays.");
-				return INTERPRET_RUNTIME_ERROR;
-			}
-
-			bluArrayPush(vm, AS_ARRAY(array), value);
-
 			break;
 		}
 
@@ -771,6 +794,8 @@ bluVM* bluNewVM() {
 	vm->shouldGC = false;
 	vm->timeGC = 0;
 
+	bluInitCore(vm);
+
 	return vm;
 }
 
@@ -783,8 +808,6 @@ void bluFreeVM(bluVM* vm) {
 	free(vm);
 }
 
-bool bluIsFalsey(bluValue value);
-
 bluInterpretResult bluInterpret(bluVM* vm, const char* source, const char* name) {
 	bluObjFunction* function = bluCompile(vm, source, name);
 	if (function == NULL) {
@@ -794,4 +817,28 @@ bluInterpretResult bluInterpret(bluVM* vm, const char* source, const char* name)
 
 		return run(vm);
 	}
+}
+
+bluObj* bluGetGlobal(bluVM* vm, const char* name) {
+	bluValue value;
+	if (!bluTableGet(vm, &vm->globals, bluCopyString(vm, name, strlen(name)), &value)) {
+		return NULL;
+	}
+
+	if (!IS_OBJ(value)) {
+		return NULL;
+	}
+
+	return AS_OBJ(value);
+}
+
+bool bluDefineMethod(bluVM* vm, bluObj* obj, const char* name, bluNativeFn function, int8_t arity) {
+	if (obj->type != OBJ_CLASS) {
+		return false;
+	}
+
+	bluObjNative* native = bluNewNative(vm, function, arity);
+
+	bluObjClass* class = (bluObjClass*)obj;
+	return bluTableSet(vm, &class->methods, bluCopyString(vm, name, strlen(name)), OBJ_VAL(native));
 }

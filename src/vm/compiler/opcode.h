@@ -9,7 +9,6 @@ typedef enum {
 	OP_ARRAY,
 
 	OP_POP,
-	OP_ARRAY_PUSH,
 
 	OP_GET_LOCAL,
 	OP_SET_LOCAL,
