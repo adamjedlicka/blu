@@ -4,6 +4,7 @@ class Object {
     foreign fn isTruthy()
 
     fn isNil(): false
+    fn equals(other): @ == other
 }
 
 class Nil {
@@ -30,16 +31,57 @@ class Array {
     foreign fn push(value)
     foreign fn len()
 
+    fn filter(callback) {
+        var arr = []
+
+        for var i = 0; i < @len(); i = i + 1 {
+            if callback(@[i]) == true {
+                arr.push(@[i])
+            }
+        }
+
+        return arr
+    }
+
+    fn map(callback) {
+        var arr = []
+
+        for var i = 0; i < @len(); i = i + 1 {
+            arr.push(callback(@[i]))
+        }
+
+        return arr
+    }
+
+    fn reduce(callback, accumulator) {
+        for var i = 0; i < @len(); i = i + 1 {
+            accumulator = callback(accumulator, @[i])
+        }
+
+        return accumulator
+    }
+
     fn join(separator) {
         if @.len() == 0: return nil
 
         var accumulator = @[0]
 
-        for var i = 1; i < @.len(); i = i + 1 {
+        for var i = 1; i < @len(); i = i + 1 {
             accumulator = accumulator + separator + @[i]
         }
 
         return accumulator
+    }
+
+    fn equals(other) {
+        if other.getClass() != Array: return false
+        if other.len() != @len(): return false
+
+        for var i = 0; i < @len(); i = i + 1 {
+            if @[i].equals(other[i]) == false: return false
+        }
+
+        return true
     }
 }
 

@@ -22,3 +22,11 @@ assert arr2[6][1] == "array"
 var arr3 = []
 var arr4 = []
 assert arr3 != arr4
+
+var arr5 = [1, 2, 3, 4, 5, 6]
+assert 24 == arr5.
+    filter(fn(x): x % 2 == 0).
+    map(fn(x): x * 2).
+    reduce(fn(acc, cur): acc + cur, 0)
+
+assert [1, 2, 3].equals([1, 2, 3])
