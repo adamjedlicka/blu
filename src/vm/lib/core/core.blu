@@ -33,6 +33,14 @@ class Array {
     // fn push(value)
     // fn len()
 
+    fn each(callback) {
+        for var i = 0; i < @len(); i = i + 1 {
+            callback(@[i])
+        }
+
+        return @
+    }
+
     fn filter(callback) {
         var arr = []
 

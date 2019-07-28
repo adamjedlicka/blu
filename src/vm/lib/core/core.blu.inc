@@ -1,4 +1,4 @@
-// Generated automatically from src/vm/core/core.blu. Do not edit.
+// Generated automatically from src/vm/lib/core/core.blu. Do not edit.
 static const char* coreSource =
 "class Object {\n"
 "    // fn getClass()\n"
@@ -34,6 +34,14 @@ static const char* coreSource =
 "class Array {\n"
 "    // fn push(value)\n"
 "    // fn len()\n"
+"\n"
+"    fn each(callback) {\n"
+"        for var i = 0; i < @len(); i = i + 1 {\n"
+"            callback(@[i])\n"
+"        }\n"
+"\n"
+"        return @\n"
+"    }\n"
 "\n"
 "    fn filter(callback) {\n"
 "        var arr = []\n"
