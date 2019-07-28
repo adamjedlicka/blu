@@ -14,6 +14,8 @@ static void freeObject(bluVM* vm, bluObj* object) {
 	printf("\n");
 #endif
 
+	bluTableFree(vm, &object->fields);
+
 	switch (object->type) {
 
 	case OBJ_ARRAY: {
@@ -32,7 +34,6 @@ static void freeObject(bluVM* vm, bluObj* object) {
 	case OBJ_CLASS: {
 		bluObjClass* class = (bluObjClass*)object;
 		bluTableFree(vm, &class->methods);
-		bluTableFree(vm, &class->staticMethods);
 		bluDeallocate(vm, class, sizeof(bluObjClass));
 		break;
 	}
@@ -47,7 +48,6 @@ static void freeObject(bluVM* vm, bluObj* object) {
 
 	case OBJ_INSTANCE: {
 		bluObjInstance* instance = (bluObjInstance*)object;
-		bluTableFree(vm, &instance->fields);
 		bluDeallocate(vm, instance, sizeof(bluObjInstance));
 		break;
 	}
@@ -101,8 +101,8 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 
 	object->isDark = true;
 
-	// TODO : Remove if when all objects have own class.
-	if (object->class != NULL) bluGrayObject(vm, (bluObj*)object->class);
+	bluGrayObject(vm, (bluObj*)object->class);
+	bluGrayTable(vm, &object->fields);
 
 	switch (object->type) {
 
@@ -125,7 +125,6 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 		bluObjClass* class = (bluObjClass*)object;
 		bluGrayObject(vm, (bluObj*)class->name);
 		bluGrayTable(vm, &class->methods);
-		bluGrayTable(vm, &class->staticMethods);
 		break;
 	}
 
@@ -137,8 +136,6 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 	}
 
 	case OBJ_INSTANCE: {
-		bluObjInstance* instance = (bluObjInstance*)object;
-		bluGrayTable(vm, &instance->fields);
 		break;
 	}
 

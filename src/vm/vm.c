@@ -59,7 +59,7 @@ static void concatenate(bluVM* vm) {
 }
 
 static bool call(bluVM* vm, bluObjFunction* function, int8_t argCount) {
-	if (argCount != function->arity) {
+	if (argCount < function->arity) {
 		runtimeError(vm, "Expected %d arguments but got %d.", function->arity, argCount);
 		return false;
 	}
@@ -120,7 +120,7 @@ static bool callValue(bluVM* vm, bluValue callee, int8_t argCount) {
 	case OBJ_NATIVE: {
 		bluObjNative* native = AS_NATIVE(callee);
 
-		if (argCount != native->arity) {
+		if (argCount < native->arity) {
 			runtimeError(vm, "Expected %d arguments but got %d.", native->arity, argCount);
 			return false;
 		}
@@ -162,45 +162,18 @@ static bool invokeFromClass(bluVM* vm, bluObjClass* class, bluObjString* name, i
 	return call(vm, AS_FUNCTION(method), argCount);
 }
 
-static bool invokeStatic(bluVM* vm, bluObjClass* class, bluObjString* name, int8_t argCount) {
-	bluValue method;
-	if (!bluTableGet(vm, &class->staticMethods, name, &method)) {
-		if (class->superclass != NULL && invokeStatic(vm, class->superclass, name, argCount)) {
-			return true;
-		} else {
-			runtimeError(vm, "Undefined static property '%s'.", name->chars);
-			return false;
-		}
-	}
-
-	if (IS_NATIVE(method)) {
-		return callValue(vm, method, argCount);
-	}
-
-	return call(vm, AS_FUNCTION(method), argCount);
-}
-
 static bool invoke(bluVM* vm, bluObjString* name, int8_t argCount) {
 	bluValue receiver = bluPeek(vm, argCount);
 
-	if (IS_CLASS(receiver)) {
-		bluObjClass* class = AS_CLASS(receiver);
-		return invokeStatic(vm, class, name, argCount);
-	} else if (!IS_INSTANCE(receiver)) {
-		bluObjClass* class = bluGetClass(vm, receiver);
-		return invokeFromClass(vm, class, name, argCount);
+	if (IS_OBJ(receiver)) {
+		bluValue value;
+		if (bluTableGet(vm, &AS_OBJ(receiver)->fields, name, &value)) {
+			return callValue(vm, value, argCount);
+		}
 	}
 
-	bluObjInstance* instance = AS_INSTANCE(receiver);
-
-	// First we look for a field which may shadow a method.
-	bluValue value;
-	if (bluTableGet(vm, &instance->fields, name, &value)) {
-		vm->stackTop[-argCount] = value;
-		return callValue(vm, value, argCount);
-	}
-
-	return invokeFromClass(vm, instance->obj.class, name, argCount);
+	bluObjClass* class = bluGetClass(vm, receiver);
+	return invokeFromClass(vm, class, name, argCount);
 }
 
 // Captures the local variable [local] into an [Upvalue]. If that local is already in an upvalue, the existing one is
@@ -396,22 +369,21 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_GET_PROPERTY: {
-			if (!IS_INSTANCE(PEEK(0))) {
-				RUNTIME_ERROR("Only instances have properties.");
-				return INTERPRET_RUNTIME_ERROR;
-			}
-
-			bluObjInstance* instance = AS_INSTANCE(PEEK(0));
 			bluObjString* name = READ_STRING();
 
-			bluValue value;
-			if (bluTableGet(vm, &instance->fields, name, &value)) {
-				DROP(); // Instance.
-				PUSH(value);
-				break;
+			if (IS_OBJ(PEEK(0))) {
+				bluObj* object = AS_OBJ(PEEK(0));
+
+				bluValue value;
+				if (bluTableGet(vm, &object->fields, name, &value)) {
+					DROP(); // Object.
+					PUSH(value);
+					break;
+				}
 			}
 
-			if (!bindMethod(vm, instance->obj.class, name)) {
+			if (!bindMethod(vm, bluGetClass(vm, PEEK(0)), name)) {
+				RUNTIME_ERROR("No such property.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
@@ -419,15 +391,15 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_SET_PROPERTY: {
-			if (!IS_INSTANCE(PEEK(1))) {
-				RUNTIME_ERROR("Only instances have fields.");
+			if (!IS_OBJ(PEEK(1))) {
+				RUNTIME_ERROR("Only objects have fields.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
-			bluObjInstance* instance = AS_INSTANCE(PEEK(1));
-			bluTableSet(vm, &instance->fields, READ_STRING(), PEEK(0));
+			bluObj* object = AS_OBJ(PEEK(1));
+			bluTableSet(vm, &object->fields, READ_STRING(), PEEK(0));
 			bluValue value = POP();
-			DROP(); // Instance
+			DROP(); // Object
 			PUSH(value);
 
 			break;
@@ -725,7 +697,7 @@ static bluInterpretResult run(bluVM* vm) {
 		case OP_METHOD_STATIC: {
 			bluValue method = bluPop(vm);
 			bluObjClass* class = AS_CLASS(bluPop(vm));
-			bluTableSet(vm, &class->staticMethods, READ_STRING(), method);
+			bluTableSet(vm, &class->obj.fields, READ_STRING(), method);
 			break;
 		}
 
@@ -883,5 +855,5 @@ bool bluDefineStaticMethod(bluVM* vm, bluObj* obj, const char* name, bluNativeFn
 	bluObjNative* native = bluNewNative(vm, function, arity);
 
 	bluObjClass* class = (bluObjClass*)obj;
-	return bluTableSet(vm, &class->staticMethods, bluCopyString(vm, name, strlen(name)), OBJ_VAL(native));
+	return bluTableSet(vm, &class->obj.fields, bluCopyString(vm, name, strlen(name)), OBJ_VAL(native));
 }
