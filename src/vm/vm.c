@@ -11,9 +11,9 @@
 			return INTERPRET_RUNTIME_ERROR;                                                                            \
 		}                                                                                                              \
                                                                                                                        \
-		double right = AS_NUMBER(bluPop(vm));                                                                          \
-		double left = AS_NUMBER(bluPop(vm));                                                                           \
-		bluPush(vm, valueType(left op right));                                                                         \
+		double right = AS_NUMBER(POP());                                                                               \
+		double left = AS_NUMBER(POP());                                                                                \
+		PUSH(valueType(left op right));                                                                                \
 	} while (false)
 
 static void resetStack(bluVM* vm) {
@@ -234,10 +234,10 @@ static bluInterpretResult run(bluVM* vm) {
 	register bluCallFrame* frame;
 	register bluValue* slots;
 
-#define PUSH(value) (*((vm->stackTop)++) = value)
-#define POP() (*(--(vm->stackTop)))
+#define PUSH(value) bluPush(vm, value)
+#define POP() bluPop(vm)
 #define DROP() (--(vm->stackTop))
-#define PEEK(distance) (vm->stackTop[-1 - distance])
+#define PEEK(distance) bluPeek(vm, distance)
 #define READ_BYTE() (*(frame->ip++))
 #define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
 #define READ_CONSTANT() (frame->function->chunk.constants.data[READ_SHORT()])
@@ -781,18 +781,6 @@ void bluFreeVM(bluVM* vm) {
 	bluTableFree(vm, &vm->strings);
 
 	free(vm);
-}
-
-void bluPush(bluVM* vm, bluValue value) {
-	*((vm->stackTop)++) = value;
-}
-
-bluValue bluPop(bluVM* vm) {
-	return *(--(vm->stackTop));
-}
-
-bluValue bluPeek(bluVM* vm, int32_t distance) {
-	return vm->stackTop[-1 - distance];
 }
 
 bool bluIsFalsey(bluValue value);

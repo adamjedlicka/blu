@@ -38,9 +38,17 @@ struct bluVM {
 	double timeGC;
 };
 
-void bluPush(bluVM* vm, bluValue value);
-bluValue bluPop(bluVM* vm);
-bluValue bluPeek(bluVM* vm, int32_t distance);
+inline void bluPush(bluVM* vm, bluValue value) {
+	*((vm->stackTop)++) = value;
+}
+
+inline bluValue bluPop(bluVM* vm) {
+	return *(--(vm->stackTop));
+}
+
+inline bluValue bluPeek(bluVM* vm, int32_t distance) {
+	return vm->stackTop[-1 - distance];
+}
 
 bool bluIsFalsey(bluValue value);
 
