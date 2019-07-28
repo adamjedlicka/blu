@@ -1,0 +1,6 @@
+assert nil.isFalsey() == true
+assert nil.isTruthy() == false
+assert nil.isNil() == true
+
+assert false.isTruthy() == false
+assert true.isTruthy() == true

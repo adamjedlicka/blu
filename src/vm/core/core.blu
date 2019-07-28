@@ -1,9 +1,13 @@
 class Object {
     foreign fn getClass()
+    foreign fn isFalsey()
+    foreign fn isTruthy()
+
+    fn isNil(): false
 }
 
 class Nil {
-
+    fn isNil(): true
 }
 
 class Bool {
@@ -11,12 +15,32 @@ class Bool {
 }
 
 class Number {
+    fn times(callback) {
+        var result = []
 
+        for var i = 0; i < @; i = i + 1 {
+            result.push(callback(i))
+        }
+
+        return result
+    }
 }
 
 class Array {
     foreign fn push(value)
     foreign fn len()
+
+    fn join(separator) {
+        if @.len() == 0: return nil
+
+        var accumulator = @[0]
+
+        for var i = 1; i < @.len(); i = i + 1 {
+            accumulator = accumulator + separator + @[i]
+        }
+
+        return accumulator
+    }
 }
 
 class Class {

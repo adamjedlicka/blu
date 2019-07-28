@@ -13,6 +13,22 @@ int8_t Object_getClass(bluVM* vm, int8_t argCount, bluValue* args) {
 	return 1;
 }
 
+int8_t Object_isFalsey(bluVM* vm, int8_t argCount, bluValue* args) {
+	bluValue value = args[0];
+
+	args[0] = BOOL_VAL(bluIsFalsey(value));
+
+	return 1;
+}
+
+int8_t Object_isTruthy(bluVM* vm, int8_t argCount, bluValue* args) {
+	bluValue value = args[0];
+
+	args[0] = BOOL_VAL(!bluIsFalsey(value));
+
+	return 1;
+}
+
 int8_t Array_push(bluVM* vm, int8_t argCount, bluValue* args) {
 	bluObjArray* array = AS_ARRAY(args[0]);
 	bluValue value = args[1];
@@ -44,6 +60,8 @@ void bluInitCore(bluVM* vm) {
 
 	bluObj* objectClass = bluGetGlobal(vm, "Object");
 	bluDefineMethod(vm, objectClass, "getClass", Object_getClass, 0);
+	bluDefineMethod(vm, objectClass, "isFalsey", Object_isFalsey, 0);
+	bluDefineMethod(vm, objectClass, "isTruthy", Object_isTruthy, 0);
 
 	bluObj* nilClass = bluGetGlobal(vm, "Nil");
 	vm->nilClass = (bluObjClass*)nilClass;

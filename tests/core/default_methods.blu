@@ -1,0 +1,1 @@
+assert 3.times(fn(i): "a").join(" ") == "a a a"
