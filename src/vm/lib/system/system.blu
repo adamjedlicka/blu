@@ -2,4 +2,6 @@ class System {
     // static fn print(value)
 
     // static fn println(value)
+
+    // static fn readline()
 }
