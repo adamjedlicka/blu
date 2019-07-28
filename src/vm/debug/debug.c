@@ -1,5 +1,5 @@
 #include "debug.h"
-#include "blu.h"
+#include "include/blu.h"
 #include "vm/object.h"
 #include "vm/value.h"
 

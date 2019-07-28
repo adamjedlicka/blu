@@ -1,5 +1,5 @@
 #include "compiler.h"
-#include "blu.h"
+#include "include/blu.h"
 #include "vm/debug/debug.h"
 #include "vm/memory.h"
 #include "vm/object.h"

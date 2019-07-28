@@ -1,9 +1,9 @@
 #ifndef blu_compiler_h
 #define blu_compiler_h
 
-#include "blu.h"
-#include "chunk.h"
+#include "include/blu.h"
 #include "vm/common.h"
+#include "vm/compiler/chunk.h"
 #include "vm/object.h"
 #include "vm/parser/parser.h"
 

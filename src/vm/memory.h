@@ -2,8 +2,8 @@
 #define blu_memory_h
 
 #include "compiler/chunk.h"
-#include "object.h"
-#include "table.h"
+#include "vm/object.h"
+#include "vm/table.h"
 
 void* bluAllocate(bluVM* vm, size_t size);
 void* bluReallocate(bluVM* vm, void* previous, size_t oldSize, size_t newSize);

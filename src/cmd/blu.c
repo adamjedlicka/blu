@@ -1,4 +1,4 @@
-#include "blu.h"
+#include "include/blu.h"
 
 static void repl() {
 	char line[1024];

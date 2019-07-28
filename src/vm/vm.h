@@ -1,11 +1,11 @@
 #ifndef blu_vm_h
 #define blu_vm_h
 
-#include "blu.h"
 #include "compiler/chunk.h"
-#include "object.h"
-#include "table.h"
-#include "value.h"
+#include "include/blu.h"
+#include "vm/object.h"
+#include "vm/table.h"
+#include "vm/value.h"
 
 #define FRAMES_MAX 256
 #define STACK_MAX (FRAMES_MAX * (UINT8_MAX + 1))

@@ -1,8 +1,7 @@
 #include <math.h>
 
-#include "blu.h"
-#include "object.h"
 #include "value.h"
+#include "vm/object.h"
 
 bool bluValuesEqual(bluValue a, bluValue b) {
 	if (a.type != b.type) return false;

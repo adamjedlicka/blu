@@ -1,8 +1,8 @@
 #ifndef blu_table_h
 #define blu_table_h
 
-#include "blu.h"
-#include "value.h"
+#include "include/blu.h"
+#include "vm/value.h"
 
 typedef struct {
 	bluObjString* key;

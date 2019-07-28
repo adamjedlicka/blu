@@ -1,8 +1,8 @@
 #ifndef blu_parser_h
 #define blu_parser_h
 
-#include "blu.h"
-#include "token.h"
+#include "include/blu.h"
+#include "vm/parser/token.h"
 
 typedef struct {
 	const char* source;

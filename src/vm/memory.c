@@ -1,7 +1,7 @@
 #include <time.h>
 
 #include "memory.h"
-#include "vm.h"
+#include "vm/vm.h"
 
 #define GC_HEAP_GROW_FACTOR 0.5
 #define GC_HEAP_MINIMUM 1024 * 1024

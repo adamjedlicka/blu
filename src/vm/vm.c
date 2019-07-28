@@ -1,9 +1,8 @@
 #include "vm.h"
-#include "blu.h"
 #include "compiler/compiler.h"
-#include "memory.h"
-#include "object.h"
 #include "vm/debug/debug.h"
+#include "vm/memory.h"
+#include "vm/object.h"
 
 #define BINARY_OP(valueType, op)                                                                                       \
 	do {                                                                                                               \

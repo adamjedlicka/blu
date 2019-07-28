@@ -1,8 +1,8 @@
 #ifndef blu_buffer_h
 #define blu_buffer_h
 
-#include "blu.h"
-#include "utils.h"
+#include "include/blu.h"
+#include "util/utils.h"
 
 // We need buffers of a few different types. To avoid lots of casting between void* and back, we'll use the preprocessor
 // as a poor man's generics and let it generate a few type-specific ones.

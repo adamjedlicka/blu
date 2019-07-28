@@ -1,7 +1,7 @@
 #ifndef blu_common_h
 #define blu_common_h
 
-#include "blu.h"
+#include "include/blu.h"
 
 #define LOCALS_MAX UINT16_MAX + 1
 

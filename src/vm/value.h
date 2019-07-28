@@ -1,7 +1,7 @@
 #ifndef blu_value_h
 #define blu_value_h
 
-#include "blu.h"
+#include "include/blu.h"
 
 typedef enum {
 	VAL_BOOL,

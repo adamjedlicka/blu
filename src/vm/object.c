@@ -1,8 +1,8 @@
 #include "object.h"
-#include "blu.h"
-#include "memory.h"
-#include "table.h"
-#include "vm.h"
+#include "include/blu.h"
+#include "vm/memory.h"
+#include "vm/table.h"
+#include "vm/vm.h"
 
 DEFINE_BUFFER(bluObjUpvalue, bluObjUpvalue*);
 

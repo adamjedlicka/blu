@@ -1,10 +1,10 @@
 #ifndef blu_object_h
 #define blu_object_h
 
-#include "blu.h"
 #include "compiler/chunk.h"
-#include "table.h"
-#include "value.h"
+#include "include/blu.h"
+#include "vm/table.h"
+#include "vm/value.h"
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
