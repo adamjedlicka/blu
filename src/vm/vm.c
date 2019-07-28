@@ -1,7 +1,6 @@
 #include "vm.h"
 #include "compiler/compiler.h"
-#include "core/core.h"
-#include "core/system.h"
+#include "lib/std.h"
 #include "vm/debug/debug.h"
 #include "vm/memory.h"
 #include "vm/object.h"
@@ -810,8 +809,7 @@ bluVM* bluNewVM() {
 	vm->shouldGC = false;
 	vm->timeGC = 0;
 
-	bluInitCore(vm);
-	bluInitSystem(vm);
+	bluInitStd(vm);
 
 	return vm;
 }
