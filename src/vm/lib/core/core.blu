@@ -78,7 +78,7 @@ class Array {
     }
 
     fn join(separator) {
-        if @.len() == 0: return nil
+        if @len() == 0: return nil
 
         var accumulator = @[0]
 

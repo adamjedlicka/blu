@@ -80,7 +80,7 @@ static const char* coreSource =
 "    }\n"
 "\n"
 "    fn join(separator) {\n"
-"        if @.len() == 0: return nil\n"
+"        if @len() == 0: return nil\n"
 "\n"
 "        var accumulator = @[0]\n"
 "\n"
