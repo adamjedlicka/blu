@@ -927,9 +927,9 @@ static void varDeclaration(bluCompiler* compiler) {
 		emitByte(compiler, OP_NIL);
 	}
 
-	expectNewlineOrSemicolon(compiler);
-
 	defineVariable(compiler, name);
+
+	expectNewlineOrSemicolon(compiler);
 }
 
 static void function(bluCompiler* compiler, bluFunctionType type) {

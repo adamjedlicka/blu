@@ -244,6 +244,10 @@ void bluParserInit(bluParser* parser, const char* source) {
 	parser->columnFrom = 0;
 	parser->columnTo = 0;
 
+	// Initialize the token types to something deterministic to prevent compiler optimizations
+	parser->current.type = TOKEN_EOF;
+	parser->previous.type = TOKEN_EOF;
+
 	parser->emitEOF = false;
 }
 

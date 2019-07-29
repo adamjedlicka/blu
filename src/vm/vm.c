@@ -165,9 +165,14 @@ static bool invokeFromClass(bluVM* vm, bluObjClass* class, bluObjString* name, i
 static bool invoke(bluVM* vm, bluObjString* name, int8_t argCount) {
 	bluValue receiver = bluPeek(vm, argCount);
 
-	if (IS_OBJ(receiver)) {
+	if (IS_INSTANCE(receiver)) {
 		bluValue value;
-		if (bluTableGet(vm, &AS_OBJ(receiver)->fields, name, &value)) {
+		if (bluTableGet(vm, &AS_INSTANCE(receiver)->fields, name, &value)) {
+			return callValue(vm, value, argCount);
+		}
+	} else if (IS_CLASS(receiver)) {
+		bluValue value;
+		if (bluTableGet(vm, &AS_CLASS(receiver)->fields, name, &value)) {
 			return callValue(vm, value, argCount);
 		}
 	}
@@ -369,20 +374,29 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_GET_PROPERTY: {
+			bluValue receiver = PEEK(0);
 			bluObjString* name = READ_STRING();
 
-			if (IS_OBJ(PEEK(0))) {
-				bluObj* object = AS_OBJ(PEEK(0));
-
+			if (!IS_INSTANCE(receiver) && !IS_CLASS(receiver)) {
+				RUNTIME_ERROR("Only instances and objects have properties.");
+				return INTERPRET_RUNTIME_ERROR;
+			} else if (IS_INSTANCE(receiver)) {
 				bluValue value;
-				if (bluTableGet(vm, &object->fields, name, &value)) {
-					DROP(); // Object.
+				if (bluTableGet(vm, &AS_INSTANCE(receiver)->fields, name, &value)) {
+					DROP(); // Receiver.
+					PUSH(value);
+					break;
+				}
+			} else {
+				bluValue value;
+				if (bluTableGet(vm, &AS_CLASS(receiver)->fields, name, &value)) {
+					DROP(); // Receiver.
 					PUSH(value);
 					break;
 				}
 			}
 
-			if (!bindMethod(vm, bluGetClass(vm, PEEK(0)), name)) {
+			if (!bindMethod(vm, bluGetClass(vm, receiver), name)) {
 				RUNTIME_ERROR("No such property.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
@@ -391,15 +405,19 @@ static bluInterpretResult run(bluVM* vm) {
 		}
 
 		case OP_SET_PROPERTY: {
-			if (!IS_OBJ(PEEK(1))) {
-				RUNTIME_ERROR("Only objects have fields.");
+			bluValue receiver = PEEK(1);
+
+			if (!IS_INSTANCE(receiver) && !IS_CLASS(receiver)) {
+				RUNTIME_ERROR("Only instances and objects have properties.");
 				return INTERPRET_RUNTIME_ERROR;
+			} else if (IS_INSTANCE(receiver)) {
+				bluTableSet(vm, &AS_INSTANCE(receiver)->fields, READ_STRING(), PEEK(0));
+			} else {
+				bluTableSet(vm, &AS_CLASS(receiver)->fields, READ_STRING(), PEEK(0));
 			}
 
-			bluObj* object = AS_OBJ(PEEK(1));
-			bluTableSet(vm, &object->fields, READ_STRING(), PEEK(0));
 			bluValue value = POP();
-			DROP(); // Object
+			DROP(); // Receiver.
 			PUSH(value);
 
 			break;
@@ -697,7 +715,7 @@ static bluInterpretResult run(bluVM* vm) {
 		case OP_METHOD_STATIC: {
 			bluValue method = bluPop(vm);
 			bluObjClass* class = AS_CLASS(bluPop(vm));
-			bluTableSet(vm, &class->obj.fields, READ_STRING(), method);
+			bluTableSet(vm, &class->fields, READ_STRING(), method);
 			break;
 		}
 
@@ -855,5 +873,5 @@ bool bluDefineStaticMethod(bluVM* vm, bluObj* obj, const char* name, bluNativeFn
 	bluObjNative* native = bluNewNative(vm, function, arity);
 
 	bluObjClass* class = (bluObjClass*)obj;
-	return bluTableSet(vm, &class->obj.fields, bluCopyString(vm, name, strlen(name)), OBJ_VAL(native));
+	return bluTableSet(vm, &class->fields, bluCopyString(vm, name, strlen(name)), OBJ_VAL(native));
 }

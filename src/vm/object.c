@@ -10,9 +10,6 @@ static bluObj* allocateObject(bluVM* vm, size_t size, bluObjType type) {
 	bluObj* object = (bluObj*)bluAllocate(vm, size);
 	object->type = type;
 	object->class = NULL;
-
-	bluTableInit(vm, &object->fields);
-
 	object->isDark = false;
 	object->next = vm->objects;
 
@@ -83,6 +80,7 @@ bluObjClass* bluNewClass(bluVM* vm, bluObjString* name) {
 	class->name = name;
 
 	bluTableInit(vm, &class->methods);
+	bluTableInit(vm, &class->fields);
 
 	return class;
 }
@@ -102,6 +100,8 @@ bluObjFunction* bluNewFunction(bluVM* vm) {
 bluObjInstance* bluNewInstance(bluVM* vm, bluObjClass* class) {
 	bluObjInstance* instance = (bluObjInstance*)allocateObject(vm, sizeof(bluObjInstance), OBJ_INSTANCE);
 	instance->obj.class = class;
+
+	bluTableInit(vm, &instance->fields);
 
 	return instance;
 }
