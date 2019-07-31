@@ -13,9 +13,13 @@ class File {
 
     // fn close()
 
+    // fn rewind()
+
     // fn readLine()
 
     fn lines() {
+        @rewind()
+
         var lines = []
 
         var line = @readLine()

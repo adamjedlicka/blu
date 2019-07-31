@@ -50,6 +50,14 @@ int8_t File_close(bluVM* vm, int8_t argCount, bluValue* args) {
 	return 1;
 }
 
+int8_t File_rewind(bluVM* vm, int8_t argCount, bluValue* args) {
+	bluObjInstance* receiver = AS_INSTANCE(args[0]);
+
+	rewind(((FileData*)receiver->data)->fd);
+
+	return 1;
+}
+
 int8_t File_readLine(bluVM* vm, int8_t argCount, bluValue* args) {
 	bluObjInstance* receiver = AS_INSTANCE(args[0]);
 
@@ -84,5 +92,6 @@ void bluInitFile(bluVM* vm) {
 
 	bluDefineMethod(vm, fileClass, "open", File_open, 0);
 	bluDefineMethod(vm, fileClass, "close", File_close, 0);
+	bluDefineMethod(vm, fileClass, "rewind", File_rewind, 0);
 	bluDefineMethod(vm, fileClass, "readLine", File_readLine, 0);
 }
