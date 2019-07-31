@@ -36,6 +36,9 @@ typedef struct bluObjUpvalue bluObjUpvalue;
 
 DECLARE_BUFFER(bluObjUpvalue, bluObjUpvalue*);
 
+typedef void (*bluConstruct)(bluVM* vm, bluObjInstance* instance);
+typedef void (*bluDestruct)(bluVM* vm, bluObjInstance* instance);
+
 typedef enum {
 	OBJ_ARRAY,
 	OBJ_BOUND_METHOD,
@@ -74,6 +77,8 @@ struct bluObjClass {
 	bluObjClass* superclass;
 	bluTable methods;
 	bluTable fields;
+	bluConstruct construct;
+	bluDestruct destruct;
 };
 
 struct bluObjFunction {
@@ -87,6 +92,7 @@ struct bluObjFunction {
 struct bluObjInstance {
 	bluObj obj;
 	bluTable fields;
+	void* data;
 };
 
 struct bluObjNative {

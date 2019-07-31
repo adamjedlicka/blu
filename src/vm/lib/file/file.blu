@@ -1,0 +1,32 @@
+class File {
+
+    fn __init(name, mode) {
+        @_name = name
+        @_mode = mode
+    }
+
+    static fn open(name, mode) {
+        return File(name, mode).open()
+    }
+
+    // fn open()
+
+    // fn close()
+
+    // fn readLine()
+
+    fn lines() {
+        var lines = []
+
+        var line = @readLine()
+
+        while line {
+            lines.push(line)
+
+            line = @readLine()
+        }
+
+        return lines
+    }
+
+}

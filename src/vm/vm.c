@@ -104,10 +104,16 @@ static bool callValue(bluVM* vm, bluValue callee, int8_t argCount) {
 		// Call the initializer, if there is one.
 		bluValue initializer;
 		if (bluTableGet(vm, &class->methods, vm->stringInitializer, &initializer)) {
-			return call(vm, AS_FUNCTION(initializer), argCount);
+			if (!callValue(vm, initializer, argCount)) {
+				return false;
+			}
 		} else if (argCount != 0) {
 			runtimeError(vm, "Expected 0 arguments but got %d.", argCount);
 			return false;
+		}
+
+		if (class->construct != NULL) {
+			class->construct(vm, AS_INSTANCE(vm->stackTop[-argCount - 1]));
 		}
 
 		return true;

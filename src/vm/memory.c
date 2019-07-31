@@ -47,6 +47,11 @@ static void freeObject(bluVM* vm, bluObj* object) {
 
 	case OBJ_INSTANCE: {
 		bluObjInstance* instance = (bluObjInstance*)object;
+
+		if (instance->obj.class->destruct != NULL) {
+			instance->obj.class->destruct(vm, instance);
+		}
+
 		bluTableFree(vm, &instance->fields);
 		bluDeallocate(vm, instance, sizeof(bluObjInstance));
 		break;
@@ -252,5 +257,13 @@ void bluCollectMemory(bluVM* vm) {
 		bluObj* next = object->next;
 		freeObject(vm, object);
 		object = next;
+	}
+}
+
+void bluClaimMemory(bluVM* vm, void* ptr, size_t size) {
+	vm->bytesAllocated += size;
+
+	if (vm->bytesAllocated > vm->nextGC) {
+		vm->shouldGC = true;
 	}
 }

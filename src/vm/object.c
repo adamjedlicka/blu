@@ -78,6 +78,8 @@ bluObjClass* bluNewClass(bluVM* vm, bluObjString* name) {
 	class->obj.class = vm->classClass;
 	class->superclass = NULL;
 	class->name = name;
+	class->construct = NULL;
+	class->destruct = NULL;
 
 	bluTableInit(vm, &class->methods);
 	bluTableInit(vm, &class->fields);
@@ -100,6 +102,7 @@ bluObjFunction* bluNewFunction(bluVM* vm) {
 bluObjInstance* bluNewInstance(bluVM* vm, bluObjClass* class) {
 	bluObjInstance* instance = (bluObjInstance*)allocateObject(vm, sizeof(bluObjInstance), OBJ_INSTANCE);
 	instance->obj.class = class;
+	instance->data = NULL;
 
 	bluTableInit(vm, &instance->fields);
 
