@@ -3,7 +3,7 @@ class System {
 
     // static fn println(value)
 
-    // static fn readline()
+    // static fn readln()
 
     // static fn clock()
 }

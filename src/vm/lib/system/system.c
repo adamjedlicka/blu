@@ -28,7 +28,7 @@ int8_t System__println(bluVM* vm, int8_t argCount, bluValue* args) {
 	return 1;
 }
 
-int8_t System__readline(bluVM* vm, int8_t argCount, bluValue* args) {
+int8_t System__readln(bluVM* vm, int8_t argCount, bluValue* args) {
 	char* line = bluAllocate(vm, sizeof(char) * 1024);
 
 	if (!fgets(line, 1024, stdin)) {
@@ -54,6 +54,6 @@ void bluInitSystem(bluVM* vm) {
 	bluObj* systemClass = bluGetGlobal(vm, "System");
 	bluDefineStaticMethod(vm, systemClass, "print", System__print, 0);
 	bluDefineStaticMethod(vm, systemClass, "println", System__println, 0);
-	bluDefineStaticMethod(vm, systemClass, "readline", System__readline, 0);
+	bluDefineStaticMethod(vm, systemClass, "readln", System__readln, 0);
 	bluDefineStaticMethod(vm, systemClass, "clock", System__clock, 0);
 }
