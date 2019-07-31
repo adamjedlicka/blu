@@ -113,4 +113,8 @@ static const char* coreSource =
 "\n"
 "class String {\n"
 "\n"
+"    // fn len()\n"
+"\n"
+"    // fn reverse()\n"
+"\n"
 "}\n";

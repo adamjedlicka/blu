@@ -1,0 +1,6 @@
+var in = ["hello", "w", "world"]
+var expected = ["olleh", "dlrow"]
+
+var out = in.filter(fn(s): s.len() > 1).map(fn(s): s.reverse())
+
+assert out.equals(expected)

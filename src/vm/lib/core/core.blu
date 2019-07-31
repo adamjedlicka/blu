@@ -111,4 +111,8 @@ class Function {
 
 class String {
 
+    // fn len()
+
+    // fn reverse()
+
 }

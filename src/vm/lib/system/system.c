@@ -1,3 +1,5 @@
+#include <time.h>
+
 #include "system.h"
 #include "vm/memory.h"
 #include "vm/object.h"
@@ -40,6 +42,12 @@ int8_t System__readline(bluVM* vm, int8_t argCount, bluValue* args) {
 	return 1;
 }
 
+int8_t System__clock(bluVM* vm, int8_t argCount, bluValue* args) {
+	args[0] = NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
+
+	return 1;
+}
+
 void bluInitSystem(bluVM* vm) {
 	bluInterpret(vm, systemSource, "__SYSTEM__");
 
@@ -47,4 +55,5 @@ void bluInitSystem(bluVM* vm) {
 	bluDefineStaticMethod(vm, systemClass, "print", System__print, 0);
 	bluDefineStaticMethod(vm, systemClass, "println", System__println, 0);
 	bluDefineStaticMethod(vm, systemClass, "readline", System__readline, 0);
+	bluDefineStaticMethod(vm, systemClass, "clock", System__clock, 0);
 }

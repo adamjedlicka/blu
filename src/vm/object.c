@@ -134,7 +134,7 @@ bluObjString* bluTakeString(bluVM* vm, char* chars, int32_t length) {
 
 	bluObjString* interned = bluTableFindString(vm, &vm->strings, chars, length, hash);
 	if (interned != NULL) {
-		bluDeallocate(vm, chars, sizeof(char) * 1);
+		bluDeallocate(vm, chars, sizeof(char) * length);
 		return interned;
 	}
 

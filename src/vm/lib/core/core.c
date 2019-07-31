@@ -55,6 +55,29 @@ int8_t Array_len(bluVM* vm, int8_t argCount, bluValue* args) {
 	return 1;
 }
 
+int8_t String_len(bluVM* vm, int8_t argCount, bluValue* args) {
+	bluObjString* string = AS_STRING(args[0]);
+
+	args[0] = NUMBER_VAL(string->length);
+
+	return 1;
+}
+
+int8_t String_reverse(bluVM* vm, int8_t argCount, bluValue* args) {
+	bluObjString* string = AS_STRING(args[0]);
+
+	char* reversed = bluAllocate(vm, sizeof(char) * (string->length + 1));
+
+	reversed[string->length] = '\0';
+	for (int32_t i = 0; i < string->length; i++) {
+		reversed[i] = string->chars[string->length - 1 - i];
+	}
+
+	args[0] = OBJ_VAL(bluTakeString(vm, reversed, string->length));
+
+	return 1;
+}
+
 void bluInitCore(bluVM* vm) {
 	bluInterpret(vm, coreSource, "__CORE__");
 
@@ -84,5 +107,7 @@ void bluInitCore(bluVM* vm) {
 	vm->functionClass = (bluObjClass*)functionClass;
 
 	bluObj* stringClass = bluGetGlobal(vm, "String");
+	bluDefineMethod(vm, stringClass, "len", String_len, 0);
+	bluDefineMethod(vm, stringClass, "reverse", String_reverse, 0);
 	vm->stringClass = (bluObjClass*)stringClass;
 }
