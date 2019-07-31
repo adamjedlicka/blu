@@ -259,11 +259,3 @@ void bluCollectMemory(bluVM* vm) {
 		object = next;
 	}
 }
-
-void bluClaimMemory(bluVM* vm, void* ptr, size_t size) {
-	vm->bytesAllocated += size;
-
-	if (vm->bytesAllocated > vm->nextGC) {
-		vm->shouldGC = true;
-	}
-}
