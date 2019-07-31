@@ -5,7 +5,7 @@ static const char* systemSource =
 "\n"
 "    // static fn println(value)\n"
 "\n"
-"    // static fn readline()\n"
+"    // static fn readln()\n"
 "\n"
 "    // static fn clock()\n"
 "}\n";
