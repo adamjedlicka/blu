@@ -54,6 +54,8 @@ typedef enum {
 	OP_METHOD_FOREIGN,
 	OP_METHOD_STATIC,
 
+	OP_IMPORT,
+
 	OP_ECHO,
 	OP_RETURN,
 

@@ -150,7 +150,7 @@ static bluTokenType identifierType(bluParser* parser) {
 							case 'e': return checkKeyword(parser, 4, 3, "ign", TOKEN_FOREIGN);
 							}
 						} else {
-							return TOKEN_FOR;
+							return checkKeyword(parser, 3, 0, NULL, TOKEN_FOR);
 						}
 						break;
 					}
@@ -161,7 +161,14 @@ static bluTokenType identifierType(bluParser* parser) {
 			}
 		}
 		break;
-	case 'i': return checkKeyword(parser, 1, 1, "f", TOKEN_IF);
+	case 'i':
+		if (parser->at - parser->from > 1) {
+			switch (parser->source[parser->from + 1]) {
+			case 'f': return checkKeyword(parser, 2, 0, NULL, TOKEN_IF);
+			case 'm': return checkKeyword(parser, 2, 4, "port", TOKEN_IMPORT);
+			}
+		}
+		break;
 	case 'n': return checkKeyword(parser, 1, 2, "il", TOKEN_NIL);
 	case 'o': return checkKeyword(parser, 1, 1, "r", TOKEN_OR);
 	case 'r': return checkKeyword(parser, 1, 5, "eturn", TOKEN_RETURN);

@@ -392,8 +392,8 @@ static void number(bluCompiler* compiler, bool canAssign) {
 }
 
 static void string(bluCompiler* compiler, bool canAssign) {
-	bluObjString* string =
-		bluCopyString(compiler->vm, compiler->parser->previous.start + 1, compiler->parser->previous.length - 2);
+	bluToken previous = compiler->parser->previous;
+	bluObjString* string = bluCopyString(compiler->vm, previous.start + 1, previous.length - 2);
 	emitConstant(compiler, OBJ_VAL(string));
 }
 
@@ -604,6 +604,7 @@ ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE},	// TOKEN_FOR
 	{NULL, NULL, PREC_NONE},	// TOKEN_FOREIGN
 	{NULL, NULL, PREC_NONE},	// TOKEN_IF
+	{NULL, NULL, PREC_NONE},	// TOKEN_IMPORT
 	{literal, NULL, PREC_NONE}, // TOKEN_NIL
 	{NULL, or, PREC_OR},		// TOKEN_OR
 	{NULL, NULL, PREC_NONE},	// TOKEN_RETURN
@@ -845,6 +846,18 @@ static void returnStatement(bluCompiler* compiler) {
 
 		if (needsNewline) expectNewlineOrSemicolon(compiler);
 	}
+}
+
+static void importStatement(bluCompiler* compiler) {
+	emitByte(compiler, OP_IMPORT);
+
+	consume(compiler, TOKEN_STRING, "Expect string after import.");
+
+	bluToken previous = compiler->parser->previous;
+	bluObjString* string = bluCopyString(compiler->vm, previous.start + 1, previous.length - 2);
+	emitShort(compiler, makeConstant(compiler, OBJ_VAL(string)));
+
+	expectNewlineOrSemicolon(compiler);
 }
 
 static void echoStatement(bluCompiler* compiler) {
@@ -1120,6 +1133,8 @@ static void statement(bluCompiler* compiler) {
 		forStatement(compiler);
 	} else if (match(compiler, TOKEN_RETURN)) {
 		returnStatement(compiler);
+	} else if (match(compiler, TOKEN_IMPORT)) {
+		importStatement(compiler);
 	} else if (match(compiler, TOKEN_ECHO)) {
 		echoStatement(compiler);
 	} else if (match(compiler, TOKEN_ASSERT)) {

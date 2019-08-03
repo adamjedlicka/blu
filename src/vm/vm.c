@@ -17,6 +17,8 @@
 		PUSH(valueType(left op right));                                                                                \
 	} while (false)
 
+DEFINE_BUFFER(bluModule, bluModule);
+
 static void resetStack(bluVM* vm) {
 	vm->stackTop = vm->stack;
 	vm->frameCount = 0;
@@ -725,6 +727,29 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
+		case OP_IMPORT: {
+			bluObjString* name = READ_STRING();
+			for (int32_t i = 0; i < vm->modules.count; i++) {
+				if (bluValuesEqual(OBJ_VAL(name), OBJ_VAL(vm->modules.data[i].name))) {
+					bluModule* module = &vm->modules.data[i];
+
+					if (module->loaded == true) break;
+
+					module->loaded = true;
+
+					int32_t frameCountStart = vm->frameCountStart;
+					vm->frameCountStart = vm->frameCount;
+
+					module->loader(vm);
+
+					vm->frameCountStart = frameCountStart;
+
+					break;
+				}
+			}
+			break;
+		}
+
 		case OP_ECHO: {
 			bluPrintValue(POP());
 			printf("\n");
@@ -737,7 +762,7 @@ static bluInterpretResult run(bluVM* vm) {
 
 			closeUpvalues(vm, slots);
 
-			if (vm->frameCount == 0) {
+			if (vm->frameCount == vm->frameCountStart) {
 #if DEBUG
 				if (vm->stackTop - vm->stack != 0) {
 					RUNTIME_ERROR("Stack not empty!");
@@ -791,9 +816,12 @@ bluVM* bluNewVM() {
 	resetStack(vm);
 
 	vm->frameCount = 0;
+	vm->frameCountStart = 0;
 
 	bluTableInit(vm, &vm->globals);
 	bluTableInit(vm, &vm->strings);
+
+	bluModuleBufferInit(&vm->modules);
 
 	vm->openUpvalues = NULL;
 	vm->objects = NULL;
@@ -815,6 +843,8 @@ void bluFreeVM(bluVM* vm) {
 
 	bluTableFree(vm, &vm->globals);
 	bluTableFree(vm, &vm->strings);
+
+	bluModuleBufferFree(&vm->modules);
 
 	free(vm);
 }
@@ -880,4 +910,13 @@ bool bluDefineStaticMethod(bluVM* vm, bluObj* obj, const char* name, bluNativeFn
 
 	bluObjClass* class = (bluObjClass*)obj;
 	return bluTableSet(vm, &class->fields, bluCopyString(vm, name, strlen(name)), OBJ_VAL(native));
+}
+
+void bluRegisterModule(bluVM* vm, const char* name, bluModuleLoader loader) {
+	bluModule module;
+	module.name = bluCopyString(vm, name, strlen(name));
+	module.loader = loader;
+	module.loaded = false;
+
+	bluModuleBufferWrite(&vm->modules, module);
 }

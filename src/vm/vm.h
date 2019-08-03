@@ -10,6 +10,8 @@
 #define FRAMES_MAX 256
 #define STACK_MAX (FRAMES_MAX * (UINT8_MAX + 1))
 
+DECLARE_BUFFER(bluModule, bluModule);
+
 typedef struct {
 	bluObjFunction* function;
 	uint8_t* ip;
@@ -22,6 +24,7 @@ struct bluVM {
 
 	bluCallFrame frames[FRAMES_MAX];
 	int32_t frameCount;
+	int32_t frameCountStart;
 
 	bluTable globals;
 	bluTable strings;
@@ -37,6 +40,9 @@ struct bluVM {
 	bluObjClass* stringClass;
 
 	bluObjString* stringInitializer;
+
+	// TODO : Use hashmap instead of array
+	bluModuleBuffer modules;
 
 	bluObj* objects;
 

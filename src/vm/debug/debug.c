@@ -128,6 +128,8 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
 	case OP_METHOD_FOREIGN: return shortInstruction("OP_METHOD_FOREIGN", chunk, offset);
 	case OP_METHOD_STATIC: return shortInstruction("OP_METHOD_STATIC", chunk, offset);
 
+	case OP_IMPORT: return constantInstruction("OP_IMPORT", chunk, offset);
+
 	case OP_ECHO: return simpleInstruction("OP_ECHO", offset);
 	case OP_RETURN: return simpleInstruction("OP_RETURN", offset);
 

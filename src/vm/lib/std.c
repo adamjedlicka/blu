@@ -7,7 +7,7 @@
 
 void bluInitStd(bluVM* vm) {
 	bluInitCore(vm);
-	bluInitMath(vm);
-	bluInitSystem(vm);
-	bluInitFile(vm);
+
+	bluRegisterModule(vm, "system", bluInitSystem);
+	bluRegisterModule(vm, "math", bluInitMath);
 }

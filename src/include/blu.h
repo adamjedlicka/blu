@@ -30,6 +30,14 @@ typedef struct bluObjString bluObjString;
 
 typedef int8_t (*bluNativeFn)(bluVM* vm, int8_t argCount, bluValue* args);
 
+typedef void (*bluModuleLoader)(bluVM* vm);
+
+typedef struct {
+	bluObjString* name;
+	bluModuleLoader loader;
+	bool loaded;
+} bluModule;
+
 typedef enum {
 	INTERPRET_OK,
 	INTERPRET_COMPILE_ERROR,
@@ -47,5 +55,7 @@ bluObj* bluGetGlobal(bluVM* vm, const char* name);
 
 bool bluDefineMethod(bluVM* vm, bluObj* obj, const char* name, bluNativeFn function, int8_t arity);
 bool bluDefineStaticMethod(bluVM* vm, bluObj* obj, const char* name, bluNativeFn function, int8_t arity);
+
+void bluRegisterModule(bluVM* vm, const char* name, bluModuleLoader loader);
 
 #endif

@@ -1,3 +1,6 @@
+import "system"
+import "math"
+
 class Set {
 	fn __init() {
 		@_arr = []

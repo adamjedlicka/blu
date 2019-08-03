@@ -220,6 +220,10 @@ void bluCollectGarbage(bluVM* vm) {
 		bluGrayObject(vm, (bluObj*)vm->frames[i].function);
 	}
 
+	for (int32_t i = 0; i < vm->modules.count; i++) {
+		bluGrayObject(vm, (bluObj*)vm->modules.data[i].name);
+	}
+
 	bluGrayTable(vm, &vm->globals);
 
 	bluGrayObject(vm, (bluObj*)vm->stringInitializer);

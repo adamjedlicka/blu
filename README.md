@@ -4,6 +4,8 @@
 blu is small, fast and intuitive scripting language
 
 ```
+import "system"
+
 class Dog {
     fn __init(name) {
         @name = name
