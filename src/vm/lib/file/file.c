@@ -1,7 +1,3 @@
-#define _GNU_SOURCE
-
-#include <stdio.h>
-
 #include "file.h"
 #include "vm/memory.h"
 #include "vm/object.h"

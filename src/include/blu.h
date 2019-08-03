@@ -1,6 +1,9 @@
 #ifndef blu_h
 #define blu_h
 
+#define _GNU_SOURCE
+
+#include <limits.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -35,6 +38,7 @@ typedef void (*bluModuleLoader)(bluVM* vm);
 typedef struct {
 	bluObjString* name;
 	bluModuleLoader loader;
+	char* source;
 	bool loaded;
 } bluModule;
 
