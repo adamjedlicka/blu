@@ -345,7 +345,7 @@ static int32_t resolveUpvalue(bluCompiler* compiler, bluToken* name) {
 	// non-immediately enclosing function. This "flattens" closures automatically: it adds upvalues to all of the
 	// intermediate functions to get from the function where a local is declared all the way into the possibly deeply
 	// nested function that is closing over it.
-	int32_t upvalue = resolveLocal(compiler->enclosing, name);
+	int32_t upvalue = resolveUpvalue(compiler->enclosing, name);
 	if (upvalue != -1) {
 		return addUpvalue(compiler, (uint16_t)upvalue, false);
 	}
