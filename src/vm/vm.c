@@ -765,7 +765,6 @@ static bluInterpretResult run(bluVM* vm) {
 			PUSH(OBJ_VAL(closure));
 
 			for (uint16_t i = 0; i < function->upvalueCount; i++) {
-				printf("upvalue\n");
 				bool isLocal = READ_BYTE();
 				uint16_t index = READ_SHORT();
 
