@@ -3,7 +3,7 @@
 
 #include "include/blu.h"
 
-#define LOCALS_MAX UINT16_MAX + 1
+#define LOCALS_MAX UINT16_MAX - 1
 
 #ifdef DEBUG
 // #define DEBUG_COMPILER_DISASSEMBLE

@@ -112,7 +112,7 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
 		printf("\n");
 
 		bluObjFunction* function = AS_FUNCTION(chunk->constants.data[slot]);
-		for (int32_t i = 0; i < function->upvalues.count; i++) {
+		for (uint16_t i = 0; i < function->upvalueCount; i++) {
 			bool isLocal = chunk->code.data[offset];
 			uint16_t index = ((chunk->code.data[offset + 1] << 8) & 0xff) | (chunk->code.data[offset + 2] & 0xff);
 			offset += 3;

@@ -88,13 +88,14 @@ struct bluObjClass {
 struct bluObjClosure {
 	bluObj obj;
 	bluObjFunction* function;
+	bluObjUpvalueBuffer upvalues;
 };
 
 struct bluObjFunction {
 	bluObj obj;
 	int8_t arity;
+	uint16_t upvalueCount;
 	bluChunk chunk;
-	bluObjUpvalueBuffer upvalues;
 	bluObjString* name;
 };
 

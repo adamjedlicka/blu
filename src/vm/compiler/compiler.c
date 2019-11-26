@@ -14,7 +14,7 @@ typedef enum {
 	PREC_ASSIGNMENT, // =
 	PREC_OR,		 // or
 	PREC_AND,		 // and
-	PREC_EQUALITY,   // == !=
+	PREC_EQUALITY,	 // == !=
 	PREC_COMPARISON, // < > <= >=
 	PREC_TERM,		 // + -
 	PREC_FACTOR,	 // * /
@@ -301,8 +301,8 @@ static int32_t resolveLocal(bluCompiler* compiler, bluToken* name) {
 // is already in the list. Returns the index of the upvalue.
 static int32_t addUpvalue(bluCompiler* compiler, uint16_t index, bool isLocal) {
 	// Look for an existing one.
-	int32_t upvalueCount = compiler->function->upvalues.count;
-	for (int32_t i = 0; i < upvalueCount; i++) {
+	uint16_t upvalueCount = compiler->function->upvalueCount;
+	for (uint16_t i = 0; i < upvalueCount; i++) {
 		bluUpvalue* upvalue = &compiler->upvalues.data[i];
 		if (upvalue->index == index && upvalue->isLocal == isLocal) {
 			return i;
@@ -320,7 +320,7 @@ static int32_t addUpvalue(bluCompiler* compiler, uint16_t index, bool isLocal) {
 	upvalue.index = index;
 	bluUpvalueBufferWrite(&compiler->upvalues, upvalue);
 
-	return bluObjUpvalueBufferWrite(&compiler->function->upvalues, NULL);
+	return compiler->function->upvalueCount++;
 }
 
 // Attempts to look up [name] in the functions enclosing the one being compiled by [compiler]. If found, it adds an
@@ -563,7 +563,7 @@ static void subscript(bluCompiler* compiler, bool canAssign) {
 
 ParseRule rules[] = {
 	{at, NULL, PREC_NONE},		   // TOKEN_AT
-	{caret, NULL, PREC_NONE},	  // TOKEN_CARET
+	{caret, NULL, PREC_NONE},	   // TOKEN_CARET
 	{NULL, NULL, PREC_NONE},	   // TOKEN_COLON
 	{NULL, NULL, PREC_NONE},	   // TOKEN_COMMA
 	{NULL, dot, PREC_CALL},		   // TOKEN_DOT
@@ -575,9 +575,9 @@ ParseRule rules[] = {
 	{NULL, NULL, PREC_NONE},	   // TOKEN_RIGHT_PAREN
 	{NULL, NULL, PREC_NONE},	   // TOKEN_SEMICOLON
 
-	{NULL, binary, PREC_EQUALITY},   // TOKEN_BANG_EQUAL
+	{NULL, binary, PREC_EQUALITY},	 // TOKEN_BANG_EQUAL
 	{unary, NULL, PREC_NONE},		 // TOKEN_BANG
-	{NULL, binary, PREC_EQUALITY},   // TOKEN_EQUAL_EQUAL
+	{NULL, binary, PREC_EQUALITY},	 // TOKEN_EQUAL_EQUAL
 	{NULL, binary, PREC_NONE},		 // TOKEN_EQUAL
 	{NULL, binary, PREC_COMPARISON}, // TOKEN_GREATER_EQUAL
 	{NULL, binary, PREC_COMPARISON}, // TOKEN_GREATER
@@ -590,8 +590,8 @@ ParseRule rules[] = {
 	{NULL, binary, PREC_FACTOR},	 // TOKEN_STAR
 
 	{variable, NULL, PREC_NONE}, // TOKEN_IDENTIFIER
-	{number, NULL, PREC_NONE},   // TOKEN_NUMBER
-	{string, NULL, PREC_NONE},   // TOKEN_STRING
+	{number, NULL, PREC_NONE},	 // TOKEN_NUMBER
+	{string, NULL, PREC_NONE},	 // TOKEN_STRING
 
 	{NULL, and, PREC_AND},		// TOKEN_AND
 	{NULL, NULL, PREC_NONE},	// TOKEN_ASSERT
@@ -995,7 +995,7 @@ static void function(bluCompiler* compiler, bluFunctionType type) {
 	emitShort(compiler, makeConstant(compiler, OBJ_VAL(function)));
 
 	// Emit arguments for each upvalue to know whether to capture a local or an upvalue.
-	for (int32_t i = 0; i < function->upvalues.count; i++) {
+	for (uint16_t i = 0; i < function->upvalueCount; i++) {
 		emitByte(compiler, fnCompiler.upvalues.data[i].isLocal ? 1 : 0);
 		emitShort(compiler, fnCompiler.upvalues.data[i].index);
 	}

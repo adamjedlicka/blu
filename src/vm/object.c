@@ -92,6 +92,8 @@ bluObjClosure* newClosure(bluVM* vm, bluObjFunction* function) {
 	closure->obj.class = vm->functionClass;
 	closure->function = function;
 
+	bluObjUpvalueBufferInit(&closure->upvalues);
+
 	return closure;
 }
 
@@ -99,10 +101,10 @@ bluObjFunction* bluNewFunction(bluVM* vm) {
 	bluObjFunction* function = (bluObjFunction*)allocateObject(vm, sizeof(bluObjFunction), OBJ_FUNCTION);
 	function->obj.class = vm->functionClass;
 	function->arity = 0;
+	function->upvalueCount = 0;
 	function->name = NULL;
 
 	bluChunkInit(&function->chunk);
-	bluObjUpvalueBufferInit(&function->upvalues);
 
 	return function;
 }

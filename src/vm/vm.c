@@ -368,7 +368,8 @@ static bluInterpretResult run(bluVM* vm) {
 		if (vm->shouldGC) bluCollectGarbage(vm);
 
 #ifdef DEBUG_VM_TRACE
-		bluDisassembleInstruction(&frame->closure->function->chunk, frame->ip - frame->closure->function->chunk.code.data);
+		bluDisassembleInstruction(&frame->closure->function->chunk,
+								  frame->ip - frame->closure->function->chunk.code.data);
 #endif
 
 		uint8_t instruction = READ_BYTE();
@@ -460,14 +461,14 @@ static bluInterpretResult run(bluVM* vm) {
 
 		case OP_GET_UPVALUE: {
 			uint16_t slot = READ_SHORT();
-			PUSH(*frame->closure->function->upvalues.data[slot]->value);
+			PUSH(*frame->closure->upvalues.data[slot]->value);
 
 			break;
 		}
 
 		case OP_SET_UPVALUE: {
 			uint16_t slot = READ_SHORT();
-			*frame->closure->function->upvalues.data[slot]->value = PEEK(0);
+			*frame->closure->upvalues.data[slot]->value = PEEK(0);
 			break;
 		}
 
@@ -763,16 +764,17 @@ static bluInterpretResult run(bluVM* vm) {
 			bluObjClosure* closure = newClosure(vm, function);
 			PUSH(OBJ_VAL(closure));
 
-			for (int32_t i = 0; i < function->upvalues.count; i++) {
+			for (uint16_t i = 0; i < function->upvalueCount; i++) {
+				printf("upvalue\n");
 				bool isLocal = READ_BYTE();
 				uint16_t index = READ_SHORT();
 
 				if (isLocal) {
 					// Make an new upvalue to close over the parent's local variable.
-					function->upvalues.data[i] = captureUpvalue(vm, slots + index);
+					bluObjUpvalueBufferWrite(&closure->upvalues, captureUpvalue(vm, slots + index));
 				} else {
 					// Use the same upvalue as the current call frame.
-					function->upvalues.data[i] = frame->closure->function->upvalues.data[index];
+					bluObjUpvalueBufferWrite(&closure->upvalues, frame->closure->upvalues.data[index]);
 				}
 			}
 
