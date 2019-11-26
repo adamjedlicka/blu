@@ -13,7 +13,7 @@
 DECLARE_BUFFER(bluModule, bluModule);
 
 typedef struct {
-	bluObjFunction* function;
+	bluObjClosure* closure;
 	uint8_t* ip;
 	bluValue* slots;
 } bluCallFrame;

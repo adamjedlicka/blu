@@ -11,6 +11,7 @@
 #define IS_ARRAY(value) bluIsObjType(value, OBJ_ARRAY)
 #define IS_BOUND_METHOD(value) bluIsObjType(value, OBJ_BOUND_METHOD)
 #define IS_CLASS(value) bluIsObjType(value, OBJ_CLASS)
+#define IS_CLOSURE(value) bluIsObjType(value, OBJ_CLOSURE)
 #define IS_FUNCTION(value) bluIsObjType(value, OBJ_FUNCTION)
 #define IS_INSTANCE(value) bluIsObjType(value, OBJ_INSTANCE)
 #define IS_NATIVE(value) bluIsObjType(value, OBJ_NATIVE)
@@ -19,6 +20,7 @@
 #define AS_ARRAY(value) ((bluObjArray*)AS_OBJ(value))
 #define AS_BOUND_METHOD(value) ((bluObjBoundMethod*)AS_OBJ(value))
 #define AS_CLASS(value) ((bluObjClass*)AS_OBJ(value))
+#define AS_CLOSURE(value) ((bluObjClosure*)AS_OBJ(value))
 #define AS_FUNCTION(value) ((bluObjFunction*)AS_OBJ(value))
 #define AS_INSTANCE(value) ((bluObjInstance*)AS_OBJ(value))
 #define AS_NATIVE(value) ((bluObjNative*)AS_OBJ(value))
@@ -29,6 +31,7 @@
 typedef struct bluObjArray bluObjArray;
 typedef struct bluObjBoundMethod bluObjBoundMethod;
 typedef struct bluObjClass bluObjClass;
+typedef struct bluObjClosure bluObjClosure;
 typedef struct bluObjFunction bluObjFunction;
 typedef struct bluObjInstance bluObjInstance;
 typedef struct bluObjNative bluObjNative;
@@ -43,6 +46,7 @@ typedef enum {
 	OBJ_ARRAY,
 	OBJ_BOUND_METHOD,
 	OBJ_CLASS,
+	OBJ_CLOSURE,
 	OBJ_FUNCTION,
 	OBJ_INSTANCE,
 	OBJ_NATIVE,
@@ -68,7 +72,7 @@ struct bluObjArray {
 struct bluObjBoundMethod {
 	bluObj obj;
 	bluValue receiver;
-	bluObjFunction* function;
+	bluObjClosure* closure;
 };
 
 struct bluObjClass {
@@ -79,6 +83,11 @@ struct bluObjClass {
 	bluTable fields;
 	bluConstruct construct;
 	bluDestruct destruct;
+};
+
+struct bluObjClosure {
+	bluObj obj;
+	bluObjFunction* function;
 };
 
 struct bluObjFunction {
@@ -123,8 +132,9 @@ struct bluObjUpvalue {
 };
 
 bluObjArray* bluNewArray(bluVM* vm, int32_t len);
-bluObjBoundMethod* bluNewBoundMethod(bluVM* vm, bluValue receiver, bluObjFunction* function);
+bluObjBoundMethod* bluNewBoundMethod(bluVM* vm, bluValue receiver, bluObjClosure* closure);
 bluObjClass* bluNewClass(bluVM* vm, bluObjString* name);
+bluObjClosure* newClosure(bluVM* vm, bluObjFunction* function);
 bluObjFunction* bluNewFunction(bluVM* vm);
 bluObjInstance* bluNewInstance(bluVM* vm, bluObjClass* class);
 bluObjNative* bluNewNative(bluVM* vm, bluNativeFn function, int8_t arity);

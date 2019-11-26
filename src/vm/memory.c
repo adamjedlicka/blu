@@ -37,6 +37,12 @@ static void freeObject(bluVM* vm, bluObj* object) {
 		break;
 	}
 
+	case OBJ_CLOSURE: {
+		bluObjClosure* closure = (bluObjClosure*)object;
+		bluDeallocate(vm, closure, sizeof(bluObjClosure));
+		break;
+	}
+
 	case OBJ_FUNCTION: {
 		bluObjFunction* function = (bluObjFunction*)object;
 		bluChunkFree(&function->chunk);
@@ -121,7 +127,7 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 	case OBJ_BOUND_METHOD: {
 		bluObjBoundMethod* boundMethod = (bluObjBoundMethod*)object;
 		bluGrayValue(vm, boundMethod->receiver);
-		bluGrayObject(vm, (bluObj*)boundMethod->function);
+		bluGrayObject(vm, (bluObj*)boundMethod->closure);
 		break;
 	}
 
@@ -130,6 +136,12 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 		bluGrayObject(vm, (bluObj*)class->name);
 		bluGrayTable(vm, &class->methods);
 		bluGrayTable(vm, &class->fields);
+		break;
+	}
+
+	case OBJ_CLOSURE: {
+		bluObjClosure* closure = (bluObjClosure*)object;
+		bluGrayObject(vm, (bluObj*)closure->function);
 		break;
 	}
 
@@ -217,7 +229,7 @@ void bluCollectGarbage(bluVM* vm) {
 	}
 
 	for (int32_t i = 0; i < vm->frameCount; i++) {
-		bluGrayObject(vm, (bluObj*)vm->frames[i].function);
+		bluGrayObject(vm, (bluObj*)vm->frames[i].closure);
 	}
 
 	for (int32_t i = 0; i < vm->modules.count; i++) {

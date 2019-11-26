@@ -33,7 +33,7 @@ static void runtimeError(bluVM* vm, const char* format, ...) {
 
 	for (int i = vm->frameCount - 1; i >= 0; i--) {
 		bluCallFrame* frame = &vm->frames[i];
-		bluObjFunction* function = frame->function;
+		bluObjFunction* function = frame->closure->function;
 
 		// -1 because the IP is sitting on the next instruction to be executed.
 		size_t instruction = frame->ip - function->chunk.code.data - 1;
@@ -60,9 +60,9 @@ static void concatenate(bluVM* vm) {
 	bluPush(vm, OBJ_VAL(result));
 }
 
-static bool call(bluVM* vm, bluObjFunction* function, int8_t argCount) {
-	if (argCount < function->arity) {
-		runtimeError(vm, "Expected %d arguments but got %d.", function->arity, argCount);
+static bool call(bluVM* vm, bluObjClosure* closure, int8_t argCount) {
+	if (argCount < closure->function->arity) {
+		runtimeError(vm, "Expected %d arguments but got %d.", closure->function->arity, argCount);
 		return false;
 	}
 
@@ -72,8 +72,8 @@ static bool call(bluVM* vm, bluObjFunction* function, int8_t argCount) {
 	}
 
 	bluCallFrame* frame = &vm->frames[vm->frameCount++];
-	frame->function = function;
-	frame->ip = function->chunk.code.data;
+	frame->closure = closure;
+	frame->ip = closure->function->chunk.code.data;
 
 	// +1 to include either the called function or the receiver.
 	frame->slots = vm->stackTop - (argCount + 1);
@@ -94,7 +94,7 @@ static bool callValue(bluVM* vm, bluValue callee, int8_t argCount) {
 
 		// Replace the bound method with the new receiver so it's in the right slot when the method is called.
 		vm->stackTop[-argCount - 1] = boundMethod->receiver;
-		return call(vm, boundMethod->function, argCount);
+		return call(vm, boundMethod->closure, argCount);
 	}
 
 	case OBJ_CLASS: {
@@ -121,8 +121,8 @@ static bool callValue(bluVM* vm, bluValue callee, int8_t argCount) {
 		return true;
 	}
 
-	case OBJ_FUNCTION: {
-		return call(vm, AS_FUNCTION(callee), argCount);
+	case OBJ_CLOSURE: {
+		return call(vm, AS_CLOSURE(callee), argCount);
 	}
 
 	case OBJ_NATIVE: {
@@ -167,7 +167,7 @@ static bool invokeFromClass(bluVM* vm, bluObjClass* class, bluObjString* name, i
 		return callValue(vm, method, argCount);
 	}
 
-	return call(vm, AS_FUNCTION(method), argCount);
+	return call(vm, AS_CLOSURE(method), argCount);
 }
 
 static bool invoke(bluVM* vm, bluObjString* name, int8_t argCount) {
@@ -245,7 +245,7 @@ static bool bindMethod(bluVM* vm, bluObjClass* class, bluObjString* name) {
 		return false;
 	}
 
-	bluObjBoundMethod* bound = bluNewBoundMethod(vm, bluPop(vm), AS_FUNCTION(method));
+	bluObjBoundMethod* bound = bluNewBoundMethod(vm, bluPop(vm), AS_CLOSURE(method));
 	bluPush(vm, OBJ_VAL(bound));
 
 	return true;
@@ -352,7 +352,7 @@ static bluInterpretResult run(bluVM* vm) {
 #define PEEK(distance) bluPeek(vm, distance)
 #define READ_BYTE() (*(frame->ip++))
 #define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
-#define READ_CONSTANT() (frame->function->chunk.constants.data[READ_SHORT()])
+#define READ_CONSTANT() (frame->closure->function->chunk.constants.data[READ_SHORT()])
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 
 #define RUNTIME_ERROR(...) runtimeError(vm, __VA_ARGS__)
@@ -368,7 +368,7 @@ static bluInterpretResult run(bluVM* vm) {
 		if (vm->shouldGC) bluCollectGarbage(vm);
 
 #ifdef DEBUG_VM_TRACE
-		bluDisassembleInstruction(&frame->function->chunk, frame->ip - frame->function->chunk.code.data);
+		bluDisassembleInstruction(&frame->closure->function->chunk, frame->ip - frame->closure->function->chunk.code.data);
 #endif
 
 		uint8_t instruction = READ_BYTE();
@@ -460,14 +460,14 @@ static bluInterpretResult run(bluVM* vm) {
 
 		case OP_GET_UPVALUE: {
 			uint16_t slot = READ_SHORT();
-			PUSH(*frame->function->upvalues.data[slot]->value);
+			PUSH(*frame->closure->function->upvalues.data[slot]->value);
 
 			break;
 		}
 
 		case OP_SET_UPVALUE: {
 			uint16_t slot = READ_SHORT();
-			*frame->function->upvalues.data[slot]->value = PEEK(0);
+			*frame->closure->function->upvalues.data[slot]->value = PEEK(0);
 			break;
 		}
 
@@ -760,7 +760,8 @@ static bluInterpretResult run(bluVM* vm) {
 
 		case OP_CLOSURE: {
 			bluObjFunction* function = AS_FUNCTION(READ_CONSTANT());
-			PUSH(OBJ_VAL(function));
+			bluObjClosure* closure = newClosure(vm, function);
+			PUSH(OBJ_VAL(closure));
 
 			for (int32_t i = 0; i < function->upvalues.count; i++) {
 				bool isLocal = READ_BYTE();
@@ -771,7 +772,7 @@ static bluInterpretResult run(bluVM* vm) {
 					function->upvalues.data[i] = captureUpvalue(vm, slots + index);
 				} else {
 					// Use the same upvalue as the current call frame.
-					function->upvalues.data[i] = frame->function->upvalues.data[index];
+					function->upvalues.data[i] = frame->closure->function->upvalues.data[index];
 				}
 			}
 
@@ -933,10 +934,12 @@ void bluFreeVM(bluVM* vm) {
 
 bluInterpretResult bluInterpret(bluVM* vm, const char* source, const char* name) {
 	bluObjFunction* function = bluCompile(vm, source, name);
+	bluObjClosure* closure = newClosure(vm, function);
+
 	if (function == NULL) {
 		return INTERPRET_COMPILE_ERROR;
 	} else {
-		callValue(vm, OBJ_VAL(function), 0);
+		callValue(vm, OBJ_VAL(closure), 0);
 
 		return run(vm);
 	}

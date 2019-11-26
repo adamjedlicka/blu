@@ -64,11 +64,11 @@ bluObjArray* bluNewArray(bluVM* vm, int32_t len) {
 	return array;
 }
 
-bluObjBoundMethod* bluNewBoundMethod(bluVM* vm, bluValue receiver, bluObjFunction* function) {
+bluObjBoundMethod* bluNewBoundMethod(bluVM* vm, bluValue receiver, bluObjClosure* closure) {
 	bluObjBoundMethod* method = (bluObjBoundMethod*)allocateObject(vm, sizeof(bluObjBoundMethod), OBJ_BOUND_METHOD);
 	method->obj.class = vm->functionClass;
 	method->receiver = receiver;
-	method->function = function;
+	method->closure = closure;
 
 	return method;
 }
@@ -85,6 +85,14 @@ bluObjClass* bluNewClass(bluVM* vm, bluObjString* name) {
 	bluTableInit(vm, &class->fields);
 
 	return class;
+}
+
+bluObjClosure* newClosure(bluVM* vm, bluObjFunction* function) {
+	bluObjClosure* closure = (bluObjClosure*)allocateObject(vm, sizeof(bluObjClosure), OBJ_CLOSURE);
+	closure->obj.class = vm->functionClass;
+	closure->function = function;
+
+	return closure;
 }
 
 bluObjFunction* bluNewFunction(bluVM* vm) {
@@ -161,7 +169,7 @@ void bluPrintObject(bluValue value) {
 	}
 
 	case OBJ_BOUND_METHOD: {
-		printf("<method %s>", AS_BOUND_METHOD(value)->function->name->chars);
+		printf("<method %s>", AS_BOUND_METHOD(value)->closure->function->name->chars);
 		break;
 	}
 
@@ -169,6 +177,14 @@ void bluPrintObject(bluValue value) {
 		printf("<class %s>", AS_CLASS(value)->name->chars);
 		break;
 	}
+
+	case OBJ_CLOSURE:
+		if (AS_CLOSURE(value)->function->name == NULL) {
+			printf("<anonymous fn>");
+		} else {
+			printf("<fn %s>", AS_CLOSURE(value)->function->name->chars);
+		}
+		break;
 
 	case OBJ_FUNCTION: {
 		if (AS_FUNCTION(value)->name == NULL) {
