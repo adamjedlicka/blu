@@ -1,0 +1,20 @@
+fn counter() {
+    var i = 0;
+
+    return fn() {
+        i = i + 1
+
+        return i
+    }
+}
+
+var cnt1 = counter()
+assert cnt1() == 1
+assert cnt1() == 2
+
+var cnt2 = counter()
+assert cnt2() == 1
+assert cnt1() == 3
+assert cnt1() == 4
+assert cnt2() == 2
+assert cnt2() == 3
