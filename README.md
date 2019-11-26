@@ -1,5 +1,5 @@
 # blu
-## blest language. undisputed
+## best language. undisputed
 
 blu is small, fast and intuitive scripting language
 
