@@ -13,7 +13,7 @@ def blu_to_c_string(input_path, source_lines, module):
     blu_source = ""
 
     for line in source_lines:
-        line = line.replace('"', '\"')
+        line = line.replace('"', '\\"')
         line = line.replace('\n', '\\n"')
 
         if blu_source:
