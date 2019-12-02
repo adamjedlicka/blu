@@ -116,4 +116,5 @@ class String {
     // fn len()
     // fn reverse()
     // fn toNumber()
+    // fn split(delimeter)
 }

@@ -118,4 +118,5 @@ static const char* coreSource =
 "    // fn len()\n"
 "    // fn reverse()\n"
 "    // fn toNumber()\n"
+"    // fn split(delimeter)\n"
 "}\n";

@@ -8,3 +8,9 @@ assert out.equals(expected)
 assert "3".toNumber() == 3
 assert "1.2".toNumber() == 1.2
 assert "0.1".toNumber() + "0.2".toNumber() == 0.1 + 0.2
+
+assert "1,2,3".split(",").equals(["1", "2", "3"])
+assert "a + b;c * d".split(";").equals(["a + b", "c * d"])
+assert "xxx".split(",").equals(["xxx"])
+assert "xxx".split("x").equals(["", "", "", ""])
+assert "a;;b".split(";").equals(["a", "", "b"])

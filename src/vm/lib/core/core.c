@@ -108,6 +108,37 @@ int8_t String_toNumber(bluVM* vm, int8_t argCount, bluValue* args) {
 	return 1;
 }
 
+int8_t String_split(bluVM* vm, int8_t argCount, bluValue* args) {
+	bluObjString* string = AS_STRING(args[0]);
+	bluObjString* delimeter = AS_STRING(args[1]);
+
+	bluObjArray* array = bluNewArray(vm, 0);
+
+	char *token, *str, *tofree;
+	tofree = str = strdup(string->chars);
+
+	while ((token = strsep(&str, delimeter->chars)) != NULL) {
+		bluObjString* part = bluCopyString(vm, token, strlen(token));
+
+		if (array->len == array->cap) {
+			int32_t newCap = bluPowerOf2Ceil(array->cap * 2);
+
+			if (newCap == 0) newCap = 8;
+
+			array->data = bluReallocate(vm, array->data, (sizeof(bluValue) * array->cap), (sizeof(bluValue) * newCap));
+			array->cap = newCap;
+		}
+
+		array->data[array->len++] = OBJ_VAL(part);
+	}
+
+	free(tofree);
+
+	args[0] = OBJ_VAL(array);
+
+	return 1;
+}
+
 void bluInitCore(bluVM* vm) {
 	bluInterpret(vm, coreSource, "__CORE__");
 
@@ -142,5 +173,6 @@ void bluInitCore(bluVM* vm) {
 	bluDefineMethod(vm, stringClass, "len", String_len, 0);
 	bluDefineMethod(vm, stringClass, "reverse", String_reverse, 0);
 	bluDefineMethod(vm, stringClass, "toNumber", String_toNumber, 0);
+	bluDefineMethod(vm, stringClass, "split", String_split, 1);
 	vm->stringClass = (bluObjClass*)stringClass;
 }
