@@ -69,9 +69,11 @@ int8_t File_readLine(bluVM* vm, int8_t argCount, bluValue* args) {
 		return 1;
 	}
 
-	buffer[read - 1] = '\0';
+	if (buffer[read - 1] == '\n') {
+		buffer[--read] = '\0';
+	}
 
-	args[0] = OBJ_VAL(bluCopyString(vm, buffer, read - 1));
+	args[0] = OBJ_VAL(bluCopyString(vm, buffer, read));
 
 	free(buffer);
 
