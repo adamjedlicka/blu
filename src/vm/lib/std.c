@@ -10,4 +10,5 @@ void bluInitStd(bluVM* vm) {
 
 	bluRegisterModule(vm, "system", bluInitSystem);
 	bluRegisterModule(vm, "math", bluInitMath);
+	bluRegisterModule(vm, "file", bluInitFile);
 }

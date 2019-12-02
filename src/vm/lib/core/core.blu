@@ -18,6 +18,9 @@ class Bool {
 }
 
 class Number {
+    // floor()
+    // ceil()
+
     fn times(value) {
         var result = []
 
@@ -110,9 +113,7 @@ class Function {
 }
 
 class String {
-
     // fn len()
-
     // fn reverse()
-
+    // fn toNumber()
 }

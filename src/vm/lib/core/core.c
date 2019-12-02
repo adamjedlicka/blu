@@ -29,6 +29,26 @@ int8_t Object_isTruthy(bluVM* vm, int8_t argCount, bluValue* args) {
 	return 1;
 }
 
+int8_t Number_floor(bluVM* vm, int8_t argCount, bluValue* args) {
+	double number = AS_NUMBER(args[0]);
+
+	double floored = (double)((int)number);
+
+	args[0] = NUMBER_VAL(floored);
+
+	return 1;
+}
+
+int8_t Number_ceil(bluVM* vm, int8_t argCount, bluValue* args) {
+	double number = AS_NUMBER(args[0]);
+
+	double ceiled = (double)((int)number) + 1;
+
+	args[0] = NUMBER_VAL(ceiled);
+
+	return 1;
+}
+
 int8_t Array_push(bluVM* vm, int8_t argCount, bluValue* args) {
 	bluObjArray* array = AS_ARRAY(args[0]);
 	bluValue value = args[1];
@@ -78,6 +98,16 @@ int8_t String_reverse(bluVM* vm, int8_t argCount, bluValue* args) {
 	return 1;
 }
 
+int8_t String_toNumber(bluVM* vm, int8_t argCount, bluValue* args) {
+	bluObjString* string = AS_STRING(args[0]);
+
+	double number = atof(string->chars);
+
+	args[0] = NUMBER_VAL(number);
+
+	return 1;
+}
+
 void bluInitCore(bluVM* vm) {
 	bluInterpret(vm, coreSource, "__CORE__");
 
@@ -93,6 +123,8 @@ void bluInitCore(bluVM* vm) {
 	vm->boolClass = (bluObjClass*)boolClass;
 
 	bluObj* numberClass = bluGetGlobal(vm, "Number");
+	bluDefineMethod(vm, numberClass, "floor", Number_floor, 0);
+	bluDefineMethod(vm, numberClass, "ceil", Number_ceil, 0);
 	vm->numberClass = (bluObjClass*)numberClass;
 
 	bluObj* arrayClass = bluGetGlobal(vm, "Array");
@@ -109,5 +141,6 @@ void bluInitCore(bluVM* vm) {
 	bluObj* stringClass = bluGetGlobal(vm, "String");
 	bluDefineMethod(vm, stringClass, "len", String_len, 0);
 	bluDefineMethod(vm, stringClass, "reverse", String_reverse, 0);
+	bluDefineMethod(vm, stringClass, "toNumber", String_toNumber, 0);
 	vm->stringClass = (bluObjClass*)stringClass;
 }

@@ -4,3 +4,7 @@ var expected = ["olleh", "dlrow"]
 var out = in.filter(fn(s): s.len() > 1).map(fn(s): s.reverse())
 
 assert out.equals(expected)
+
+assert "3".toNumber() == 3
+assert "1.2".toNumber() == 1.2
+assert "0.1".toNumber() + "0.2".toNumber() == 0.1 + 0.2
