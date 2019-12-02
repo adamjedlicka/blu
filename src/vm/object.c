@@ -213,7 +213,7 @@ void bluPrintObject(bluValue value) {
 	}
 
 	case OBJ_STRING: {
-		printf("%s", AS_CSTRING(value));
+		printf("\"%s\"", AS_CSTRING(value));
 		break;
 	}
 	}
