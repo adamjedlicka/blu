@@ -75,6 +75,15 @@ int8_t Array_len(bluVM* vm, int8_t argCount, bluValue* args) {
 	return 1;
 }
 
+int8_t Array_at(bluVM* vm, int8_t argCount, bluValue* args) {
+	bluObjArray* array = AS_ARRAY(args[0]);
+	int index = AS_NUMBER(args[1]);
+
+	args[0] = array->data[index];
+
+	return 1;
+}
+
 int8_t String_len(bluVM* vm, int8_t argCount, bluValue* args) {
 	bluObjString* string = AS_STRING(args[0]);
 
@@ -139,6 +148,19 @@ int8_t String_split(bluVM* vm, int8_t argCount, bluValue* args) {
 	return 1;
 }
 
+int8_t String_at(bluVM* vm, int8_t argCount, bluValue* args) {
+	bluObjString* string = AS_STRING(args[0]);
+	int index = AS_NUMBER(args[1]);
+
+	char* str = bluAllocate(vm, sizeof(char) * 2);
+	str[0] = string->chars[index];
+	str[1] = '\0';
+
+	args[0] = OBJ_VAL(bluTakeString(vm, str, 1));
+
+	return 1;
+}
+
 int8_t String_substring(bluVM* vm, int8_t argCount, bluValue* args) {
 	bluObjString* string = AS_STRING(args[0]);
 	int from = AS_NUMBER(args[1]);
@@ -175,6 +197,7 @@ void bluInitCore(bluVM* vm) {
 	bluObj* arrayClass = bluGetGlobal(vm, "Array");
 	bluDefineMethod(vm, arrayClass, "push", Array_push, 1);
 	bluDefineMethod(vm, arrayClass, "len", Array_len, 0);
+	bluDefineMethod(vm, arrayClass, "at", Array_at, 1);
 	vm->arrayClass = (bluObjClass*)arrayClass;
 
 	bluObj* classClass = bluGetGlobal(vm, "Class");
@@ -188,6 +211,7 @@ void bluInitCore(bluVM* vm) {
 	bluDefineMethod(vm, stringClass, "reverse", String_reverse, 0);
 	bluDefineMethod(vm, stringClass, "toNumber", String_toNumber, 0);
 	bluDefineMethod(vm, stringClass, "split", String_split, 1);
+	bluDefineMethod(vm, stringClass, "at", String_at, 1);
 	bluDefineMethod(vm, stringClass, "substring", String_substring, 2);
 	vm->stringClass = (bluObjClass*)stringClass;
 }

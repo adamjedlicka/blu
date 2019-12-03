@@ -43,6 +43,7 @@ static const char* coreSource =
 "class Array {\n"
 "    // fn push(value)\n"
 "    // fn len()\n"
+"    // fn at(index)\n"
 "\n"
 "    fn each(callback) {\n"
 "        for var i = 0; i < @len(); i = i + 1 {\n"
@@ -119,5 +120,6 @@ static const char* coreSource =
 "    // fn reverse()\n"
 "    // fn toNumber()\n"
 "    // fn split(delimeter)\n"
+"    // fn at(index)\n"
 "    // fn substring(from, length)\n"
 "}\n";

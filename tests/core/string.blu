@@ -21,3 +21,7 @@ assert "abcde".substring(1, 2) == "bc"
 assert "abcde".substring(0, 5) == "abcde"
 assert "abcde".substring(0, 1) == "a"
 assert "abcde".substring(4, 1) == "e"
+
+assert "abcde".at(0) == "a"
+assert "abcde".at(2) == "c"
+assert "abcde".at(4) == "e"

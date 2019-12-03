@@ -41,6 +41,7 @@ class Number {
 class Array {
     // fn push(value)
     // fn len()
+    // fn at(index)
 
     fn each(callback) {
         for var i = 0; i < @len(); i = i + 1 {
@@ -117,5 +118,6 @@ class String {
     // fn reverse()
     // fn toNumber()
     // fn split(delimeter)
+    // fn at(index)
     // fn substring(from, length)
 }
