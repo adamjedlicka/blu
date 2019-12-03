@@ -14,3 +14,5 @@ assert "a + b;c * d".split(";").equals(["a + b", "c * d"])
 assert "xxx".split(",").equals(["xxx"])
 assert "xxx".split("x").equals(["", "", "", ""])
 assert "a;;b".split(";").equals(["a", "", "b"])
+
+assert ";ab;c;;d;;;".split(";").join(";") == ";ab;c;;d;;;"
