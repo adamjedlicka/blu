@@ -103,6 +103,17 @@ class Array {
 
         return true
     }
+
+    fn slice(from, length) {
+        var arr = []
+        var to = from + length
+
+        for var i = from; i < to; i = i + 1 {
+            arr.push(@[i])
+        }
+
+        return arr
+    }
 }
 
 class Class {
