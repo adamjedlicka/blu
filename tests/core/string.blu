@@ -16,3 +16,8 @@ assert "xxx".split("x").equals(["", "", "", ""])
 assert "a;;b".split(";").equals(["a", "", "b"])
 
 assert ";ab;c;;d;;;".split(";").join(";") == ";ab;c;;d;;;"
+
+assert "abcde".substring(1, 2) == "bc"
+assert "abcde".substring(0, 5) == "abcde"
+assert "abcde".substring(0, 1) == "a"
+assert "abcde".substring(4, 1) == "e"

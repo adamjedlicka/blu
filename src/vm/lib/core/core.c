@@ -139,6 +139,20 @@ int8_t String_split(bluVM* vm, int8_t argCount, bluValue* args) {
 	return 1;
 }
 
+int8_t String_substring(bluVM* vm, int8_t argCount, bluValue* args) {
+	bluObjString* string = AS_STRING(args[0]);
+	int from = AS_NUMBER(args[1]);
+	int length = AS_NUMBER(args[2]);
+
+	char* str = bluAllocate(vm, sizeof(char) * (length + 1));
+	memcpy(str, string->chars + from, length);
+	str[length] = '\0';
+
+	args[0] = OBJ_VAL(bluTakeString(vm, str, length));
+
+	return 1;
+}
+
 void bluInitCore(bluVM* vm) {
 	bluInterpret(vm, coreSource, "__CORE__");
 
@@ -174,5 +188,6 @@ void bluInitCore(bluVM* vm) {
 	bluDefineMethod(vm, stringClass, "reverse", String_reverse, 0);
 	bluDefineMethod(vm, stringClass, "toNumber", String_toNumber, 0);
 	bluDefineMethod(vm, stringClass, "split", String_split, 1);
+	bluDefineMethod(vm, stringClass, "substring", String_substring, 2);
 	vm->stringClass = (bluObjClass*)stringClass;
 }
