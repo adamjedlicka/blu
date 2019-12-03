@@ -8,4 +8,5 @@ assert ["adf", "fgh", "jkl"][1][1] == "g"
 assert [1, 2, 3, 4, 5].slice(1, 2).equals([2, 3])
 assert [1, 2, 3, 4, 5].slice(0, 0).equals([])
 assert [1, 2, 3, 4, 5].slice(4, 1).equals([5])
+assert [1, 2, 3, 4, 5].slice(-10, 10).equals([1, 2, 3, 4, 5])
 

@@ -106,7 +106,10 @@ class Array {
 
     fn slice(from, length) {
         var arr = []
+
+        if from < 0: from = 0
         var to = from + length
+        if to > @len(): to = @len()
 
         for var i = from; i < to; i = i + 1 {
             arr.push(@[i])
