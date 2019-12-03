@@ -3,3 +3,5 @@ assert [1, 2, 3, 4, 5].at(2) == 3
 assert [1, 2, 3, 4, 5].at(4) == 5
 
 assert ["adf", "fgh", "jkl"].at(1).at(1) == "g"
+assert ["adf", "fgh", "jkl"][1][1] == "g"
+

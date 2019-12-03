@@ -533,7 +533,7 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
-		case OP_GET_ARRAY: {
+		case OP_SUBSCRIPT_GET: {
 			bluValue index = POP();
 
 			if (!IS_NUMBER(index)) {
@@ -541,24 +541,45 @@ static bluInterpretResult run(bluVM* vm) {
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
-			bluValue array = POP();
+			bluValue receiver = POP();
 
-			if (!IS_ARRAY(array)) {
-				RUNTIME_ERROR("Only arrays can be indexed.");
+			if (!IS_ARRAY(receiver) && !IS_STRING(receiver)) {
+				RUNTIME_ERROR("Only arrays and strings can be indexed.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
-			if (AS_NUMBER(index) >= AS_ARRAY(array)->len || AS_NUMBER(index) < 0) {
-				RUNTIME_ERROR("Array index out of range.");
+			bluObjClass* class = bluGetClass(vm, receiver);
+
+			bluValue method;
+
+			if (!bluTableGet(vm, &class->methods, bluCopyString(vm, "len", 3), &method)) {
+				RUNTIME_ERROR("No method 'len' on subscript receiver.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
-			PUSH(AS_ARRAY(array)->data[(int)AS_NUMBER(index)]);
+			PUSH(receiver);
+			callValue(vm, method, 0);
+			int len = AS_NUMBER(POP());
+
+			if (AS_NUMBER(index) < 0 || AS_NUMBER(index) >= len) {
+				RUNTIME_ERROR("Index out of bounds.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			if (!bluTableGet(vm, &class->methods, bluCopyString(vm, "at", 2), &method)) {
+				RUNTIME_ERROR("No method 'at' on subscript receiver.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			PUSH(receiver);
+			PUSH(index);
+
+			callValue(vm, method, 1);
 
 			break;
 		}
 
-		case OP_SET_ARRAY: {
+		case OP_SUBSCRIPT_SET: {
 			bluValue value = POP();
 			bluValue index = POP();
 

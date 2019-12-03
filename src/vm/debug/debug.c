@@ -77,8 +77,8 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
 	case OP_GET_PROPERTY: return shortInstruction("OP_GET_PROPERTY", chunk, offset);
 	case OP_SET_PROPERTY: return shortInstruction("OP_SET_PROPERTY", chunk, offset);
 	case OP_GET_SUPER: return shortInstruction("OP_GET_SUPER", chunk, offset);
-	case OP_GET_ARRAY: return simpleInstruction("OP_GET_ARRAY", offset);
-	case OP_SET_ARRAY: return simpleInstruction("OP_SET_ARRAY", offset);
+	case OP_SUBSCRIPT_GET: return simpleInstruction("OP_SUBSCRIPT_GET", offset);
+	case OP_SUBSCRIPT_SET: return simpleInstruction("OP_SUBSCRIPT_SET", offset);
 
 	case OP_CALL: return byteInstruction("OP_CALL", chunk, offset);
 	case OP_INVOKE: return invokeInstruction("OP_INVOKE", chunk, offset);

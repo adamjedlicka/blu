@@ -555,9 +555,9 @@ static void subscript(bluCompiler* compiler, bool canAssign) {
 
 	if (canAssign && match(compiler, TOKEN_EQUAL)) {
 		expression(compiler);
-		emitByte(compiler, OP_SET_ARRAY);
+		emitByte(compiler, OP_SUBSCRIPT_SET);
 	} else {
-		emitByte(compiler, OP_GET_ARRAY);
+		emitByte(compiler, OP_SUBSCRIPT_GET);
 	}
 }
 
