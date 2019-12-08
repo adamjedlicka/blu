@@ -123,8 +123,11 @@ static bool match(bluCompiler* compiler, bluTokenType type) {
 
 static void expectNewlineOrSemicolon(bluCompiler* compiler) {
 	// TODO : Improve consuming of newlines
-	// If previous token is TOKEN_RIGHT_BRACE than all newlines were already consumed
+	// If previous token is TOKEN_RIGHT_BRACE then all newlines were already consumed
 	if (compiler->parser->previous.type == TOKEN_RIGHT_BRACE) return;
+
+	// If current token is TOKEN_RIGHT_BRACE then we don't need newline nor semicolon
+	if (compiler->parser->current.type == TOKEN_RIGHT_BRACE) return;
 
 	if (!match(compiler, TOKEN_SEMICOLON)) {
 		consume(compiler, TOKEN_NEWLINE, "Expect newline or ';'.");
