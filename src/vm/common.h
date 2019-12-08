@@ -7,8 +7,8 @@
 
 #ifdef DEBUG
 // #define DEBUG_COMPILER_DISASSEMBLE
-#define DEBUG_VM_TRACE
-// #define DEBUG_GC_STRESS
+// #define DEBUG_VM_TRACE
+#define DEBUG_GC_STRESS
 // #define DEBUG_GC_TRACE
 #endif
 

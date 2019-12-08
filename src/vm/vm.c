@@ -917,20 +917,20 @@ bluVM* bluNewVM() {
 	vm->frameCount = 0;
 	vm->frameCountStart = 0;
 
-	bluTableInit(vm, &vm->globals);
-	bluTableInit(vm, &vm->strings);
-
-	bluModuleBufferInit(&vm->modules);
-
 	vm->openUpvalues = NULL;
 	vm->objects = NULL;
-
-	vm->stringInitializer = bluCopyString(vm, "__init", 6);
 
 	vm->bytesAllocated = 0;
 	vm->nextGC = 1024 * 1024;
 	vm->shouldGC = false;
 	vm->timeGC = 0;
+
+	bluTableInit(vm, &vm->globals);
+	bluTableInit(vm, &vm->strings);
+
+	bluModuleBufferInit(&vm->modules);
+
+	vm->stringInitializer = bluCopyString(vm, "__init", 6);
 
 	bluInitStd(vm);
 
@@ -950,6 +950,10 @@ void bluFreeVM(bluVM* vm) {
 	}
 
 	bluModuleBufferFree(&vm->modules);
+
+#ifdef DEBUG
+	assert(vm->bytesAllocated == 0);
+#endif
 
 	free(vm);
 }
