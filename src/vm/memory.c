@@ -2,7 +2,7 @@
 #include "vm/common.h"
 #include "vm/vm.h"
 
-#define GC_HEAP_GROW_FACTOR 0.5
+#define GC_HEAP_GROW_FACTOR 2
 #define GC_HEAP_MINIMUM 1024 * 1024
 
 static void freeObject(bluVM* vm, bluObj* object) {
