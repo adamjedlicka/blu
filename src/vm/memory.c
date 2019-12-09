@@ -1,6 +1,5 @@
-#include <time.h>
-
 #include "memory.h"
+#include "vm/common.h"
 #include "vm/vm.h"
 
 #define GC_HEAP_GROW_FACTOR 0.5
