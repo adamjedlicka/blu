@@ -141,6 +141,9 @@ void bluGrayObject(bluVM* vm, bluObj* object) {
 	case OBJ_CLOSURE: {
 		bluObjClosure* closure = (bluObjClosure*)object;
 		bluGrayObject(vm, (bluObj*)closure->function);
+		for (int32_t i = 0; i < closure->upvalues.count; i++) {
+			bluGrayObject(vm, &closure->upvalues.data[i]->obj);
+		}
 		break;
 	}
 
