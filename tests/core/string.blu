@@ -25,3 +25,7 @@ assert "abcde".substring(4, 1) == "e"
 assert "abcde".at(0) == "a"
 assert "abcde".at(2) == "c"
 assert "abcde".at(4) == "e"
+
+assert "letters".letters().getClass() == Array
+assert "letters".letters().len() == 7
+assert "letters".letters().equals(["l", "e", "t", "t", "e", "r", "s"])

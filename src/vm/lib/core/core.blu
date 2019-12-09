@@ -134,4 +134,15 @@ class String {
     // fn split(delimeter)
     // fn at(index)
     // fn substring(from, length)
+
+    fn letters() {
+        var letters = []
+        var len = @len()
+
+        for var i = 0; i < len; i = i + 1 {
+            letters.push(@[i])
+        }
+
+        return letters
+    }
 }

@@ -978,8 +978,12 @@ bluObjClass* bluGetClass(bluVM* vm, bluValue value) {
 	case VAL_NUMBER: return vm->numberClass;
 	case VAL_OBJ:
 		if (IS_CLASS(value)) {
-			// Core classes were created before Class so they don't have a reference to it.
+			// Core class were created before Class so they don't have a reference to it.
 			return vm->classClass;
+		} else if (IS_STRING(value)) {
+			// String class can be defiend after some string instances have been already allocated so they have
+			// incorrect pointer to String class.
+			return vm->stringClass;
 		} else {
 			return AS_OBJ(value)->class;
 		}
