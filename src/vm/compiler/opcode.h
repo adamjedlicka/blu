@@ -42,6 +42,7 @@ typedef enum {
 	OP_REMINDER,
 	OP_SUBTRACT,
 	OP_MULTIPLY,
+	OP_POWER,
 	OP_NOT,
 	OP_NEGATE,
 

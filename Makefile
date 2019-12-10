@@ -18,7 +18,7 @@ DCOMPILE_FLAGS = -D DEBUG -O0 -g -fsanitize=address
 # Add additional include paths
 INCLUDES = -I $(SRC_PATH)
 # General linker settings
-LINK_FLAGS =
+LINK_FLAGS = -lm
 # Additional release-specific linker settings
 RLINK_FLAGS =
 # Additional debug-specific linker settings

@@ -754,6 +754,18 @@ static bluInterpretResult run(bluVM* vm) {
 			break;
 		}
 
+		case OP_POWER: {
+			if (!IS_NUMBER(PEEK(0)) || !IS_NUMBER(PEEK(1))) {
+				RUNTIME_ERROR("Operands must be numbers.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			double exponent = AS_NUMBER(POP());
+			double base = AS_NUMBER(POP());
+			PUSH(NUMBER_VAL(pow(base, exponent)));
+			break;
+		}
+
 		case OP_NOT: {
 			bluValue value = POP();
 

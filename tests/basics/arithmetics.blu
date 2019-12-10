@@ -10,3 +10,8 @@ assert 1 <= 1
 assert 2 > 1
 assert 2 >= 1
 assert 1 >= 1
+assert 9 == 3 ^ 2
+assert 16 == 2 * 2 ^ 3
+assert 64 == 2 ^ 3 * 2 ^ 3
+assert 1 == 0 ^ 0
+assert 1.41421 < 2 ^ 0.5 and 1.41422 > 2 ^ 0.5

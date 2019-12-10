@@ -18,6 +18,7 @@ typedef enum {
 	PREC_COMPARISON, // < > <= >=
 	PREC_TERM,		 // + -
 	PREC_FACTOR,	 // * /
+	PREC_POWER,		 // ^
 	PREC_UNARY,		 // ! -
 	PREC_CALL,		 // . () []
 	PREC_PRIMARY,
@@ -273,6 +274,7 @@ static void binary(bluCompiler* compiler, bool canAssign) {
 	case TOKEN_PLUS: emitByte(compiler, OP_ADD); break;
 	case TOKEN_SLASH: emitByte(compiler, OP_DIVIDE); break;
 	case TOKEN_STAR: emitByte(compiler, OP_MULTIPLY); break;
+	case TOKEN_CARET: emitByte(compiler, OP_POWER); break;
 	default: return;
 	}
 }
@@ -570,7 +572,7 @@ static void subscript(bluCompiler* compiler, bool canAssign) {
 
 ParseRule rules[] = {
 	{at, NULL, PREC_NONE},		   // TOKEN_AT
-	{caret, NULL, PREC_NONE},	   // TOKEN_CARET
+	{caret, binary, PREC_POWER},   // TOKEN_CARET
 	{NULL, NULL, PREC_NONE},	   // TOKEN_COLON
 	{NULL, NULL, PREC_NONE},	   // TOKEN_COMMA
 	{NULL, dot, PREC_CALL},		   // TOKEN_DOT

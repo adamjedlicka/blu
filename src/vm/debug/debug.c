@@ -99,6 +99,7 @@ int32_t bluDisassembleInstruction(bluChunk* chunk, int32_t offset) {
 	case OP_REMINDER: return simpleInstruction("OP_REMINDER", offset);
 	case OP_SUBTRACT: return simpleInstruction("OP_SUBTRACT", offset);
 	case OP_MULTIPLY: return simpleInstruction("OP_MULTIPLY", offset);
+	case OP_POWER: return simpleInstruction("OP_POWER", offset);
 	case OP_NOT: return simpleInstruction("OP_NOT", offset);
 	case OP_NEGATE: return simpleInstruction("OP_NEGATE", offset);
 
