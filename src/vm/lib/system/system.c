@@ -29,13 +29,13 @@ int8_t System__println(bluVM* vm, int8_t argCount, bluValue* args) {
 }
 
 int8_t System__readln(bluVM* vm, int8_t argCount, bluValue* args) {
-	char* line = bluAllocate(vm, sizeof(char) * 1024);
+	bluObjString* line = bluNewString(vm, 1024);
 
-	if (!fgets(line, 1024, stdin)) {
+	if (!fgets(line->chars, 1024, stdin)) {
 		printf("\n");
 	}
 
-	bluObjString* string = bluTakeString(vm, line, strlen(line) - 1);
+	bluObjString* string = bluTakeString(vm, line);
 
 	args[0] = OBJ_VAL(string);
 

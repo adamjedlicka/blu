@@ -95,14 +95,14 @@ int8_t String_len(bluVM* vm, int8_t argCount, bluValue* args) {
 int8_t String_reverse(bluVM* vm, int8_t argCount, bluValue* args) {
 	bluObjString* string = AS_STRING(args[0]);
 
-	char* reversed = bluAllocate(vm, sizeof(char) * (string->length + 1));
+	bluObjString* reversed = bluNewString(vm, string->length);
 
-	reversed[string->length] = '\0';
+	reversed->chars[string->length] = '\0';
 	for (int32_t i = 0; i < string->length; i++) {
-		reversed[i] = string->chars[string->length - 1 - i];
+		reversed->chars[i] = string->chars[string->length - 1 - i];
 	}
 
-	args[0] = OBJ_VAL(bluTakeString(vm, reversed, string->length));
+	args[0] = OBJ_VAL(bluTakeString(vm, reversed));
 
 	return 1;
 }
@@ -152,11 +152,11 @@ int8_t String_at(bluVM* vm, int8_t argCount, bluValue* args) {
 	bluObjString* string = AS_STRING(args[0]);
 	int index = AS_NUMBER(args[1]);
 
-	char* str = bluAllocate(vm, sizeof(char) * 2);
-	str[0] = string->chars[index];
-	str[1] = '\0';
+	bluObjString* str = bluNewString(vm, 1);
+	str->chars[0] = string->chars[index];
+	str->chars[1] = '\0';
 
-	args[0] = OBJ_VAL(bluTakeString(vm, str, 1));
+	args[0] = OBJ_VAL(bluTakeString(vm, str));
 
 	return 1;
 }
@@ -166,11 +166,11 @@ int8_t String_substring(bluVM* vm, int8_t argCount, bluValue* args) {
 	int from = AS_NUMBER(args[1]);
 	int length = AS_NUMBER(args[2]);
 
-	char* str = bluAllocate(vm, sizeof(char) * (length + 1));
-	memcpy(str, string->chars + from, length);
-	str[length] = '\0';
+	bluObjString* str = bluNewString(vm, length);
+	memcpy(str->chars, string->chars + from, length);
+	str->chars[length] = '\0';
 
-	args[0] = OBJ_VAL(bluTakeString(vm, str, length));
+	args[0] = OBJ_VAL(bluTakeString(vm, str));
 
 	return 1;
 }

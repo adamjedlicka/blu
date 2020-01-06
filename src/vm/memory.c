@@ -76,8 +76,7 @@ static void freeObject(bluVM* vm, bluObj* object) {
 
 	case OBJ_STRING: {
 		bluObjString* string = (bluObjString*)object;
-		bluDeallocate(vm, string->chars, sizeof(char) * (string->length + 1));
-		bluDeallocate(vm, string, sizeof(bluObjString));
+		bluDeallocate(vm, string, sizeof(bluObjString) + (sizeof(char) * (string->length + 1)));
 		break;
 	}
 	}

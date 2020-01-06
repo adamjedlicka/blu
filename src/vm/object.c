@@ -29,12 +29,17 @@ static int32_t hashString(const char* key, int32_t length) {
 	return hash;
 }
 
-static bluObjString* allocateString(bluVM* vm, char* chars, int32_t length, int32_t hash) {
-	bluObjString* string = (bluObjString*)allocateObject(vm, sizeof(bluObjString), OBJ_STRING);
+static bluObjString* allocateString(bluVM* vm, const char* chars, int32_t length, int32_t hash) {
+	size_t totalSize = sizeof(bluObjString) + (sizeof(char) * (length + 1));
+
+	bluObjString* string = (bluObjString*)allocateObject(vm, totalSize, OBJ_STRING);
 	string->obj.class = vm->stringClass;
-	string->chars = chars;
 	string->length = length;
 	string->hash = hash;
+
+	strncpy(string->chars, chars, length);
+
+	string->chars[length] = '\0';
 
 	bluTableSet(vm, &vm->strings, string, NIL_VAL);
 
@@ -47,11 +52,7 @@ bluObjString* bluCopyString(bluVM* vm, const char* chars, int32_t length) {
 	bluObjString* interned = bluTableFindString(vm, &vm->strings, chars, length, hash);
 	if (interned != NULL) return interned;
 
-	char* heapChars = bluAllocate(vm, sizeof(char) * (length + 1));
-	memcpy(heapChars, chars, length);
-	heapChars[length] = '\0';
-
-	return allocateString(vm, heapChars, length, hash);
+	return allocateString(vm, chars, length, hash);
 }
 
 bluObjArray* bluNewArray(bluVM* vm, int32_t len) {
@@ -128,6 +129,17 @@ bluObjNative* bluNewNative(bluVM* vm, bluNativeFn function, int8_t arity) {
 	return native;
 }
 
+bluObjString* bluNewString(bluVM* vm, int32_t length) {
+	size_t totalSize = sizeof(bluObjString) + (sizeof(char) * (length + 1));
+
+	bluObjString* string = (bluObjString*)allocateObject(vm, totalSize, OBJ_STRING);
+	string->obj.class = vm->stringClass;
+	string->length = length;
+	string->hash = 0;
+
+	return string;
+}
+
 bluObjUpvalue* bluNewUpvalue(bluVM* vm, bluValue* slot) {
 	bluObjUpvalue* upvalue = (bluObjUpvalue*)allocateObject(vm, sizeof(bluObjUpvalue), OBJ_UPVALUE);
 	// TODO : This should not be needed.
@@ -139,16 +151,17 @@ bluObjUpvalue* bluNewUpvalue(bluVM* vm, bluValue* slot) {
 	return upvalue;
 }
 
-bluObjString* bluTakeString(bluVM* vm, char* chars, int32_t length) {
-	int32_t hash = hashString(chars, length);
+bluObjString* bluTakeString(bluVM* vm, bluObjString* string) {
+	string->hash = hashString(string->chars, string->length);
 
-	bluObjString* interned = bluTableFindString(vm, &vm->strings, chars, length, hash);
+	bluObjString* interned = bluTableFindString(vm, &vm->strings, string->chars, string->length, string->hash);
 	if (interned != NULL) {
-		bluDeallocate(vm, chars, sizeof(char) * (length + 1));
 		return interned;
 	}
 
-	return allocateString(vm, chars, length, hash);
+	bluTableSet(vm, &vm->strings, string, NIL_VAL);
+
+	return string;
 }
 
 void bluPrintObject(bluValue value) {

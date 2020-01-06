@@ -114,8 +114,8 @@ struct bluObjNative {
 struct bluObjString {
 	bluObj obj;
 	int32_t length;
-	char* chars;
 	int32_t hash;
+	char chars[];
 };
 
 struct bluObjUpvalue {
@@ -139,10 +139,11 @@ bluObjClosure* newClosure(bluVM* vm, bluObjFunction* function);
 bluObjFunction* bluNewFunction(bluVM* vm);
 bluObjInstance* bluNewInstance(bluVM* vm, bluObjClass* class);
 bluObjNative* bluNewNative(bluVM* vm, bluNativeFn function, int8_t arity);
+bluObjString* bluNewString(bluVM* vm, int32_t length);
 bluObjUpvalue* bluNewUpvalue(bluVM* vm, bluValue* slot);
 
 bluObjString* bluCopyString(bluVM* vm, const char* chars, int32_t length);
-bluObjString* bluTakeString(bluVM* vm, char* chars, int32_t length);
+bluObjString* bluTakeString(bluVM* vm, bluObjString* string);
 
 void bluPrintObject(bluValue value);
 

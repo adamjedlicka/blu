@@ -50,12 +50,12 @@ static void concatenate(bluVM* vm) {
 	bluObjString* left = AS_STRING(bluPop(vm));
 
 	int32_t length = left->length + right->length;
-	char* chars = bluAllocate(vm, sizeof(char) * length + 1);
-	memcpy(chars, left->chars, left->length);
-	memcpy(chars + left->length, right->chars, right->length);
-	chars[length] = '\0';
+	bluObjString* string = bluNewString(vm, length);
+	memcpy(string->chars, left->chars, left->length);
+	memcpy(string->chars + left->length, right->chars, right->length);
+	string->chars[length] = '\0';
 
-	bluObjString* result = bluTakeString(vm, chars, length);
+	bluObjString* result = bluTakeString(vm, string);
 
 	bluPush(vm, OBJ_VAL(result));
 }
@@ -276,69 +276,8 @@ static bool importModule(bluVM* vm, bluObjString* moduleName) {
 	return false;
 }
 
-static bool importFile(bluVM* vm, bluObjString* moduleName) {
-	char* path = realpath(moduleName->chars, NULL);
-	if (path == NULL) {
-		runtimeError(vm, "No such module '%s'.", moduleName->chars);
-		return false;
-	}
-
-	bluObjString* pathString = bluTakeString(vm, path, strlen(path));
-
-	for (int32_t i = 0; i < vm->modules.count; i++) {
-		if (bluValuesEqual(OBJ_VAL(pathString), OBJ_VAL(vm->modules.data[i].name))) {
-			if (vm->modules.data[i].loaded == true) return true;
-		}
-	}
-
-	FILE* file = fopen(path, "rb");
-	if (file == NULL) {
-		runtimeError(vm, "Could not open file '%s'.", path);
-		return false;
-	}
-
-	fseek(file, 0L, SEEK_END);
-	size_t fileSize = ftell(file);
-	rewind(file);
-
-	char* buffer = (char*)malloc(fileSize + 1);
-	if (buffer == NULL) {
-		runtimeError(vm, "Not enough memory to read \"%s\".\n", path);
-		return false;
-	}
-
-	size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
-	if (bytesRead < fileSize) {
-		runtimeError(vm, "Could not read file \"%s\".\n", path);
-		return false;
-	}
-
-	buffer[bytesRead] = '\0';
-
-	fclose(file);
-
-	bluModule module;
-	module.name = pathString;
-	module.loader = NULL;
-	module.loaded = true;
-	module.source = buffer;
-
-	bluModuleBufferWrite(&vm->modules, module);
-
-	int32_t frameCountStart = vm->frameCountStart;
-	vm->frameCountStart = vm->frameCount;
-
-	bluInterpret(vm, module.source, module.name->chars);
-
-	vm->frameCountStart = frameCountStart;
-
-	return true;
-}
-
 static bool import(bluVM* vm, bluObjString* moduleName) {
-	bool isFile = strcmp(".blu", &moduleName->chars[moduleName->length - 4]) == 0;
-
-	return isFile ? importFile(vm, moduleName) : importModule(vm, moduleName);
+	return importModule(vm, moduleName);
 }
 
 static bluInterpretResult run(bluVM* vm) {
