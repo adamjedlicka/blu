@@ -1,0 +1,56 @@
+import "system"
+
+fn BottomUpTree(depth) {
+    if depth > 0 {
+        return [BottomUpTree(depth - 1), BottomUpTree(depth - 1)]
+    } else {
+        return []
+    }
+}
+
+fn ItemCheck(tree) {
+    if tree.len() > 0 {
+        return 1 + ItemCheck(tree[0]) + ItemCheck(tree[1])
+    } else {
+        return 1
+    }
+}
+
+fn main() {
+    var N = 21
+    var minDepth = 4
+    var maxDepth = minDepth + 2
+    if maxDepth < N: maxDepth = N
+
+    var stretchDepth = maxDepth + 1
+    var stretchTree = BottomUpTree(stretchDepth)
+
+    System.print("stretch tree of depth ")
+    System.print(stretchDepth)
+    System.print(" - check: ")
+    System.println(ItemCheck(stretchTree))
+
+    var longLivedTree = BottomUpTree(maxDepth)
+
+    for var depth = minDepth; depth < maxDepth; depth = depth + 2 {
+        var iterations = 2 ^ (maxDepth - depth + minDepth)
+        var check = 0
+
+        for var i = 0; i < iterations; i = i + 1 {
+            check = check + ItemCheck(BottomUpTree(depth))
+        }
+
+        System.print(iterations)
+        System.print(" trees of depth ")
+        System.print(depth)
+        System.print(" - check: ")
+        System.println(check)
+    }
+
+    System.print("long lived tree of depth ")
+    System.print(maxDepth)
+    System.print(" - check: ")
+    System.println(ItemCheck(longLivedTree))
+}
+
+main()
